@@ -17,12 +17,16 @@ Extracts learning outcomes from chapter outlines, validates cross-chapter consis
 - Properly sequenced (building on previous chapters)
 
 **Workflow**:
-1. Extract LOs from chapter outline(s)
+1. Extract LOs from chapter (learning_outcomes.md or outline.md)
+   - Checks for learning_outcomes.md first (new structure)
+   - Falls back to outline.md if not found (backward compatibility)
 2. Parse into structured CSV format
 3. Cross-chapter overlap detection
 4. Optional: Check research notes for implicit LOs
 5. Optional: Check code examples for implicit LOs
 6. Export to CSV for manual/LLM review
+
+**Backward Compatibility**: This command supports both the new canonical structure (standalone learning_outcomes.md) and the old structure (LOs embedded in outline.md). Clear output messages indicate which file was read for each chapter.
 
 ## Parse Arguments
 
@@ -110,40 +114,74 @@ fi
 ## Extract Learning Outcomes
 
 ```bash
-# Function to extract LOs from a chapter outline
+# Function to extract LOs from a chapter outline (with backward compatibility)
 extract_los_from_outline() {
     local chapter_num=$1
     local outline_file=$2
     local chapter_id=$(printf "%02d" "$chapter_num")
 
-    # Check if outline exists
-    if [ ! -f "$outline_file" ]; then
-        echo "  ⚠️  Outline not found: $outline_file"
-        return 1
-    fi
+    # Get chapter directory
+    local chapter_dir=$(dirname "$outline_file")
+    local learning_outcomes_file="${chapter_dir}/learning_outcomes.md"
 
-    # Extract chapter title
-    local chapter_title=$(grep "^# " "$outline_file" | head -1 | sed 's/^# //' | sed 's/\*//g' | xargs)
+    # Initialize variables
+    local source_file=""
+    local los_section=""
+    local chapter_title=""
 
-    # Extract learning outcomes section
-    # Pattern: Look for "Learning Outcomes:" section in CHAPTER GUIDANCE
-    local los_section=$(awk '
-        /CHAPTER GUIDANCE/,/^---/ {
-            if (/Learning Outcomes:/) {
+    # Check for learning_outcomes.md first (new structure)
+    if [ -f "$learning_outcomes_file" ]; then
+        echo "  📘 Reading from learning_outcomes.md (new structure)"
+        source_file="$learning_outcomes_file"
+
+        # Extract chapter title from learning_outcomes.md
+        chapter_title=$(grep "^# Chapter" "$learning_outcomes_file" | head -1 | sed 's/^# Chapter [0-9]\+: //' | xargs)
+
+        # Extract learning outcomes (numbered list after "After completing")
+        los_section=$(awk '
+            /After completing this chapter/ {
                 in_los = 1
                 next
             }
-            if (in_los && /^[[:space:]]*\*/) {
-                print
-            }
-            if (in_los && /^---/) {
+            /^---/ {
                 exit
             }
-        }
-    ' "$outline_file")
+            in_los && /^[0-9]/ {
+                print
+            }
+        ' "$learning_outcomes_file")
+
+    # Fall back to outline.md (old structure)
+    elif [ -f "$outline_file" ]; then
+        echo "  📄 Reading from outline.md (old structure - backward compatibility)"
+        source_file="$outline_file"
+
+        # Extract chapter title
+        chapter_title=$(grep "^# " "$outline_file" | head -1 | sed 's/^# //' | sed 's/\*//g' | xargs)
+
+        # Extract learning outcomes section from CHAPTER GUIDANCE
+        los_section=$(awk '
+            /CHAPTER GUIDANCE/,/^---/ {
+                if (/Learning Outcomes:/) {
+                    in_los = 1
+                    next
+                }
+                if (in_los && /^[[:space:]]*\*/) {
+                    print
+                }
+                if (in_los && /^---/) {
+                    exit
+                }
+            }
+        ' "$outline_file")
+
+    else
+        echo "  ⚠️  Neither learning_outcomes.md nor outline.md found in: $chapter_dir"
+        return 1
+    fi
 
     if [ -z "$los_section" ]; then
-        echo "  ⚠️  No Learning Outcomes found in: $outline_file"
+        echo "  ⚠️  No Learning Outcomes found in: $source_file"
         return 1
     fi
 
@@ -153,8 +191,9 @@ extract_los_from_outline() {
         # Skip empty lines
         [ -z "$(echo "$line" | xargs)" ] && continue
 
-        # Clean up the line (remove leading *, spaces, trailing periods)
-        local lo_text=$(echo "$line" | sed 's/^[[:space:]]*\*[[:space:]]*//' | sed 's/\.$//' | xargs)
+        # Clean up the line (remove leading numbers/bullets, spaces, trailing periods)
+        # Handles both "1. LO text" (new) and "* LO text" (old)
+        local lo_text=$(echo "$line" | sed 's/^[[:space:]]*[0-9]\+\.[[:space:]]*//' | sed 's/^[[:space:]]*\*[[:space:]]*//' | sed 's/\.$//' | xargs)
 
         # Skip if empty after cleaning
         [ -z "$lo_text" ] && continue
