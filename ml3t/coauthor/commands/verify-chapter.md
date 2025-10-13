@@ -23,8 +23,14 @@ Citation and fact verification before finalizing to prevent post-draft rework.
 1. Checks citations for completeness against draft content
 2. Flags unsupported factual claims needing verification
 3. Tests code examples for errors
-4. Generates verification checklist
-5. Creates verification report with issues found
+4. Validates learning outcomes structure (with backward compatibility)
+   - Checks for learning_outcomes.md (new structure)
+   - Falls back to outline.md (old structure)
+   - Verifies outline references learning_outcomes.md correctly
+5. Generates verification checklist
+6. Creates verification report with issues found
+
+**Backward Compatibility**: Supports both the new canonical structure (standalone learning_outcomes.md) and the old structure (LOs embedded in outline.md).
 
 **Integration**: Third phase of ML4T workflow (Research → Draft → Verify)
 
@@ -245,8 +251,126 @@ fi
 echo ""
 echo "" >> "$VERIFICATION_REPORT"
 
+# Check 4: Learning Outcomes Structure
+echo "🎯 Checking Learning Outcomes Structure..."
+echo ""
+
+LO_ISSUES=0
+
+# Determine chapter directory from draft file path or chapter title
+CHAPTER_NUM=$(echo "$CHAPTER_SLUG" | grep -oP '^\d+' || echo "")
+if [ -n "$CHAPTER_NUM" ]; then
+    CHAPTER_DIR=$(find ~/ml4t/third_edition/chapters -maxdepth 1 -type d -name "${CHAPTER_NUM}_*" | head -1)
+
+    if [ -n "$CHAPTER_DIR" ]; then
+        LEARNING_OUTCOMES_FILE="$CHAPTER_DIR/manuscript/learning_outcomes.md"
+        OUTLINE_FILE="$CHAPTER_DIR/manuscript/outline.md"
+
+        # Check for learning_outcomes.md (new structure)
+        if [ -f "$LEARNING_OUTCOMES_FILE" ]; then
+            info "✅ Found learning_outcomes.md (new structure)"
+
+            LO_COUNT=$(grep -c "^[0-9]\+\." "$LEARNING_OUTCOMES_FILE" 2>/dev/null || echo "0")
+
+            cat >> "$VERIFICATION_REPORT" <<EOF
+### 4. Learning Outcomes Structure
+
+**Structure**: New (standalone learning_outcomes.md)
+**Learning Outcomes Found**: $LO_COUNT
+
+EOF
+
+            # Check if outline.md references learning_outcomes.md
+            if [ -f "$OUTLINE_FILE" ]; then
+                if grep -q "learning_outcomes\.md" "$OUTLINE_FILE"; then
+                    success "Outline correctly references learning_outcomes.md"
+                    echo "✅ Outline structure correct - references learning_outcomes.md" >> "$VERIFICATION_REPORT"
+                else
+                    warn "Outline does not reference learning_outcomes.md"
+                    echo "⚠️  ISSUE: Outline should reference learning_outcomes.md but doesn't" >> "$VERIFICATION_REPORT"
+                    LO_ISSUES=$((LO_ISSUES + 1))
+                fi
+            fi
+
+            success "Learning outcomes structure validated ($LO_COUNT LOs)"
+
+        # Fall back to outline.md (old structure)
+        elif [ -f "$OUTLINE_FILE" ]; then
+            info "📄 Using outline.md (old structure - backward compatibility)"
+
+            # Extract LO count from outline
+            LO_COUNT=$(awk '
+                /CHAPTER GUIDANCE/,/^---/ {
+                    if (/Learning Outcomes:/) {
+                        in_los = 1
+                        next
+                    }
+                    if (in_los && /^[[:space:]]*\*/) {
+                        count++
+                    }
+                    if (in_los && /^---/) {
+                        exit
+                    }
+                }
+                END {
+                    print count
+                }
+            ' "$OUTLINE_FILE" 2>/dev/null || echo "0")
+
+            cat >> "$VERIFICATION_REPORT" <<EOF
+### 4. Learning Outcomes Structure
+
+**Structure**: Old (LOs embedded in outline.md)
+**Learning Outcomes Found**: $LO_COUNT
+**Recommendation**: Consider migrating to standalone learning_outcomes.md
+
+EOF
+
+            if [ "$LO_COUNT" -gt 0 ]; then
+                success "Learning outcomes found in outline ($LO_COUNT LOs)"
+                echo "✅ Learning outcomes present in outline" >> "$VERIFICATION_REPORT"
+            else
+                warn "No learning outcomes found in outline"
+                echo "⚠️  ISSUE: No learning outcomes found" >> "$VERIFICATION_REPORT"
+                LO_ISSUES=$((LO_ISSUES + 1))
+            fi
+
+        else
+            warn "Neither learning_outcomes.md nor outline.md found"
+            cat >> "$VERIFICATION_REPORT" <<EOF
+### 4. Learning Outcomes Structure
+
+**Structure**: Not found
+**Issue**: Neither learning_outcomes.md nor outline.md found in chapter directory
+
+EOF
+            echo "⚠️  ISSUE: Learning outcomes structure not found" >> "$VERIFICATION_REPORT"
+            LO_ISSUES=$((LO_ISSUES + 1))
+        fi
+    else
+        info "Chapter directory not found (chapter number: $CHAPTER_NUM)"
+        cat >> "$VERIFICATION_REPORT" <<EOF
+### 4. Learning Outcomes Structure
+
+**Status**: Skipped (chapter directory not found)
+
+EOF
+    fi
+else
+    info "Cannot determine chapter number from draft file"
+    cat >> "$VERIFICATION_REPORT" <<EOF
+### 4. Learning Outcomes Structure
+
+**Status**: Skipped (cannot determine chapter number)
+
+EOF
+fi
+
+echo ""
+echo "" >> "$VERIFICATION_REPORT"
+
 # Verification Summary
-TOTAL_ISSUES=$((CITATION_ISSUES + CODE_ISSUES))
+TOTAL_ISSUES=$((CITATION_ISSUES + CODE_ISSUES + LO_ISSUES))
 
 cat >> "$VERIFICATION_REPORT" <<EOF
 ---
@@ -256,6 +380,7 @@ cat >> "$VERIFICATION_REPORT" <<EOF
 **Total Issues Found**: $TOTAL_ISSUES
 - Citation Issues: $CITATION_ISSUES
 - Code Issues: $CODE_ISSUES
+- Learning Outcomes Issues: $LO_ISSUES
 
 **Status**: $([ "$TOTAL_ISSUES" -eq 0 ] && echo "✅ PASS - No issues found" || echo "⚠️  NEEDS ATTENTION - $TOTAL_ISSUES issues to resolve")
 
@@ -279,6 +404,14 @@ if [ "$CODE_ISSUES" -gt 0 ]; then
     echo "" >> "$VERIFICATION_REPORT"
 fi
 
+if [ "$LO_ISSUES" -gt 0 ]; then
+    echo "### Learning Outcomes Structure" >> "$VERIFICATION_REPORT"
+    echo "- Ensure learning outcomes are properly defined" >> "$VERIFICATION_REPORT"
+    echo "- For new structure: Verify outline.md references learning_outcomes.md" >> "$VERIFICATION_REPORT"
+    echo "- For old structure: Consider migrating to standalone learning_outcomes.md" >> "$VERIFICATION_REPORT"
+    echo "" >> "$VERIFICATION_REPORT"
+fi
+
 if [ "$TOTAL_ISSUES" -eq 0 ]; then
     echo "✅ Chapter appears ready for finalization" >> "$VERIFICATION_REPORT"
     echo "- All verification checks passed" >> "$VERIFICATION_REPORT"
@@ -299,6 +432,7 @@ echo ""
 echo "📊 Verification Results:"
 echo "  - Citations: $([ "$CITATION_ISSUES" -eq 0 ] && echo "✅ OK" || echo "⚠️  $CITATION_ISSUES issues")"
 echo "  - Code: $([ "$CODE_ISSUES" -eq 0 ] && echo "✅ OK" || echo "⚠️  $CODE_ISSUES issues")"
+echo "  - Learning Outcomes: $([ "$LO_ISSUES" -eq 0 ] && echo "✅ OK" || echo "⚠️  $LO_ISSUES issues")"
 echo "  - Claims: ℹ️  $STRONG_CLAIMS strong claims to verify"
 echo ""
 echo "📁 Verification Report: $VERIFICATION_REPORT"
