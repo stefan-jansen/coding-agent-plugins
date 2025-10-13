@@ -1,0 +1,73 @@
+{
+  "name": "stefan-plugins",
+  "owner": {
+    "name": "Stefan Jansen"
+  },
+  "description": "Personal plugin marketplace for Claude Code - modular development tools and domain-specific workflows",
+  "homepage": "https://github.com/stefan-jansen",
+  "plugins": [
+    {
+      "name": "core",
+      "source": "./core",
+      "description": "Core utilities (cleanup, docs, status, setup, handoff)",
+      "version": "1.0.0",
+      "keywords": ["utilities", "core", "setup"]
+    },
+    {
+      "name": "workflow",
+      "source": "./workflow",
+      "description": "Task workflow management (explore, plan, next, ship)",
+      "version": "1.0.0",
+      "keywords": ["workflow", "tasks", "planning"]
+    },
+    {
+      "name": "development",
+      "source": "./development",
+      "description": "Development tools (analyze, review, test, fix, run)",
+      "version": "1.0.0",
+      "keywords": ["development", "testing", "code-review"]
+    },
+    {
+      "name": "memory",
+      "source": "./memory",
+      "description": "Memory management and knowledge persistence",
+      "version": "1.0.0",
+      "keywords": ["memory", "knowledge", "persistence"]
+    },
+    {
+      "name": "git",
+      "source": "./git",
+      "description": "Git operations and version control workflows",
+      "version": "1.0.0",
+      "keywords": ["git", "version-control", "vcs"]
+    },
+    {
+      "name": "quant",
+      "source": "./quant",
+      "description": "Quantitative finance workflows and validators",
+      "version": "1.0.0",
+      "keywords": ["quant", "finance", "trading"]
+    },
+    {
+      "name": "reports",
+      "source": "./reports",
+      "description": "Professional report generation tools",
+      "version": "1.0.0",
+      "keywords": ["reports", "documentation", "stakeholders"]
+    },
+    {
+      "name": "ml3t-researcher",
+      "source": "./ml3t/researcher",
+      "description": "Academic research assistant with paper search and citation management",
+      "version": "1.0.0",
+      "keywords": ["research", "papers", "citations", "ml3t"]
+    },
+    {
+      "name": "ml3t-coauthor",
+      "source": "./ml3t/coauthor",
+      "description": "Book co-authoring assistance with ML3T infrastructure",
+      "version": "1.0.0",
+      "keywords": ["writing", "co-authoring", "books", "ml3t"]
+    }
+  ]
+}

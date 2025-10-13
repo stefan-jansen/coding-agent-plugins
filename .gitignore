@@ -1,0 +1,25 @@
+# Development artifacts
+*.pyc
+__pycache__/
+.DS_Store
+.idea/
+.vscode/
+
+# Temporary files
+*.tmp
+*.log
+*.swp
+*~
+
+# Environment files
+.env
+.env.local
+
+# Plugin development artifacts
+*/test/
+*/tests/
+*/dev/
+
+# Backup files
+*.backup
+*.bak
