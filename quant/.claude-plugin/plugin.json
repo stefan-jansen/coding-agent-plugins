@@ -1,0 +1,76 @@
+{
+  "name": "claude-code-quant",
+  "version": "1.0.0",
+  "description": "Quantitative finance ML framework - strategy development, validation, and deployment",
+  "author": "Claude Code Framework",
+  "keywords": ["quant", "finance", "ml", "trading", "strategy", "validation"],
+  "commands": ["commands/*.md"],
+  "agents": [
+    "agents/quant-ml-validator.md",
+    "agents/quant-backtest-validator.md",
+    "agents/quant-risk-validator.md",
+    "agents/data-scientist.md"
+  ],
+  "settings": {
+    "defaultEnabled": false,
+    "category": "domain"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/claude-code-plugins"
+  },
+  "license": "MIT",
+  "capabilities": {
+    "strategyExploration": {
+      "description": "Explore quantitative finance ML requirements with domain-specific validation",
+      "command": "quant-explore"
+    },
+    "strategyPlanning": {
+      "description": "Create quant strategy implementation plan with validation gates and cost modeling",
+      "command": "quant-plan"
+    },
+    "strategyExecution": {
+      "description": "Execute next task with phase-appropriate quant validation",
+      "command": "quant-next"
+    },
+    "strategyDeployment": {
+      "description": "Validate quant strategy deployment readiness with comprehensive safety checks",
+      "command": "quant-ship"
+    },
+    "mlExperiments": {
+      "description": "Run ML experiments with tracking and reproducibility",
+      "command": "experiment",
+      "agent": "data-scientist"
+    },
+    "mlEvaluation": {
+      "description": "Compare experiments and identify best performers",
+      "command": "evaluate",
+      "agent": "data-scientist"
+    }
+  },
+  "agents": {
+    "quant-ml-validator": {
+      "description": "ML-specific validation for quantitative finance strategies",
+      "validation_domains": ["overfitting", "data-leakage", "look-ahead-bias"]
+    },
+    "quant-backtest-validator": {
+      "description": "Backtest validation with common pitfalls detection",
+      "validation_domains": ["survivorship-bias", "transaction-costs", "slippage"]
+    },
+    "quant-risk-validator": {
+      "description": "Risk management validation for trading strategies",
+      "validation_domains": ["position-sizing", "leverage", "drawdown"]
+    },
+    "data-scientist": {
+      "description": "ML lifecycle specialist focusing on experimentation and evaluation",
+      "structured_reasoning": true
+    }
+  },
+  "dependencies": {
+    "claude-code-core": "^1.0.0"
+  },
+  "mcpTools": {
+    "optional": ["sequential-thinking", "context7"],
+    "gracefulDegradation": true
+  }
+}

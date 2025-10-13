@@ -1,0 +1,39 @@
+{
+  "name": "claude-code-reports",
+  "version": "1.0.0",
+  "description": "Professional stakeholder report generation - technical, business, and executive reports from data",
+  "author": "Claude Code Framework",
+  "keywords": ["reports", "stakeholder", "communication", "documentation", "business"],
+  "commands": ["commands/*.md"],
+  "agents": ["agents/report-generator.md"],
+  "settings": {
+    "defaultEnabled": false,
+    "category": "productivity"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/claude-code-plugins"
+  },
+  "license": "MIT",
+  "capabilities": {
+    "reportGeneration": {
+      "description": "Generate professional stakeholder reports from data with multiple audience formats",
+      "command": "report",
+      "agent": "report-generator",
+      "formats": ["technical", "business", "executive"]
+    }
+  },
+  "agents": {
+    "report-generator": {
+      "description": "Professional stakeholder reports with NotebookEdit for interactive content",
+      "notebook_support": true
+    }
+  },
+  "dependencies": {
+    "claude-code-core": "^1.0.0"
+  },
+  "mcpTools": {
+    "optional": [],
+    "gracefulDegradation": true
+  }
+}

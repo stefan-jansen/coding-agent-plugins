@@ -1,0 +1,40 @@
+{
+  "name": "claude-code-memory",
+  "version": "1.0.0",
+  "description": "Active memory management and maintenance for Claude Code framework",
+  "author": "Claude Code Framework",
+  "keywords": ["memory", "maintenance", "context", "management"],
+  "commands": ["commands/*.md"],
+  "settings": {
+    "defaultEnabled": true,
+    "category": "core"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/claude-code-plugins"
+  },
+  "license": "MIT",
+  "capabilities": {
+    "memoryReview": {
+      "description": "Display current memory state with timestamps and sizes",
+      "command": "memory-review"
+    },
+    "memoryUpdate": {
+      "description": "Interactive memory maintenance with add/update/remove/relocate operations",
+      "command": "memory-update"
+    },
+    "memoryGarbageCollection": {
+      "description": "Identify and clean up stale memory entries",
+      "command": "memory-gc"
+    },
+    "autoReflection": {
+      "description": "Auto-analyze work for memory updates at completion points",
+      "integrated": "ship, fix, review commands"
+    }
+  },
+  "dependencies": {},
+  "mcpTools": {
+    "optional": ["sequential-thinking"],
+    "gracefulDegradation": true
+  }
+}

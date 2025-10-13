@@ -1,0 +1,85 @@
+{
+  "name": "claude-code-development",
+  "version": "1.0.0",
+  "description": "Code development and quality assurance tools - analyze, test, fix, review",
+  "author": "Claude Code Framework",
+  "keywords": ["development", "testing", "quality", "analysis", "debugging"],
+  "commands": ["commands/*.md"],
+  "agents": ["agents/architect.md", "agents/code-reviewer.md", "agents/test-engineer.md"],
+  "settings": {
+    "defaultEnabled": true,
+    "category": "development"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/claude-code-plugins"
+  },
+  "license": "MIT",
+  "capabilities": {
+    "codebaseAnalysis": {
+      "description": "Deep codebase analysis with semantic understanding",
+      "command": "analyze",
+      "agent": "architect"
+    },
+    "testCreation": {
+      "description": "Test-driven development workflow using test-engineer agent",
+      "command": "test",
+      "agent": "test-engineer"
+    },
+    "errorDebugging": {
+      "description": "Universal debugging and fix application with semantic analysis",
+      "command": "fix"
+    },
+    "scriptExecution": {
+      "description": "Execute code or scripts with monitoring and timeout control",
+      "command": "run"
+    },
+    "codeReview": {
+      "description": "Code review focused on bugs, design flaws, and quality",
+      "command": "review",
+      "agent": "code-reviewer"
+    },
+    "reportGeneration": {
+      "description": "Generate professional stakeholder reports from data",
+      "command": "report"
+    },
+    "mlExperiments": {
+      "description": "Run ML experiments with tracking",
+      "command": "experiment"
+    },
+    "mlEvaluation": {
+      "description": "Compare experiments and identify best performers",
+      "command": "evaluate"
+    }
+  },
+  "agents": {
+    "architect": {
+      "description": "System design and architectural decisions specialist",
+      "structured_reasoning": true
+    },
+    "test-engineer": {
+      "description": "Test creation, coverage analysis, and quality assurance specialist",
+      "semantic_code_understanding": true
+    },
+    "code-reviewer": {
+      "description": "Code review, documentation quality, security audit specialist",
+      "structured_reasoning": true,
+      "semantic_code_understanding": true
+    },
+    "auditor": {
+      "description": "Compliance auditor for work progress and system setup",
+      "integrated": true
+    },
+    "data-scientist": {
+      "description": "ML experiments, data analysis, model evaluation specialist",
+      "structured_reasoning": true
+    }
+  },
+  "dependencies": {
+    "claude-code-core": "^1.0.0"
+  },
+  "mcpTools": {
+    "optional": ["sequential-thinking", "serena", "context7"],
+    "gracefulDegradation": true
+  }
+}
