@@ -51,6 +51,7 @@ if [ -z "$CHAPTER_DIR" ]; then
 fi
 
 OUTLINE_FILE="${CHAPTER_DIR}/manuscript/outline.md"
+LO_FILE="${CHAPTER_DIR}/manuscript/learning_outcomes.md"
 
 # Output paths
 DESIGN_DIR="$CHAPTER_DIR/code_design"
@@ -84,22 +85,35 @@ WORD_TARGET=$(grep -A 5 "CHAPTER GUIDANCE" "$OUTLINE_FILE" | grep "Word Target" 
 echo "  📚 Chapter: $CHAPTER - $CHAPTER_TITLE"
 echo "  🎯 Word target: $WORD_TARGET words"
 
-# Extract learning outcomes
+# Extract learning outcomes with backward compatibility
 echo "  🎓 Learning Outcomes:"
-LOS_SECTION=$(awk '
-    /Learning Outcomes:/,/^---/ {
-        if (/Learning Outcomes:/) {
-            in_los = 1
-            next
+
+# Check for learning_outcomes.md first (new canonical structure)
+if [ -f "$LO_FILE" ]; then
+    echo "  📄 Reading from learning_outcomes.md (canonical structure)"
+    LOS_SECTION=$(awk '
+        /^[0-9]+\./ {
+            print "    * " $0
         }
-        if (in_los && /^[[:space:]]*\*/) {
-            print
+    ' "$LO_FILE" | sed 's/^    \* [0-9]\+\. /    * /')
+else
+    echo "  📄 Reading from outline.md (old structure)"
+    # Fall back to outline.md for backward compatibility
+    LOS_SECTION=$(awk '
+        /Learning Outcomes:/,/^---/ {
+            if (/Learning Outcomes:/) {
+                in_los = 1
+                next
+            }
+            if (in_los && /^[[:space:]]*\*/) {
+                print
+            }
+            if (in_los && /^---/) {
+                exit
+            }
         }
-        if (in_los && /^---/) {
-            exit
-        }
-    }
-' "$OUTLINE_FILE")
+    ' "$OUTLINE_FILE")
+fi
 
 echo "$LOS_SECTION" | sed 's/^[[:space:]]*\*/     -/' | head -10
 
