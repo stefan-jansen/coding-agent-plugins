@@ -1,6 +1,6 @@
 ---
 title: handoff
-aliases: [transition, continue]
+aliases: [transition]
 ---
 
 # Conversation Handoff
@@ -54,24 +54,28 @@ I'll analyze our conversation and execute these steps:
 3. **Verify Symlink** → Ensure `.claude/transitions/latest/handoff.md` is correct
 4. **Inform User** → Tell user to run `/clear` manually (auto-clear not available via SlashCommand)
 
-**IMPORTANT**: After I complete the handoff document, you should:
-- Run `/clear` (the CLI command, not a slash command)
-- Then say "continue from .claude/transitions/latest/handoff.md"
+**IMPORTANT**: After I complete the handoff document, you must manually continue:
 
-Or simply run `/clear` and I'll automatically load the handoff for you.
+1. Run `/clear` (the CLI command, not a slash command)
+2. Say: "continue from .claude/transitions/latest/handoff.md"
+
+**Note**: Auto-continue after `/clear` is NOT supported. You must explicitly tell me to continue from the handoff document.
 
 ## User Continuation Steps
 
-After I create the handoff document and verify the symlink, you need to:
+After I create the handoff document and verify the symlink:
 
-**Step 1**: Run `/clear` (the CLI command)
+**Step 1**: Run `/clear` to reset conversation context
 ```bash
 /clear
 ```
 
-**Step 2**: I will automatically detect the cleared context and load the handoff document
+**Step 2**: Explicitly tell me to continue from handoff
+```
+continue from .claude/transitions/latest/handoff.md
+```
 
-**That's it!** The automated workflow makes continuation seamless.
+**Manual intervention required** - There is no automatic detection or loading after `/clear`.
 
 ## Intelligence Guidelines
 
@@ -140,26 +144,26 @@ readlink -f .claude/transitions/latest/handoff.md
 
 This prevents the issue where an older handoff document gets linked instead of the newest one.
 
-### Automated Workflow
+### Manual Continuation Workflow
 After creating handoff and verifying symlink, I will tell you:
 
 ```
 ✅ Handoff complete!
 
-Next steps:
+To continue:
 1. Run /clear (the CLI command)
-2. I'll automatically load the handoff document for you
+2. Say: "continue from .claude/transitions/latest/handoff.md"
 ```
 
-This eliminates the need to manually type "continue from..." - just run `/clear` and I'll handle the rest.
+**Important**: Auto-continuation is NOT supported. You must explicitly tell me to read the handoff document after `/clear`.
 
 ## Benefits
 
-- **No Context Loss**: Smooth continuation across conversation boundaries
+- **No Context Loss**: Smooth continuation across conversation boundaries (with manual continue step)
 - **Clean Documentation**: Permanent docs stay concise and relevant
 - **Efficient Startup**: Next agent gets exactly what they need
 - **Progressive Learning**: Project knowledge accumulates properly
-- **No Repetitive Work**: Automatic clear + read eliminates manual steps
+- **Symlink Convenience**: `.claude/transitions/latest/handoff.md` always points to newest handoff
 
 ---
 
