@@ -1,53 +1,25 @@
 {
-  "name": "claude-code-workflow",
+  "name": "workflow",
   "version": "1.0.0",
   "description": "Structured development workflow - explore, plan, implement, deliver",
-  "author": "Claude Code Framework",
-  "keywords": ["workflow", "explore", "plan", "next", "ship"],
-  "commands": ["commands/*.md"],
-  "settings": {
-    "defaultEnabled": true,
-    "category": "workflow"
+  "author": {
+    "name": "Claude Code Framework"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/claude-code-plugins"
-  },
-  "license": "MIT",
-  "capabilities": {
-    "requirementExploration": {
-      "description": "Explore requirements and codebase with systematic analysis",
-      "command": "explore"
-    },
-    "implementationPlanning": {
-      "description": "Create detailed implementation plan with ordered tasks and dependencies",
-      "command": "plan"
-    },
-    "taskExecution": {
-      "description": "Execute next available task from implementation plan",
-      "command": "next"
-    },
-    "workDelivery": {
-      "description": "Deliver completed work with validation and comprehensive documentation",
-      "command": "ship"
-    }
-  },
-  "dependencies": {
-    "claude-code-core": "^1.0.0",
-    "claude-code-memory": "^1.0.0"
-  },
-  "mcpTools": {
-    "optional": ["sequential-thinking", "serena", "firecrawl"],
-    "gracefulDegradation": true
-  },
-  "integrations": {
-    "memory": {
-      "description": "Auto-loads memory context via @imports",
-      "files": ["decisions.md", "lessons_learned.md", "project_state.md", "conventions.md", "dependencies.md"]
-    },
-    "workUnits": {
-      "description": "Integrated with work unit management",
-      "directory": ".claude/work/current/"
-    }
-  }
+  "keywords": [
+    "workflow",
+    "explore",
+    "plan",
+    "next",
+    "ship"
+  ],
+  "commands": [
+    "./commands/explore.md",
+    "./commands/next.md",
+    "./commands/plan.md",
+    "./commands/ship.md",
+    "./commands/spike.md",
+    "./commands/work.md"
+  ],
+  "repository": "https://github.com/yourusername/claude-code-plugins",
+  "license": "MIT"
 }

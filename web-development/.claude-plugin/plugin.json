@@ -2,56 +2,10 @@
   "name": "web-development",
   "version": "1.1.1",
   "description": "Full-stack web development with design expertise and intelligent agent routing for Django + Tailwind CSS projects",
-  "author": "Stefan",
-  "commands": ["commands/*.md"],
-  "capabilities": {
-    "frontend": [
-      "Tailwind CSS 3.4.4 utility-first design",
-      "DaisyUI 4.12.2 component library",
-      "htmx for dynamic interactions",
-      "Alpine.js for reactive components",
-      "Chrome DevTools verification",
-      "Responsive design and accessibility",
-      "Performance optimization (Core Web Vitals)",
-      "Color palette selection and theory",
-      "Typography and font pairing",
-      "Visual hierarchy and spacing",
-      "Modern layout patterns (hero, cards, pricing)",
-      "Design review and critique"
-    ],
-    "backend": [
-      "Django framework and ORM",
-      "Django REST Framework APIs",
-      "Django Channels WebSocket/real-time",
-      "Database optimization and migrations",
-      "Authentication and security",
-      "Testing with pytest-django"
-    ],
-    "workflow": [
-      "Intelligent agent routing (frontend vs backend)",
-      "Task analysis and complexity assessment",
-      "Full-stack coordination patterns",
-      "Chrome DevTools verification workflow",
-      "Test-driven development"
-    ]
+  "author": {
+    "name": "Stefan"
   },
-  "mcpRequirements": {
-    "frontend": [
-      "chrome-devtools (required for verification)",
-      "context7 (recommended for Tailwind/htmx docs)"
-    ],
-    "backend": [
-      "serena (recommended for Django codebase navigation)",
-      "context7 (recommended for Django/DRF docs)"
-    ]
-  },
-  "tags": [
-    "web-development",
-    "django",
-    "tailwind",
-    "htmx",
-    "full-stack",
-    "frontend",
-    "backend"
+  "commands": [
+    "./commands/*.md"
   ]
 }

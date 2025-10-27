@@ -1,5 +1,5 @@
 {
-  "name": "stefan-plugins",
+  "name": "local",
   "owner": {
     "name": "Stefan Jansen"
   },
@@ -7,65 +7,79 @@
   "homepage": "https://github.com/stefan-jansen",
   "plugins": [
     {
-      "name": "core",
-      "source": "./core",
-      "description": "Core utilities (cleanup, docs, status, setup, handoff)",
+      "name": "system",
+      "source": "./system",
+      "description": "System configuration and health management",
       "version": "1.0.0",
-      "keywords": ["utilities", "core", "setup"]
+      "keywords": ["utilities", "system", "setup", "audit"]
     },
     {
       "name": "workflow",
       "source": "./workflow",
-      "description": "Task workflow management (explore, plan, next, ship)",
+      "description": "Structured development workflow - explore, plan, implement, deliver",
       "version": "1.0.0",
       "keywords": ["workflow", "tasks", "planning"]
     },
     {
       "name": "development",
       "source": "./development",
-      "description": "Development tools (analyze, review, test, fix, run)",
+      "description": "Code development and quality assurance tools - analyze, test, fix, review",
       "version": "1.0.0",
-      "keywords": ["development", "testing", "code-review"]
+      "keywords": ["development", "testing", "code-review", "git"]
     },
     {
       "name": "memory",
       "source": "./memory",
-      "description": "Memory management and knowledge persistence",
+      "description": "Active memory management and maintenance for Claude Code framework",
       "version": "1.0.0",
-      "keywords": ["memory", "knowledge", "persistence"]
+      "keywords": ["memory", "knowledge", "persistence", "handoff"]
     },
     {
-      "name": "git",
-      "source": "./git",
-      "description": "Git operations and version control workflows",
+      "name": "agents",
+      "source": "./agents",
+      "description": "Specialized agent invocation and management",
       "version": "1.0.0",
-      "keywords": ["git", "version-control", "vcs"]
+      "keywords": ["agents", "specialists", "delegation"]
     },
     {
       "name": "quant",
       "source": "./quant",
-      "description": "Quantitative finance workflows and validators",
+      "description": "Quantitative finance ML framework - strategy development, validation, and deployment",
       "version": "1.0.0",
-      "keywords": ["quant", "finance", "trading"]
+      "keywords": ["quant", "finance", "trading", "ml"]
     },
     {
       "name": "reports",
       "source": "./reports",
-      "description": "Professional report generation tools",
+      "description": "Professional stakeholder report generation - technical, business, and executive reports from data",
       "version": "1.0.0",
       "keywords": ["reports", "documentation", "stakeholders"]
     },
     {
+      "name": "marketing",
+      "source": "./marketing",
+      "description": "Content marketing skills for technical B2B audiences including social media strategy and long-form technical writing",
+      "version": "1.0.0",
+      "keywords": ["marketing", "content", "social-media", "writing"]
+    },
+    {
+      "name": "web-development",
+      "source": "./web-development",
+      "description": "Full-stack web development with design expertise and intelligent agent routing for Django + Tailwind CSS projects",
+      "version": "1.1.1",
+      "keywords": ["web", "django", "tailwind", "fullstack"]
+    },
+    {
       "name": "ml3t-researcher",
       "source": "./ml3t/researcher",
-      "description": "Academic research assistant with paper search and citation management",
-      "version": "1.0.0",
-      "keywords": ["research", "papers", "citations", "ml3t"]
+      "description": "Academic research assistant for ML for Trading - paper discovery, fact-checking, and knowledge extraction with Qdrant RAG",
+      "version": "2.0.0",
+      "keywords": ["research", "papers", "citations", "ml3t", "qdrant"]
     },
     {
       "name": "ml3t-coauthor",
       "source": "./ml3t/coauthor",
-      "description": "Book co-authoring assistance with ML3T infrastructure",
+      "description": "Book production orchestration framework for ML for Trading - 4-phase workflow with research integration, content generation, and quality gates",
       "version": "1.0.0",
       "keywords": ["writing", "co-authoring", "books", "ml3t"]
     }

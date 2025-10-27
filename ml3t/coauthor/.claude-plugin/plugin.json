@@ -2,119 +2,18 @@
   "name": "ml3t-coauthor",
   "version": "1.0.0",
   "description": "Book production orchestration framework for ML for Trading - 4-phase workflow with research integration, content generation, and quality gates",
-  "author": "ML4T Framework",
-  "keywords": ["ml4t", "coauthor", "book", "writing", "orchestration", "workflow", "jupyter"],
-  "agents": ["agents/ml3t-coauthor.md"],
-  "settings": {
-    "defaultEnabled": false,
-    "category": "ml4t-domain",
-    "requiresInfrastructure": true
+  "author": {
+    "name": "ML4T Framework"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/claude-code-plugins"
-  },
-  "license": "MIT",
-  "capabilities": {
-    "researchPhase": {
-      "description": "Gather sources from Zotero and researcher agent",
-      "agent": "ml3t-coauthor",
-      "requires": ["ml3t-researcher", "zotero", "git"]
-    },
-    "outlinePhase": {
-      "description": "Structure chapter content based on research",
-      "agent": "ml3t-coauthor",
-      "requires": ["git"]
-    },
-    "writingPhase": {
-      "description": "Generate draft content using RAG pipeline",
-      "agent": "ml3t-coauthor",
-      "requires": ["ml3t-researcher", "git"]
-    },
-    "reviewPhase": {
-      "description": "Create pull requests for human review",
-      "agent": "ml3t-coauthor",
-      "requires": ["git"]
-    },
-    "notebookManagement": {
-      "description": "Manage and validate Jupyter notebooks",
-      "agent": "ml3t-coauthor",
-      "requires": ["python", "jupyter"]
-    },
-    "citationManagement": {
-      "description": "Automated bibliography with Zotero",
-      "agent": "ml3t-coauthor",
-      "requires": ["zotero"]
-    }
-  },
-  "infrastructure": {
-    "git": {
-      "required": true,
-      "description": "Git repository for version control and collaboration",
-      "healthCheck": "git status",
-      "setup": "git init"
-    },
-    "zotero": {
-      "required": true,
-      "description": "Zotero library integration for bibliography management",
-      "envVars": ["ZOTERO_LIBRARY_ID", "ZOTERO_API_KEY"],
-      "setup": "Set environment variables in ~/.zshrc or ~/.bashrc"
-    },
-    "ml3tResearcher": {
-      "required": true,
-      "description": "ML3T researcher agent for paper discovery",
-      "plugin": "ml3t-researcher",
-      "setup": "Ensure ml3t-researcher plugin is enabled and configured"
-    },
-    "python": {
-      "required": true,
-      "version": ">=3.9",
-      "description": "Python environment for notebook execution",
-      "healthCheck": "python --version",
-      "setup": "python -m venv venv && source venv/bin/activate && pip install -r requirements.txt"
-    }
-  },
-  "workflow": {
-    "phases": ["research", "outline", "write", "review"],
-    "stateManagement": "json",
-    "collaboration": "git-pr",
-    "qualityGates": true
-  },
-  "agents": {
-    "ml3t-coauthor": {
-      "description": "Book production orchestration framework with 4-phase workflow",
-      "domain": "machine-learning-finance-publishing",
-      "infrastructure_location": "~/ml4t/agents/coauthor/",
-      "requires_services": ["git", "zotero", "ml3tResearcher", "python"],
-      "stateless": true,
-      "commands": 12
-    }
-  },
-  "dependencies": {
-    "claude-code-core": "^1.0.0",
-    "ml3t-researcher": "^2.0.0"
-  },
-  "mcpTools": {
-    "required": [],
-    "optional": ["sequential-thinking"],
-    "gracefulDegradation": true
-  },
-  "performance": {
-    "draftGeneration": "1500-2000 words/day",
-    "reviewCycle": "<7 days/chapter",
-    "commandResponse": "<30 seconds",
-    "codeSuccessRate": ">95%"
-  },
-  "quality": {
-    "contentApprovalRate": ">90%",
-    "notebookExecution": ">95%",
-    "citationAccuracy": "100%",
-    "styleConsistency": "required"
-  },
-  "documentation": {
-    "setup": "README.md",
-    "agent_docs": "~/ml4t/agents/coauthor/README.md",
-    "architecture": "~/ml4t/agents/coauthor/architecture.md",
-    "requirements": "~/ml4t/agents/coauthor/requirements.md"
-  }
+  "keywords": [
+    "ml4t",
+    "coauthor",
+    "book",
+    "writing",
+    "orchestration",
+    "workflow",
+    "jupyter"
+  ],
+  "repository": "https://github.com/yourusername/claude-code-plugins",
+  "license": "MIT"
 }

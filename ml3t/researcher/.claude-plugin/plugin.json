@@ -2,94 +2,18 @@
   "name": "ml3t-researcher",
   "version": "2.0.0",
   "description": "Academic research assistant for ML for Trading - paper discovery, fact-checking, and knowledge extraction with Qdrant RAG",
-  "author": "ML4T Framework",
-  "keywords": ["ml4t", "research", "academic", "rag", "qdrant", "zotero", "papers"],
-  "agents": ["agents/ml3t-researcher.md"],
-  "settings": {
-    "defaultEnabled": false,
-    "category": "ml4t-domain",
-    "requiresInfrastructure": true
+  "author": {
+    "name": "ML4T Framework"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/yourusername/claude-code-plugins"
-  },
-  "license": "MIT",
-  "capabilities": {
-    "paperDiscovery": {
-      "description": "Semantic search across 10,000+ academic papers",
-      "agent": "ml3t-researcher",
-      "requires": ["qdrant", "zotero"]
-    },
-    "factVerification": {
-      "description": "Validate claims and citations with source tracking",
-      "agent": "ml3t-researcher",
-      "requires": ["qdrant", "api-server"]
-    },
-    "codeExtraction": {
-      "description": "Extract and analyze code examples from research papers",
-      "agent": "ml3t-researcher",
-      "requires": ["api-server"]
-    },
-    "updateTracking": {
-      "description": "Identify research developments since previous editions",
-      "agent": "ml3t-researcher",
-      "requires": ["qdrant", "api-server"]
-    }
-  },
-  "infrastructure": {
-    "qdrant": {
-      "required": true,
-      "url": "http://localhost:7333",
-      "description": "Qdrant vector database for semantic paper search",
-      "healthCheck": "http://localhost:7333/collections",
-      "setup": "docker-compose up -d qdrant"
-    },
-    "apiServer": {
-      "required": true,
-      "url": "http://localhost:8000",
-      "description": "Research API server for paper processing",
-      "healthCheck": "http://localhost:8000/health",
-      "setup": "cd ~/ml4t/agents/researcher && uv run python run_api_server.py"
-    },
-    "zotero": {
-      "required": true,
-      "description": "Zotero library integration for bibliography management",
-      "envVars": ["ZOTERO_LIBRARY_ID", "ZOTERO_API_KEY"],
-      "setup": "Set environment variables in ~/.zshrc or ~/.bashrc"
-    }
-  },
-  "mcpServers": {
-    "qdrant": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-qdrant"],
-      "env": {
-        "QDRANT_URL": "http://localhost:7333"
-      },
-      "description": "MCP server for Qdrant vector database access",
-      "optional": false
-    }
-  },
-  "agents": {
-    "ml3t-researcher": {
-      "description": "Academic research assistant specialized in ML for Trading",
-      "domain": "machine-learning-finance",
-      "infrastructure_location": "~/ml4t/agents/researcher/",
-      "requires_services": ["qdrant", "apiServer", "zotero"],
-      "mcp_tools": ["qdrant"]
-    }
-  },
-  "dependencies": {
-    "claude-code-core": "^1.0.0"
-  },
-  "mcpTools": {
-    "required": ["qdrant"],
-    "optional": ["sequential-thinking"],
-    "gracefulDegradation": false
-  },
-  "documentation": {
-    "setup": "README.md",
-    "agent_docs": "~/ml4t/agents/researcher/.claude/CLAUDE.md",
-    "api_docs": "~/ml4t/agents/researcher/README.md"
-  }
+  "keywords": [
+    "ml4t",
+    "research",
+    "academic",
+    "rag",
+    "qdrant",
+    "zotero",
+    "papers"
+  ],
+  "repository": "https://github.com/yourusername/claude-code-plugins",
+  "license": "MIT"
 }

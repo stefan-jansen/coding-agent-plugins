@@ -1,0 +1,17 @@
+{
+  "name": "agents",
+  "version": "1.0.0",
+  "description": "Specialized agent invocation and management",
+  "author": {
+    "name": "Claude Code Framework"
+  },
+  "commands": [
+    "./commands/agent.md",
+    "./commands/serena.md"
+  ],
+  "agents": [
+    "./agents/auditor.md",
+    "./agents/reasoning-specialist.md"
+  ],
+  "license": "MIT"
+}

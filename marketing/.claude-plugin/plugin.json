@@ -1,0 +1,9 @@
+{
+  "name": "marketing",
+  "version": "1.0.0",
+  "description": "Content marketing skills for technical B2B audiences including social media strategy and long-form technical writing",
+  "author": {
+    "name": "Stefan"
+  },
+  "license": "MIT"
+}
