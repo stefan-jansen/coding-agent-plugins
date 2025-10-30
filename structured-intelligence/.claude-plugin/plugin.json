@@ -2,13 +2,37 @@
   "name": "structured-intelligence",
   "version": "1.0.0",
   "description": "Structured Intelligence Framework (SIF) - Hierarchical content creation with evidence-first methodology. Implements Pyramid Principle, SCQA, Diátaxis, and DITA-inspired content management for technical writing at scale.",
-  "author": "Stefan Witwicki",
-  "license": "MIT",
-  "homepage": "https://github.com/switwicki/claude-code-plugins",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/switwicki/claude-code-plugins"
+  "author": {
+    "name": "Stefan Witwicki"
   },
+  "license": "MIT",
+  "commands": [
+    "./commands/define-messages.md",
+    "./commands/frame-content.md",
+    "./commands/expand-outline.md",
+    "./commands/draft-section.md",
+    "./commands/review-content.md",
+    "./commands/propose.md",
+    "./commands/summarize.md"
+  ],
+  "agents": [
+    "./agents/message-architect.md",
+    "./agents/analyst.md",
+    "./agents/narrative-framer.md",
+    "./agents/diataxis-planner.md",
+    "./agents/outline-expander.md",
+    "./agents/section-drafter.md",
+    "./agents/formatter.md",
+    "./agents/evidence-validator.md"
+  ],
+  "skills": [
+    "./skills/pyramid-principle/SKILL.md",
+    "./skills/scqa-framework/SKILL.md",
+    "./skills/diataxis-framework/SKILL.md",
+    "./skills/topic-sentence-method/SKILL.md",
+    "./skills/information-mapping/SKILL.md",
+    "./skills/plain-language/SKILL.md"
+  ],
   "keywords": [
     "writing",
     "content",
@@ -18,59 +42,5 @@
     "diataxis",
     "documentation",
     "evidence-based"
-  ],
-  "capabilities": {
-    "commands": [
-      "define-messages",
-      "frame-content",
-      "expand-outline",
-      "draft-section",
-      "review-content",
-      "propose",
-      "summarize"
-    ],
-    "agents": [
-      "message-architect",
-      "analyst",
-      "narrative-framer",
-      "diataxis-planner",
-      "outline-expander",
-      "section-drafter",
-      "formatter",
-      "evidence-validator"
-    ],
-    "skills": [
-      "pyramid-principle",
-      "scqa-framework",
-      "diataxis-framework",
-      "topic-sentence-method",
-      "information-mapping",
-      "plain-language"
-    ]
-  },
-  "mcp_tools": {
-    "preferred": ["sequential-thinking", "context7"],
-    "optional": ["serena", "firecrawl"]
-  },
-  "dependencies": {
-    "claude_code": ">=1.0.0"
-  },
-  "config_schema": {
-    "readability_target": {
-      "type": "integer",
-      "default": 65,
-      "description": "Target Flesch-Kincaid readability score (60-70 recommended for technical content)"
-    },
-    "evidence_strictness": {
-      "type": "string",
-      "enum": ["strict", "moderate", "permissive"],
-      "default": "strict",
-      "description": "Evidence verification strictness level"
-    },
-    "default_content_type": {
-      "type": "string",
-      "enum": ["website-hub", "book-chapter", "blog-post", "white-paper", "documentation"],
-      "default": "website-hub"
-    }
-  }
+  ]
 }
