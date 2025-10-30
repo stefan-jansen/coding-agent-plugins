@@ -82,6 +82,13 @@
       "description": "Book production orchestration framework for ML for Trading - 4-phase workflow with research integration, content generation, and quality gates",
       "version": "1.0.0",
       "keywords": ["writing", "co-authoring", "books", "ml3t"]
+    },
+    {
+      "name": "structured-intelligence",
+      "source": "./structured-intelligence",
+      "description": "Structured Intelligence Framework (SIF) - Hierarchical content creation with evidence-first methodology. Implements Pyramid Principle, SCQA, Diátaxis, and DITA-inspired content management for technical writing at scale.",
+      "version": "1.0.0",
+      "keywords": ["writing", "content", "technical-writing", "pyramid-principle", "scqa", "diataxis", "documentation", "evidence-based"]
     }
   ]
 }
