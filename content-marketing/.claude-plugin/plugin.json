@@ -1,0 +1,29 @@
+{
+  "name": "content-marketing",
+  "version": "1.2.0",
+  "description": "Editorial workflow framework for professional content production with positioning-first process - enhanced with writing-skills methodologies (v1.2)",
+  "author": {
+    "name": "Applied AI / Factory"
+  },
+  "keywords": [
+    "content",
+    "marketing",
+    "editorial",
+    "writing",
+    "positioning"
+  ],
+  "commands": [
+    "./commands/position.md",
+    "./commands/research.md",
+    "./commands/outline.md",
+    "./commands/draft.md",
+    "./commands/review.md"
+  ],
+  "agents": [
+    "./agents/positioning-facilitator.md",
+    "./agents/researcher.md",
+    "./agents/architect.md",
+    "./agents/author.md",
+    "./agents/editor.md"
+  ]
+}

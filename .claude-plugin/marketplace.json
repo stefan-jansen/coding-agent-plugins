@@ -89,6 +89,20 @@
       "description": "Structured Intelligence Framework (SIF) - Hierarchical content creation with evidence-first methodology. Implements Pyramid Principle, SCQA, Diátaxis, and DITA-inspired content management for technical writing at scale.",
       "version": "1.0.0",
       "keywords": ["writing", "content", "technical-writing", "pyramid-principle", "scqa", "diataxis", "documentation", "evidence-based"]
+    },
+    {
+      "name": "content-marketing",
+      "source": "./content-marketing",
+      "description": "Editorial workflow framework for professional content production with positioning-first process",
+      "version": "1.0.0",
+      "keywords": ["content", "marketing", "editorial", "writing", "positioning"]
+    },
+    {
+      "name": "writing-skills",
+      "source": "./writing-skills",
+      "description": "Shared writing methodology skills library - 10 skills including SEO copywriting, concise web copy, and search intent alignment",
+      "version": "1.1.0",
+      "keywords": ["writing", "skills", "seo", "methodology", "library"]
     }
   ]
 }
