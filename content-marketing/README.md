@@ -1,16 +1,17 @@
 ---
 name: Content Marketing Framework
-version: 1.2.0
+version: 1.3.0
 type: Claude Agent Framework (CAF) for Editorial Workflows
 created: 2025-10-31
-purpose: Transform Claude Code into world-class editorial author-editor collaboration system
+updated: 2025-11-01
+purpose: Transform Claude Code into world-class editorial author-editor collaboration system with website copy generation
 ---
 
 # Content Marketing Framework
 
-**Version**: 1.2.0
+**Version**: 1.3.0
 **Type**: CAF for editorial workflows
-**Purpose**: Professional content production with positioning-first process
+**Purpose**: Professional content production with positioning-first process + website copy generation
 
 ---
 
@@ -26,12 +27,14 @@ The Content Marketing Framework is a Claude Agent Framework (CAF) that transform
 
 ### Components
 
-**5 Commands** (Workflow phases):
+**7 Commands** (Workflow phases):
 - `/position` - Strategic positioning session (7 questions → manifest)
 - `/research` - Deep, curated research constrained by positioning
 - `/outline` - Hierarchical outline using pyramid principle
 - `/draft` - Full draft generation within constraints
 - `/review` - Editorial review with actionable feedback
+- `/website-landing` - Generate concise landing page copy (50-100 words)
+- `/website-service` - Generate complete service page copy (400-600 words)
 
 **5 Agents** (Specialized roles):
 - `positioning-facilitator` - Guide positioning session, validate answers
@@ -124,6 +127,101 @@ Topic → Positioning session (7 questions) → Manifest → Framework executes 
 **Phase 7: Approval & Production**
 - Mark approved when ready
 - Prepare for publication
+
+---
+
+## Website Copy Workflow
+
+**NEW in v1.3**: Generate concise, SEO-optimized website copy using the same positioning and research context as long-form content.
+
+### Landing Page Copy
+
+```bash
+# Generate concise landing page copy (50-100 words)
+/website-landing "AI consulting services"
+
+# With positioning context
+/website-landing --positioning @positioning-doc.md "Enterprise AI transformation"
+
+# For specific section
+/website-landing --section hero "Applied AI"
+```
+
+**Output Location**: `website/[section]-landing.md` in content-marketing repo
+
+**Characteristics**:
+- 50-100 words per section
+- Scannable bullet points
+- Clear value proposition
+- SEO-optimized with keywords
+- Auto-invokes writing skills: `seo-copywriting`, `concise-web-copy`, `search-intent-alignment`
+
+### Service Page Copy
+
+```bash
+# Generate complete service page (400-600 words)
+/website-service "AI Strategy Consulting"
+
+# With custom sections
+/website-service --sections "hero,benefits,approach,cta" "ML Implementation"
+```
+
+**Output Location**: `website/services/[service-name]/` in content-marketing repo
+
+**Structure**:
+- **Hero**: 50-75 words (value prop + CTA)
+- **Benefits**: 100-150 words (3-5 key outcomes)
+- **Process**: 150-200 words (methodology steps)
+- **Social Proof**: 75-100 words (optional, results/examples)
+- **CTA**: 50-75 words (clear next step)
+
+**Total**: 400-600 words per service page
+
+### Why Website Copy Lives in content-marketing
+
+**Problem**: Website copy separated from positioning/research context
+- Developers working in website repo don't have access to positioning decisions
+- Copy created without strategic constraints
+- Inconsistent messaging across long-form and website content
+
+**Solution**: Generate website copy in content-marketing repo
+- Access to all positioning documents
+- Reference to research findings
+- Same strategic constraints as long-form content
+- Export to website via Wagtail CMS (import/export when available)
+
+### Website Copy Integration
+
+Website copy uses the same positioning workflow:
+
+```bash
+# 1. Define positioning (if not done)
+/position "Applied AI consulting services"
+
+# 2. Research context (if not done)
+/research "AI consulting market, buyer personas, competitive landscape"
+
+# 3. Generate website copy
+/website-landing "AI consulting services"
+/website-service "AI Strategy Consulting"
+
+# 4. Review
+/review website/services-ai-consulting.md
+```
+
+**Directory Structure**:
+```
+content-marketing/
+  ├── positioning/           # Strategic decisions
+  ├── research/             # Evidence and insights
+  ├── content/              # Long-form content
+  └── website/              # Website copy (NEW)
+      ├── homepage-hero.md
+      ├── services/
+      │   ├── ai-strategy/
+      │   └── ml-implementation/
+      └── about/
+```
 
 ---
 
