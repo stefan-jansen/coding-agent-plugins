@@ -63,13 +63,13 @@ find_symbol("function_name")  # Returns just the function
 
 Based on your Serena configuration:
 
-- **zipline** - Your trading platform project
-- **claude_code** - This framework project
+- **my-api** - Your API project
+- **my-frontend** - Your frontend project
 
 ### Quick Commands:
 ```bash
-/serena zipline        # Activate zipline project
-/serena claude_code    # Activate claude_code project
+/serena my-api         # Activate API project
+/serena my-frontend    # Activate frontend project
 /serena /new/path      # Activate new project by path
 ```
 
