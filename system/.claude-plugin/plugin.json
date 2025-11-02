@@ -10,6 +10,11 @@
     "./commands/audit.md",
     "./commands/cleanup.md",
     "./commands/setup.md",
+    "./commands/setup-python.md",
+    "./commands/setup-javascript.md",
+    "./commands/setup-existing.md",
+    "./commands/setup-user.md",
+    "./commands/setup-statusline.md",
     "./commands/status.md"
   ],
   "keywords": ["system", "configuration", "health", "audit", "setup"]
