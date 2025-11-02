@@ -83,12 +83,28 @@ TRANSITION_FILE=".claude/transitions/$UTC_DATE/$UTC_TIME.md"
 
 ### Step 4: Inform User
 
-**IMPORTANT**: After I complete the handoff document, you must manually continue:
+**To Continue This Session:**
 
-1. Run `/clear` (the CLI command, not a slash command)
-2. Say: "continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md"
+After I create the handoff document:
 
-**Note**: You must explicitly tell me to continue after `/clear`. You must provide the transition file path - I cannot automatically reload it.
+1. Run `/clear` (the CLI command to reset conversation context)
+2. Choose ONE of these options:
+
+   **Option A** (Recommended - Most Reliable):
+   ```
+   continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md
+   ```
+   Copy the exact path I provide - this works 100% of the time.
+
+   **Option B** (Convenience - Usually Works):
+   ```
+   /continue
+   ```
+   Uses the `/memory:continue` command to auto-find the latest handoff.
+
+   **⚠️ Known Limitation**: Sometimes Claude prioritizes checking for active background processes and may not immediately execute the `/continue` command. If this happens, fall back to Option A.
+
+**Why manual continuation is required**: There is no automatic detection or loading after `/clear` - you must explicitly tell me to continue.
 
 ## User Continuation Steps
 
@@ -99,22 +115,19 @@ After I create the handoff document:
 /clear
 ```
 
-**Step 2**: Tell me to continue
+**Step 2**: Choose continuation method
+
+**Option A** (Recommended - Most Reliable):
 ```
 continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md
 ```
 
-When you say "continue from [file]", I will read that transition file. You can also just say "continue" and I will search for the most recent transition using:
-```bash
-# Find most recent date directory
-LATEST_DATE=$(ls -1 .claude/transitions/ | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort -r | head -1)
-
-# Find most recent timestamp in that directory
-LATEST_TIME=$(ls -1 ".claude/transitions/$LATEST_DATE/" | grep -E '^[0-9]{6}\.md$' | sort -r | head -1)
-
-# Read the transition
-cat ".claude/transitions/$LATEST_DATE/$LATEST_TIME"
+**Option B** (Convenience - Usually Works):
 ```
+/continue
+```
+
+**⚠️ If `/continue` doesn't work** (Claude gets busy checking background processes), use Option A with the exact path from the handoff message.
 
 **Manual intervention required** - There is no automatic detection or loading after `/clear`.
 
@@ -241,12 +254,17 @@ After creating handoff, I will tell you:
 
 Location: .claude/transitions/YYYY-MM-DD/HHMMSS.md
 
-To continue:
+To continue this session:
 1. Run /clear (the CLI command)
-2. Say: "continue"
+2. Choose ONE:
+   A) continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md  (recommended - always works)
+   B) /continue  (convenience - usually works)
+
+⚠️  If /continue doesn't respond immediately (Claude may prioritize background process checks),
+    use Option A with the exact path above.
 ```
 
-**Important**: You must explicitly tell me to continue after `/clear`. When you say "continue", I will search for and load the most recent transition.
+**Important**: You must explicitly tell me to continue after `/clear`. The `/continue` command usually works but has a known limitation where Claude sometimes prioritizes other checks first.
 
 ## Benefits
 
