@@ -9,7 +9,6 @@
   "commands": [
     "./commands/audit.md",
     "./commands/cleanup.md",
-    "./commands/setup.md",
     "./commands/setup-python.md",
     "./commands/setup-javascript.md",
     "./commands/setup-existing.md",
