@@ -88,7 +88,7 @@ TRANSITION_FILE=".claude/transitions/$UTC_DATE/$UTC_TIME.md"
 1. Run `/clear` (the CLI command, not a slash command)
 2. Use `/memory:continue` OR say: "continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md"
 
-**Note**: `/memory:continue` may sometimes prioritize other activities first (like checking running processes). If this happens, run it again or provide the explicit transition file path.
+**Note**: Claude Code may ignore the continue command and check running processes first (internal command structure behavior). If this happens, run the command again or provide the explicit transition file path.
 
 ## User Continuation Steps
 

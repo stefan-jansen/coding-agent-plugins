@@ -336,7 +336,7 @@ pwd  # Should be your project root, not ~/.claude/
 
 **Problem**: After `/handoff` and `/clear`, running "continue" doesn't load transition.
 
-**Solution**: `/memory:continue` command can be unreliable (may prioritize other activities). Use explicit path:
+**Solution**: Claude Code may ignore the continue command and check running processes first (internal command structure). Use explicit path:
 ```bash
 # Copy the transition file path from /handoff output
 continue from .claude/transitions/2025-11-15/223452.md
