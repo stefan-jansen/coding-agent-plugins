@@ -19,6 +19,7 @@ __pycache__/
 */test/
 */tests/
 */dev/
+docs/
 
 # Backup files
 *.backup
