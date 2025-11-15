@@ -13,14 +13,11 @@
     "business"
   ],
   "commands": [
-    "./commands/*.md"
+    "./commands/report.md"
   ],
-  "agents": {
-    "report-generator": {
-      "description": "Professional stakeholder reports with NotebookEdit for interactive content",
-      "notebook_support": true
-    }
-  },
+  "agents": [
+    "./agents/report-generator.md"
+  ],
   "repository": "https://github.com/yourusername/claude-code-plugins",
   "license": "MIT"
 }

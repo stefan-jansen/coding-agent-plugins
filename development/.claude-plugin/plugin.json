@@ -18,6 +18,7 @@
     "./commands/docs.md",
     "./commands/fix.md",
     "./commands/git.md",
+    "./commands/prepare-review.md",
     "./commands/review.md",
     "./commands/test.md"
   ],

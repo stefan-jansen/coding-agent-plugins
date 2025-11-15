@@ -14,38 +14,19 @@
     "validation"
   ],
   "commands": [
-    "./commands/*.md"
+    "./commands/explore.md",
+    "./commands/plan.md",
+    "./commands/next.md",
+    "./commands/ship.md",
+    "./commands/experiment.md",
+    "./commands/evaluate.md"
   ],
-  "agents": {
-    "quant-ml-validator": {
-      "description": "ML-specific validation for quantitative finance strategies",
-      "validation_domains": [
-        "overfitting",
-        "data-leakage",
-        "look-ahead-bias"
-      ]
-    },
-    "quant-backtest-validator": {
-      "description": "Backtest validation with common pitfalls detection",
-      "validation_domains": [
-        "survivorship-bias",
-        "transaction-costs",
-        "slippage"
-      ]
-    },
-    "quant-risk-validator": {
-      "description": "Risk management validation for trading strategies",
-      "validation_domains": [
-        "position-sizing",
-        "leverage",
-        "drawdown"
-      ]
-    },
-    "data-scientist": {
-      "description": "ML lifecycle specialist focusing on experimentation and evaluation",
-      "structured_reasoning": true
-    }
-  },
+  "agents": [
+    "./agents/quant-ml-validator.md",
+    "./agents/quant-backtest-validator.md",
+    "./agents/quant-risk-validator.md",
+    "./agents/data-scientist.md"
+  ],
   "repository": "https://github.com/yourusername/claude-code-plugins",
   "license": "MIT"
 }

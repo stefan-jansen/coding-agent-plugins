@@ -1,0 +1,22 @@
+{
+  "name": "ml3t-researcher",
+  "version": "2.0.0",
+  "description": "Academic research assistant for ML for Trading - paper discovery, fact-checking, and knowledge extraction with Qdrant RAG",
+  "author": {
+    "name": "ML4T Framework"
+  },
+  "keywords": [
+    "ml4t",
+    "research",
+    "academic",
+    "rag",
+    "qdrant",
+    "zotero",
+    "papers"
+  ],
+  "agents": [
+    "./agents/ml3t-researcher.md"
+  ],
+  "repository": "https://github.com/yourusername/claude-code-plugins",
+  "license": "MIT"
+}

@@ -6,6 +6,13 @@
     "name": "Stefan"
   },
   "commands": [
-    "./commands/*.md"
+    "./commands/explore.md",
+    "./commands/plan.md",
+    "./commands/next.md",
+    "./commands/ship.md"
+  ],
+  "agents": [
+    "./agents/frontend-engineer.md",
+    "./agents/backend-django.md"
   ]
 }

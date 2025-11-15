@@ -83,28 +83,12 @@ TRANSITION_FILE=".claude/transitions/$UTC_DATE/$UTC_TIME.md"
 
 ### Step 4: Inform User
 
-**To Continue This Session:**
+**IMPORTANT**: After I complete the handoff document, you must manually continue:
 
-After I create the handoff document:
+1. Run `/clear` (the CLI command, not a slash command)
+2. Use `/memory:continue` OR say: "continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md"
 
-1. Run `/clear` (the CLI command to reset conversation context)
-2. Choose ONE of these options:
-
-   **Option A** (Recommended - Most Reliable):
-   ```
-   continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md
-   ```
-   Copy the exact path I provide - this works 100% of the time.
-
-   **Option B** (Convenience - Usually Works):
-   ```
-   /continue
-   ```
-   Uses the `/memory:continue` command to auto-find the latest handoff.
-
-   **⚠️ Known Limitation**: Sometimes Claude prioritizes checking for active background processes and may not immediately execute the `/continue` command. If this happens, fall back to Option A.
-
-**Why manual continuation is required**: There is no automatic detection or loading after `/clear` - you must explicitly tell me to continue.
+**Note**: `/memory:continue` may sometimes prioritize other activities first (like checking running processes). If this happens, run it again or provide the explicit transition file path.
 
 ## User Continuation Steps
 
@@ -115,21 +99,18 @@ After I create the handoff document:
 /clear
 ```
 
-**Step 2**: Choose continuation method
-
-**Option A** (Recommended - Most Reliable):
+**Step 2**: Resume work using ONE of these methods:
 ```
+# Option 1: Use the continue command (searches for latest transition)
+/memory:continue
+
+# Option 2: Provide explicit file path (more reliable)
 continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md
 ```
 
-**Option B** (Convenience - Usually Works):
-```
-/continue
-```
+⚠️ **Note**: `/memory:continue` may sometimes prioritize other activities before loading the transition. If this happens, either run it again or use Option 2 with the explicit file path.
 
-**⚠️ If `/continue` doesn't work** (Claude gets busy checking background processes), use Option A with the exact path from the handoff message.
-
-**Manual intervention required** - There is no automatic detection or loading after `/clear`.
+**Recommendation**: Always copy the transition file location when it's created, so you can provide it explicitly if needed for a smooth transition.
 
 ## Intelligence Guidelines
 
@@ -254,17 +235,14 @@ After creating handoff, I will tell you:
 
 Location: .claude/transitions/YYYY-MM-DD/HHMMSS.md
 
-To continue this session:
+To continue this work:
 1. Run /clear (the CLI command)
-2. Choose ONE:
-   A) continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md  (recommended - always works)
-   B) /continue  (convenience - usually works)
+2. Use /memory:continue command OR say: "continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md"
 
-⚠️  If /continue doesn't respond immediately (Claude may prioritize background process checks),
-    use Option A with the exact path above.
+⚠️ **Note**: /memory:continue may sometimes prioritize other activities first. If this happens, run it again or provide the explicit file path above.
 ```
 
-**Important**: You must explicitly tell me to continue after `/clear`. The `/continue` command usually works but has a known limitation where Claude sometimes prioritizes other checks first.
+**Important**: You must explicitly tell me to continue after `/clear`.
 
 ## Benefits
 

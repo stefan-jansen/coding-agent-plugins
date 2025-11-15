@@ -73,13 +73,13 @@ I'll:
 # Project State
 
 ## Architecture
-- Microservices: auth, trading, analytics
+- Microservices: auth, payments, analytics
 - Event-driven with RabbitMQ
 - PostgreSQL + Redis caching
 
 ## Current Scope
-- Real-time trading signals
-- Risk management system
+- Real-time data processing
+- Business logic implementation
 - Performance monitoring
 ```
 
