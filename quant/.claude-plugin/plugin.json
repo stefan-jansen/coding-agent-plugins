@@ -27,6 +27,11 @@
     "./agents/quant-risk-validator.md",
     "./agents/data-scientist.md"
   ],
+  "skills": [
+    "./skills/cme-futures-data",
+    "./skills/ml-cv-pipeline",
+    "./skills/lightgbm-training"
+  ],
   "repository": "https://github.com/yourusername/claude-code-plugins",
   "license": "MIT"
 }
