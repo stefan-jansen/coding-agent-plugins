@@ -9,12 +9,9 @@
     "memory",
     "maintenance",
     "context",
-    "management",
-    "handoff"
+    "management"
   ],
   "commands": [
-    "./commands/continue.md",
-    "./commands/handoff.md",
     "./commands/index.md",
     "./commands/memory-gc.md",
     "./commands/memory-review.md",

@@ -1,0 +1,33 @@
+# mdtoken configuration for Internal Plugin Marketplace
+# Prevents unbounded growth of plugin markdown files
+
+model: "claude-3.5"
+default_limit: 4000
+fail_on_exceed: true
+
+limits:
+  # Main README
+  "README.md": 15000
+
+  # Specific overrides FIRST (more specific before general)
+  "web-development/agents/": 9000
+  "development/skills/": 6500
+  "writing-skills/": 8000
+  "content-marketing/": 6000
+  "ml3t-": 6000
+  "hooks/README.md": 3000
+
+  # General patterns
+  "commands/": 5500
+  "agents/": 5000
+  "skills/": 7500
+  "SKILL.md": 7500
+
+exclude:
+  - "node_modules/**"
+  - "venv/**"
+  - ".git/**"
+  - ".archive/**"
+  - "*.backup"
+
+total_limit: 350000

@@ -18,6 +18,16 @@ Analyze a web development task and determine complexity, required expertise, and
 /web-explore @requirements.md
 ```
 
+## Input
+
+**Task to analyze**: $ARGUMENTS
+
+If the argument is a file reference (e.g., `@requirements.md`), read that file first to understand the full requirements.
+
+If no argument provided, ask the user what web development task they want to explore.
+
+---
+
 ## Process
 
 You are performing **task analysis** for web development work. Your goal is to:
