@@ -297,8 +297,27 @@ mkdir -p $CLAUDE_DIR/memory
 mkdir -p $CLAUDE_DIR/reference
 mkdir -p $CLAUDE_DIR/hooks
 
-# Generate security hooks from shared skill
-echo "I'll create .claude/settings.json with security hooks from the shared-setup-patterns skill."
+# Create settings.json with plugins (from shared-setup-patterns skill template)
+cat > $CLAUDE_DIR/settings.json << 'SETTINGS_EOF'
+{
+  "extraKnownMarketplaces": {
+    "local": {
+      "source": {
+        "source": "directory",
+        "path": "/home/stefan/agents/plugins"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "system@local": true,
+    "workflow@local": true,
+    "memory@local": true,
+    "development@local": true,
+    "transition@local": true
+  }
+}
+SETTINGS_EOF
+echo "✅ Created .claude/settings.json with core plugins (including transition for /handoff)"
 
 # Create project CLAUDE.md
 cat > CLAUDE.md << EOF

@@ -25,7 +25,23 @@ Language-specific templates (Python, JavaScript, etc.) are kept inline in their 
 
 ---
 
-## 1. Security Hooks
+## 1. Settings Configuration (CRITICAL)
+
+Located: `templates/settings.json`
+
+**MUST be copied to `.claude/settings.json` for every project setup.**
+
+Contains:
+- Plugin marketplace configuration (local plugins at ~/agents/plugins)
+- Core enabled plugins: system, workflow, memory, development, **transition**
+
+**The transition plugin enables `/handoff` command** - essential for session continuity.
+
+Used by: ALL setup commands that create projects
+
+---
+
+## 2. Security Hooks
 
 Located: `templates/security_hooks.json`
 
@@ -37,7 +53,7 @@ Used by: ALL setup commands that create projects
 
 ---
 
-## 2. Claude Framework Structure
+## 3. Claude Framework Structure
 
 Located: `templates/claude_framework/`
 
@@ -50,7 +66,7 @@ Used by: ALL setup commands
 
 ---
 
-## 3. Framework Detection Patterns
+## 4. Framework Detection Patterns
 
 Located: `templates/framework_detection.md`
 
@@ -71,6 +87,7 @@ skills: [shared-setup-patterns]
 ```
 
 Then access specific templates:
+- **Settings (REQUIRED)**: Copy `templates/settings.json` to `.claude/settings.json`
 - Security hooks: Load from `templates/security_hooks.json`
 - Framework structure: Generate from `templates/claude_framework/` templates
 - Detection: Use patterns from `templates/framework_detection.md`
