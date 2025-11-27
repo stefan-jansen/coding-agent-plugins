@@ -1,6 +1,6 @@
 {
   "name": "web-development",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Full-stack web development with design expertise and intelligent agent routing for Django + Tailwind CSS projects",
   "author": {
     "name": "Stefan"
@@ -14,5 +14,8 @@
   "agents": [
     "./agents/frontend-engineer.md",
     "./agents/backend-django.md"
+  ],
+  "skills": [
+    "./skills/distinctive-design"
   ]
 }
