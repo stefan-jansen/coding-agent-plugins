@@ -145,6 +145,11 @@ requires_state: drafted
 **Issues**: [Any inaccuracies found]
 **Suggestions**: [Corrections needed]
 
+### Visual Elements
+**Existing Visuals Assessment**: [Quality and effectiveness of any diagrams, charts, or images already present]
+**Visualization Opportunities**: [Sections where visuals would significantly improve comprehension]
+**Suggestions**: [Describe WHAT to visualize and WHY - tool selection handled separately]
+
 ---
 
 ## Detailed Feedback by Section
@@ -266,6 +271,7 @@ requires_state: drafted
 - Structure (does it flow logically?)
 - Engagement (will audience keep reading?)
 - Accuracy (are facts correct?)
+- Visual support (do visuals aid comprehension?)
 
 **Score per dimension, suggest improvements**
 
@@ -295,12 +301,14 @@ requires_state: drafted
 - Flow problems
 - Weak transitions
 - Evidence gaps
+- Missing visualizations for complex concepts
 
 **Minor** (Optional improvements):
 - Wordsmithing
 - Style consistency
 - Citation formatting
 - Nice-to-have examples
+- Visual polish for existing diagrams
 
 **Optional** (Suggestions only):
 - Alternative phrasings
@@ -424,6 +432,60 @@ Editorial review complete. Ready for author revision.
 **Issue**: Call to action buried
 **Severity**: Critical
 **Feedback**: "CTA is one sentence in final paragraph. Create dedicated section with: (1) Clear next step (2) GitHub link (3) Expected time investment (5 minutes). Make this prominent and easy to act on."
+
+### Pattern 6: Missing Visualization
+**Issue**: Dense conceptual content without visual aid
+**Severity**: Important
+**Feedback**: "Section 2.1 describes three-tier architecture with multiple components and data flows. This would benefit from an architecture diagram showing: (1) the three tiers (2) component relationships (3) data flow direction. Readers need a mental model before diving into details."
+
+### Pattern 7: Visualization Opportunity - Decision Framework
+**Issue**: Complex decision logic described in prose
+**Severity**: Important
+**Feedback**: "Section 3.2 walks through 'if X then Y, otherwise Z' decision logic across 4 paragraphs. Replace with a decision tree or flowchart showing: starting question, branch conditions, and recommended outcomes. This is the 'TL;DR' readers will remember."
+
+### Pattern 8: Visualization Opportunity - Comparison
+**Issue**: Multiple options compared in text
+**Severity**: Minor
+**Feedback**: "Section 4 compares three approaches across five dimensions. Consider a comparison table or matrix showing: approaches as columns, evaluation criteria as rows, with clear indicators (checkmarks, ratings, or brief notes)."
+
+### Pattern 9: Visualization Opportunity - Process/Sequence
+**Issue**: Multi-step process buried in paragraphs
+**Severity**: Important
+**Feedback**: "The deployment workflow in section 5.1 has 6 steps with branching. A sequence diagram or numbered flowchart would make this scannable. Show: actors involved, step sequence, decision points, and outcomes."
+
+### Pattern 10: Visualization Opportunity - Data/Metrics
+**Issue**: Numerical evidence presented as prose
+**Severity**: Minor
+**Feedback**: "Section 3.3 cites benchmark results across 4 systems. Consider a bar chart or data table showing: system names, metric values, and baseline comparison. Visual comparison is more impactful than 'System A achieved 87% while System B achieved 72%...'"
+
+### Pattern 11: Ineffective Existing Visual
+**Issue**: Diagram doesn't serve its purpose
+**Severity**: Important
+**Feedback**: "The architecture diagram in section 2 is too complex - 15+ components with crossing lines. Split into: (1) high-level overview showing main subsystems (2) detailed views for each subsystem. One diagram per concept."
+
+---
+
+## Visualization Suggestion Guidelines
+
+**When suggesting visualizations, specify:**
+
+1. **Location**: Which section/paragraph needs the visual
+2. **Purpose**: What comprehension problem it solves
+3. **Content**: What concepts/relationships to show
+4. **Type suggestion** (optional): diagram, chart, table, infographic
+
+**Do NOT specify:**
+- Tool or technology (D2, matplotlib, Figma)
+- Detailed styling (colors, fonts, layout engine)
+- File formats or dimensions
+
+**Example good suggestion:**
+> "Section 3.2 would benefit from a decision tree showing the XAI method selection process. Show: starting question ('What are you explaining?'), main branches (tabular vs LLM/GenAI), and recommended methods at leaf nodes. Include common pitfalls as warning callouts."
+
+**Example poor suggestion:**
+> "Add a diagram here using D2 with --layout elk and theme 200."
+
+The author/tooling will determine the best implementation approach.
 
 ---
 
