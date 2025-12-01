@@ -104,6 +104,15 @@ Our plugin framework provides guardrails that work productively within these con
 
 ### Systematic Task Execution: /explore → /plan → /next → /ship
 
+> **Note on Claude's Built-in Plan Mode**: Claude Code now includes a built-in `EnterPlanMode` that creates plans in `~/.claude/plans/` with auto-generated names. Our workflow complements this by providing:
+> - **Project-local storage** (`.claude/work/` not global `~/.claude/plans/`)
+> - **Meaningful names** (date-based `2025-11-27_01_feature` not `zany-cooking-wombat`)
+> - **Task state tracking** (`state.json` with progress)
+> - **Incremental execution** (`/next` runs one task at a time)
+> - **Session resumability** (work units persist across handoffs)
+>
+> Use built-in plan mode for simple single-session tasks. Use our workflow for multi-session projects needing incremental progress and state tracking.
+
 **`/explore [description]`** - Systematic requirements and codebase analysis
 ```bash
 /explore "add payment processing"
@@ -116,6 +125,7 @@ Our plugin framework provides guardrails that work productively within these con
 /plan --from-requirements
 # Creates: Ordered tasks with dependencies, state tracking, progress monitoring
 # Output: implementation-plan.md with 5-15 tasks
+# Tip: You can use Claude's built-in EnterPlanMode during /plan for enhanced reasoning
 ```
 
 **`/next [--task TASK-ID] [--parallel N]`** - Execute next task from plan
@@ -150,6 +160,17 @@ Our plugin framework provides guardrails that work productively within these con
 
 ## Memory & Context Management
 
+### The Power of Transitions
+
+One of the most valuable features of this framework is the **automatic session trail** created by handoffs. Every `/handoff` creates a timestamped transition document that:
+
+- **Preserves context** - Active work, decisions made, current task state
+- **Enables recovery** - Pick up exactly where you left off days or weeks later
+- **Creates audit trail** - Implicit documentation of what happened in each session
+- **Prevents lost work** - Never lose progress due to context limits
+
+This is especially valuable for long-running projects where you need to understand what decisions were made and why.
+
 ### Critical Context Commands
 
 **`/handoff`** - Create session handoff **before context limits**
@@ -167,6 +188,8 @@ continue
 # Or explicitly:
 continue from .claude/transitions/2025-11-15/223452.md
 ```
+
+**Transition files become project history**: Over time, `.claude/transitions/` becomes a chronological record of project evolution—far more useful than generic commit messages.
 
 **`/index [--update] [focus_area]`** - Create persistent project knowledge base
 ```bash

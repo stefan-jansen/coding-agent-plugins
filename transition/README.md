@@ -4,6 +4,17 @@
 
 This plugin handles transitions between Claude Code sessions, managing context preservation and continuation.
 
+## The Value of Transitions
+
+Beyond just session continuity, transitions create an **automatic project history**:
+
+- **Audit trail**: Every session's decisions, changes, and reasoning are captured
+- **Recovery**: Pick up work days or weeks later with full context
+- **Accountability**: Understand *why* decisions were made, not just *what* was changed
+- **Learning**: Review past approaches when solving similar problems
+
+Over time, `.claude/transitions/` becomes more valuable than commit history—it captures the *thinking* behind changes, not just the changes themselves.
+
 ---
 
 ## Commands (2)

@@ -6,6 +6,21 @@ Structured development workflow for systematic task completion - explore, plan, 
 
 The Workflow plugin provides a proven 4-phase development methodology for Claude Code. It guides you from initial requirements exploration through systematic planning, task execution, and final delivery. This workflow ensures thorough analysis, organized implementation, and quality delivery.
 
+### Relationship to Claude's Built-in Plan Mode
+
+Claude Code includes a built-in `EnterPlanMode` that provides enhanced reasoning for planning. **Our workflow complements it**:
+
+| Feature | Built-in Plan Mode | Our Workflow |
+|---------|-------------------|--------------|
+| **Storage** | Global `~/.claude/plans/` | Project-local `.claude/work/` |
+| **Naming** | Auto-generated (`zany-cooking-wombat`) | Date-based (`2025-11-27_01_feature`) |
+| **Execution** | Implements entire plan at once | Incremental via `/next` |
+| **State tracking** | None | `state.json` with task progress |
+| **Session resume** | Cannot resume mid-plan | Work units persist across handoffs |
+| **Parallel execution** | No | `/next --parallel 3` |
+
+**Best practice**: Use Claude's built-in plan mode *during* `/explore` or `/plan` for enhanced reasoning, while our workflow handles project-local storage and incremental execution. The two work together—you get better planning *and* better organization.
+
 ## The 4-Phase Workflow
 
 ```
