@@ -1,21 +1,14 @@
 {
   "name": "writing-skills",
-  "version": "1.1.0",
-  "description": "Shared writing methodology skills for content frameworks",
+  "version": "2.0.0",
+  "description": "Core authoring skills for book and document writing: structured organization and clear prose",
   "author": {
     "name": "Factory"
   },
   "skills": [
-    "./skills/concise-web-copy",
-    "./skills/diataxis-framework",
-    "./skills/excellent-writing",
-    "./skills/information-mapping",
-    "./skills/plain-language",
-    "./skills/pyramid-principle",
-    "./skills/scqa-framework",
-    "./skills/search-intent-alignment",
-    "./skills/seo-copywriting",
-    "./skills/topic-sentence-method"
+    "./skills/structured-writing",
+    "./skills/clear-writing",
+    "./skills/diataxis-framework"
   ],
   "license": "MIT"
 }

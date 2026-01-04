@@ -30,5 +30,10 @@
     "./agents/architect.md",
     "./agents/author.md",
     "./agents/editor.md"
+  ],
+  "skills": [
+    "./skills/seo-copywriting",
+    "./skills/concise-web-copy",
+    "./skills/search-intent-alignment"
   ]
 }
