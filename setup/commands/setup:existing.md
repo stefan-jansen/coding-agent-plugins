@@ -28,9 +28,36 @@ mkdir -p $CLAUDE_DIR/work
 mkdir -p $CLAUDE_DIR/memory
 mkdir -p $CLAUDE_DIR/reference
 mkdir -p $CLAUDE_DIR/hooks
+mkdir -p $CLAUDE_DIR/transitions
 
-# Create settings.json with plugins (from shared-setup-patterns skill template)
-cat > $CLAUDE_DIR/settings.json << 'SETTINGS_EOF'
+# Create hourly transition hook
+cat > $CLAUDE_DIR/hooks/init-transition.sh << 'HOOK_EOF'
+#!/bin/bash
+# Initialize hourly transition file for session progress tracking
+set -e
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+TRANSITIONS_DIR="$PROJECT_ROOT/.claude/transitions"
+TODAY=$(date +%Y-%m-%d)
+HOUR=$(date +%H)
+TODAY_DIR="$TRANSITIONS_DIR/$TODAY"
+HOURLY_FILE="$TODAY_DIR/${HOUR}.md"
+mkdir -p "$TODAY_DIR"
+if [ ! -f "$HOURLY_FILE" ]; then
+    echo "# Session Progress: $TODAY ${HOUR}:00" > "$HOURLY_FILE"
+    echo "" >> "$HOURLY_FILE"
+    echo "---" >> "$HOURLY_FILE"
+    echo "" >> "$HOURLY_FILE"
+fi
+exit 0
+HOOK_EOF
+chmod +x $CLAUDE_DIR/hooks/init-transition.sh
+echo "✅ Created .claude/hooks/init-transition.sh (hourly progress tracking)"
+
+# Get absolute path for hook
+HOOK_PATH="$(pwd)/$CLAUDE_DIR/hooks/init-transition.sh"
+
+# Create settings.json with plugins and hooks
+cat > $CLAUDE_DIR/settings.json << SETTINGS_EOF
 {
   "extraKnownMarketplaces": {
     "local": {
@@ -46,20 +73,64 @@ cat > $CLAUDE_DIR/settings.json << 'SETTINGS_EOF'
     "memory@local": true,
     "development@local": true,
     "transition@local": true
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOOK_PATH"
+          }
+        ]
+      }
+    ]
   }
 }
 SETTINGS_EOF
-echo "✅ Created .claude/settings.json with core plugins (including transition for /handoff)"
+echo "✅ Created .claude/settings.json with plugins + transition hook"
 echo ""
 echo "I'll also create:"
 echo "  - .claude/memory/* (project knowledge files)"
 echo "  - CLAUDE.md (project instructions)"
 echo ""
 
-# Create project CLAUDE.md
+# Create project CLAUDE.md with progress tracking
 PROJECT_NAME=$(basename "$PWD")
-cat > CLAUDE.md << EOF
-# $PROJECT_NAME
+cat > CLAUDE.md << 'CLAUDE_EOF'
+# PROJECT_NAME_PLACEHOLDER
+
+## 🔄 Session Progress Tracking (MANDATORY)
+
+**Write progress to the current hourly transition file throughout the session.**
+
+**File**: `.claude/transitions/YYYY-MM-DD/HH.md` (hook creates this automatically)
+
+### When to Update (Every 15-20 minutes or at milestones)
+
+Append to the **current hour's file** with:
+```markdown
+## HH:MM - [Brief Title]
+- What was accomplished
+- Current state
+- Next steps if interrupted
+```
+
+### Why This Matters
+- Context can be lost unexpectedly (auto-compact, /clear)
+- CLAUDE.md persists but conversation history does not
+- Progress file enables seamless continuation
+
+### Quick Update
+```bash
+cat >> .claude/transitions/$(date +%Y-%m-%d)/$(date +%H).md << 'EOF'
+## HH:MM - Title
+- Progress notes
+EOF
+```
+
+---
 
 ## Project Knowledge
 @.claude/memory/project_state.md
@@ -69,7 +140,10 @@ cat > CLAUDE.md << EOF
 
 ## Current Work
 @.claude/work/README.md
-EOF
+CLAUDE_EOF
+
+# Replace placeholder with actual project name
+sed -i "s/PROJECT_NAME_PLACEHOLDER/$PROJECT_NAME/" CLAUDE.md
 
 # Create work README
 cat > $CLAUDE_DIR/work/README.md << 'EOF'
@@ -89,8 +163,15 @@ EOF
 echo "✅ Claude Code Framework added!"
 echo ""
 echo "Created:"
-echo "  .claude/        - Framework directory"
-echo "  CLAUDE.md       - Project instructions"
+echo "  .claude/              - Framework directory"
+echo "  .claude/hooks/        - Transition hook (auto-creates hourly progress files)"
+echo "  .claude/transitions/  - Session progress tracking"
+echo "  CLAUDE.md             - Project instructions (with progress tracking)"
+echo ""
+echo "Features:"
+echo "  - Hourly progress files: .claude/transitions/YYYY-MM-DD/HH.md"
+echo "  - Auto-created on each prompt via UserPromptSubmit hook"
+echo "  - CLAUDE.md instructions persist after /clear"
 echo ""
 echo "Next: Review and customize CLAUDE.md and .claude/memory/ files for your project."
 ```

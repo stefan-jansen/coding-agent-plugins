@@ -11,7 +11,8 @@
     "./commands/setup:javascript.md",
     "./commands/setup:existing.md",
     "./commands/setup:user.md",
-    "./commands/setup:statusline.md"
+    "./commands/setup:statusline.md",
+    "./commands/setup:transitions.md"
   ],
   "skills": [
     "./skills/shared-setup-patterns"
