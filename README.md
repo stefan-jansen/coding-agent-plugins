@@ -27,7 +27,6 @@ Add to any project's `.claude/settings.json`:
     }
   },
   "enabledPlugins": {
-    "setup@local": true,
     "system@local": true,
     "workflow@local": true,
     "memory@local": true,
@@ -65,12 +64,14 @@ cd ~/my-project/
 
 A collection of Claude Code plugins that enforce systematic workflows, prevent common pitfalls, and enable productive AI-assisted development. These aren't theoretical best practices—they're patterns we built solving real problems in production.
 
-**Core plugins** (5):
-- **setup** - Project initialization and configuration
+**Core plugins** (4):
 - **system** - System health and maintenance
 - **workflow** - Structured task execution (explore → plan → next → ship)
 - **memory** - Context management and session handoffs
 - **development** - Code analysis, review, testing, and external review preparation
+
+**One-time setup** (not auto-loaded - ~23KB tokens):
+- **setup** - Project initialization (use once, then disable)
 
 **Domain plugins** (7):
 - **quant** - Quantitative finance workflows with validators
@@ -84,7 +85,7 @@ A collection of Claude Code plugins that enforce systematic workflows, prevent c
 **Utility plugins** (1):
 - **writing-skills** - Shared writing methodology library (10 skills)
 
-**Total**: 13 active plugins (5 core + 7 domain + 1 utility)
+**Total**: 13 plugins (4 core + 1 setup + 7 domain + 1 utility)
 
 ---
 
@@ -416,7 +417,6 @@ Different projects enable different plugin combinations:
 ```json
 {
   "enabledPlugins": {
-    "setup@local": true,
     "system@local": true,
     "workflow@local": true,
     "development@local": true,
