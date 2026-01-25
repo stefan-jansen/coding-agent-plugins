@@ -22,8 +22,8 @@
     "./commands/work.md"
   ],
   "skills": [
-    "./skills/work-new",
-    "./skills/work-capture"
+    "./skills/plan-start",
+    "./skills/plan-capture"
   ],
   "repository": "https://github.com/yourusername/claude-code-plugins",
   "license": "MIT"
