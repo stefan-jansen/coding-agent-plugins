@@ -1,60 +1,52 @@
 ---
-allowed-tools: [Task, Bash, Read, Write, Grep, MultiEdit, mcp__firecrawl__firecrawl_search, mcp__firecrawl__firecrawl_scrape, mcp__sequential-thinking__sequentialthinking]
-argument-hint: "[@file | #issue | description | empty] [--work-unit ID]"
-description: "Explore requirements and codebase before planning"
+allowed-tools: [Task, Bash, Read, Write, Grep, mcp__sequential-thinking__sequentialthinking]
+argument-hint: "[@file | #issue | description]"
+description: "Quick exploration without plan mode (use /work new for full planning)"
 ---
 
-# Requirements Exploration
+# Quick Exploration
 
-Analyze requirements and codebase context. First step in "Explore → Plan → Code → Commit" workflow.
+Light-weight requirements analysis. For full planning with plan mode integration, use `/work new [topic]` instead.
 
 **Input**: $ARGUMENTS
 
-## Sources
+## When to Use
 
-- `@file.md` - Read and analyze document
-- `#123` - Fetch GitHub issue
-- `"description"` - Natural language requirement
-- *(empty)* - General codebase exploration
+| Command | Use Case |
+|---------|----------|
+| `/work new [topic]` | Full planning with Claude's plan mode (recommended) |
+| `/explore [source]` | Quick analysis without entering plan mode |
 
 ## Process
 
-1. **Create Work Unit**
-   - Generate ID: `YYYY-MM-DD_NN_topic`
-   - Create `.claude/work/{id}/` with: metadata.json, requirements.md, exploration.md
-   - Set as ACTIVE_WORK
+1. **Analyze Source**
+   - `@file.md` - Extract requirements from document
+   - `#123` - Fetch and analyze GitHub issue
+   - `"description"` - Clarify natural language requirement
 
-2. **Analyze Source**
-   - Documents: Extract requirements, identify gaps, assess complexity
-   - Issues: Fetch details, understand context, map technical needs
-   - Description: Clarify scope, define success criteria, identify constraints
-
-3. **Explore Codebase**
+2. **Explore Codebase**
    - Understand architecture and patterns
    - Identify integration points
    - Map affected components
-   - Use Serena for semantic analysis when available
 
-4. **Generate Output**
-   - `requirements.md`: Functional/non-functional requirements, acceptance criteria, risks
-   - `exploration.md`: Architecture analysis, implementation approach, key files
+3. **Output Summary**
+   - Key requirements identified
+   - Complexity assessment
+   - Recommended approach
 
-5. **Smart Planning**
-   - Simple requirements → Generate complete plan + state.json → Ready for /next
-   - Complex requirements → Generate outline → Recommend /plan
+## Recommendation
 
-## Work Unit Structure
-
+For tracked work with task management:
 ```
-.claude/work/YYYY-MM-DD_NN_topic/
-├── metadata.json      # Status, created_at, requirement_type
-├── requirements.md    # Captured requirements
-├── exploration.md     # Analysis findings
-└── state.json        # Tasks (if plan auto-generated)
+/work new "add user authentication"
 ```
+This creates a work unit, enters plan mode for thorough planning, then you capture the plan for `/next` execution.
 
-## Next Steps
+## Legacy Support
 
-- **Clear plan generated**: "Run /next to implement"
-- **Needs refinement**: "Run /plan for detailed breakdown"
-- **Has ambiguities**: List clarifying questions first
+This command previously created work units directly. That workflow still works:
+- Creates `.claude/work/YYYY-MM-DD_NN_topic/` if no active unit
+- Generates requirements.md and exploration.md
+- For simple tasks, auto-generates state.json
+
+But `/work new` with plan mode produces better plans.

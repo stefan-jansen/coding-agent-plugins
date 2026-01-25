@@ -1,88 +1,59 @@
 ---
-allowed-tools: [Task, Bash, Read, Write, Grep, MultiEdit, mcp__sequential-thinking__sequentialthinking]
-argument-hint: "[--from-requirements | --from-issue #123 | description]"
-description: "Create implementation plan with ordered tasks and dependencies"
+allowed-tools: [Task, Bash, Read, Write, Grep, EnterPlanMode, mcp__sequential-thinking__sequentialthinking]
+argument-hint: "[description] (or use /work new for integrated workflow)"
+description: "Enter plan mode (consider /work new for tracked planning)"
 ---
 
-# Implementation Planning
+# Planning
 
-Create comprehensive task breakdown from requirements.
+Enter Claude's plan mode for thorough implementation planning.
 
 **Input**: $ARGUMENTS
 
-## Sources
+## Recommended Workflow
 
-- `--from-requirements`: Use existing requirements.md
-- `--from-issue #123`: Plan for GitHub issue
-- `description`: Plan from provided text
-- *(empty)*: Plan for active work unit
-
-## Process
-
-1. **Validate Context**
-   - Check for active work unit in `.claude/work/ACTIVE_WORK`
-   - Verify `requirements.md` exists
-   - Warn if overwriting existing plan
-
-2. **Analyze Requirements**
-   - Identify core functionality
-   - Map integration points
-   - Define quality requirements
-   - Use Sequential Thinking for complex analysis
-
-3. **Create Task Breakdown**
-   - 2-4 hours per task
-   - Single responsibility per task
-   - Clear acceptance criteria
-   - Testable outcomes
-
-4. **Sequence Tasks**
-   - Map dependencies (no circular refs)
-   - Identify parallel opportunities
-   - Define critical path
-
-5. **Generate Outputs**
-
-## Task Sizing
-
-| Type | Scope |
-|------|-------|
-| Foundation | Setup, infrastructure, core architecture |
-| Feature | User-facing functionality |
-| Integration | External systems, APIs |
-| Testing | Test implementation |
-| Documentation | Guides, API docs |
-
-## Output Files
-
-**state.json**:
-```json
-{
-  "status": "planning_complete",
-  "current_task": null,
-  "tasks": [
-    {
-      "id": "TASK-001",
-      "title": "Setup foundation",
-      "type": "foundation",
-      "status": "pending",
-      "dependencies": [],
-      "acceptance_criteria": ["..."],
-      "estimated_hours": 3,
-      "priority": "high"
-    }
-  ],
-  "completed_tasks": [],
-  "next_available": ["TASK-001"]
-}
+For tracked work with automatic plan capture:
+```
+/work new "feature description"
 ```
 
-**implementation-plan.md**: Human-readable plan with:
-- Project overview and scope
-- Technical architecture
-- Task execution plan
-- Quality assurance strategy
+This command (`/plan`) enters plan mode directly but doesn't create a work unit. Use `/work capture` afterward to import the plan.
 
-## Next Steps
+## When to Use Each
 
-After planning: Run `/next` to start first task
+| Command | Creates Work Unit | Enters Plan Mode | Auto-tracks |
+|---------|-------------------|------------------|-------------|
+| `/work new [topic]` | Yes | Yes | Yes |
+| `/plan [description]` | No | Yes | No |
+| `/work capture` | Optional | No | Imports plan |
+
+## Direct Plan Mode
+
+If you just want to enter plan mode without work unit tracking:
+
+1. **Enter Plan Mode**
+   - Invokes EnterPlanMode tool
+   - You approve entry
+   - Claude explores codebase thoroughly
+   - Claude proposes implementation plan
+
+2. **Review and Approve**
+   - Plan presented for your approval
+   - Modify as needed
+   - Approve via ExitPlanMode
+
+3. **Plan Storage**
+   - Saved to `~/.claude/plans/[random-name].md`
+   - To track: run `/work capture` after
+
+## After Planning
+
+- **With work unit**: Run `/next` to execute tasks
+- **Without work unit**: Run `/work capture` to create tracked unit
+
+## Legacy Support
+
+This command still supports direct task generation:
+- `--from-requirements`: Generate tasks from existing requirements.md
+- `--from-issue #123`: Plan for GitHub issue
+- Creates state.json in active work unit if one exists
