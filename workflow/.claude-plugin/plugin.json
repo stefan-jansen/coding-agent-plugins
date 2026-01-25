@@ -1,16 +1,17 @@
 {
   "name": "workflow",
-  "version": "1.0.0",
-  "description": "Structured development workflow - explore, plan, implement, deliver",
+  "version": "1.1.0",
+  "description": "Structured development workflow with plan mode integration",
   "author": {
     "name": "Claude Code Framework"
   },
   "keywords": [
     "workflow",
-    "explore",
+    "work",
     "plan",
     "next",
-    "ship"
+    "ship",
+    "skills"
   ],
   "commands": [
     "./commands/explore.md",
@@ -19,6 +20,10 @@
     "./commands/ship.md",
     "./commands/spike.md",
     "./commands/work.md"
+  ],
+  "skills": [
+    "./skills/work-new",
+    "./skills/work-capture"
   ],
   "repository": "https://github.com/yourusername/claude-code-plugins",
   "license": "MIT"
