@@ -1,6 +1,6 @@
 ---
 name: project-setup
-description: Initialize Claude Code framework infrastructure for any project
+description: This skill should be used when the user asks to "set up a project", "initialize Claude Code", "add Claude framework", "configure project", "create .claude directory", or when starting a new project that needs Claude Code infrastructure (CLAUDE.md, settings, hooks).
 invocation: "/system:setup [python|javascript|existing]"
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: plan-capture
-description: Capture the latest plan into a tracked work unit. Use after plan mode completes, when user says "capture the plan", "import the plan", or "save the plan".
+description: This skill should be used when the user asks to "capture the plan", "import the plan", "save the plan", "track this plan", "convert plan to tasks", or after plan mode completes and the user wants to track the plan in a work unit with executable tasks.
 allowed-tools: [Read, Write, Edit, Bash, Glob, Grep]
 ---
 

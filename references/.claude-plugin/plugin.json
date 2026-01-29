@@ -1,0 +1,29 @@
+{
+  "name": "references",
+  "version": "1.0.0",
+  "description": "Academic reference management with Zotero - sync, search, and manage papers",
+  "author": {
+    "name": "Claude Code Framework"
+  },
+  "keywords": [
+    "references",
+    "zotero",
+    "papers",
+    "citations",
+    "bibliography",
+    "academic",
+    "research"
+  ],
+  "commands": [
+    "./commands/ref-status.md",
+    "./commands/ref-sync.md",
+    "./commands/ref-search.md",
+    "./commands/ref-chapter.md"
+  ],
+  "skills": [
+    "./skills/reference-workflow",
+    "./skills/research-write"
+  ],
+  "repository": "https://github.com/yourusername/claude-code-plugins",
+  "license": "MIT"
+}

@@ -1,6 +1,6 @@
 ---
 name: plan-start
-description: Start planning a feature or task. Creates tracked work unit and enters plan mode. Use when user says "let's plan", "start planning", or "plan out".
+description: This skill should be used when the user asks to "let's plan", "start planning", "plan out", "I want to implement", "help me plan", "plan a feature", "begin planning", or when starting a development task that needs tracked work unit creation before entering plan mode.
 allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, EnterPlanMode]
 ---
 
