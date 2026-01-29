@@ -1,7 +1,7 @@
 {
   "name": "development",
-  "version": "1.1.0",
-  "description": "Code development and quality assurance tools - analyze, test, fix, review",
+  "version": "1.2.0",
+  "description": "Code development and quality assurance - skills: analyze, review, docs; commands: test, fix, git",
   "author": {
     "name": "Claude Code Framework"
   },
@@ -14,12 +14,9 @@
     "git"
   ],
   "commands": [
-    "./commands/analyze.md",
-    "./commands/docs.md",
     "./commands/fix.md",
     "./commands/git.md",
     "./commands/prepare-review.md",
-    "./commands/review.md",
     "./commands/test.md"
   ],
   "agents": [

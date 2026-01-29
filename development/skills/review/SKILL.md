@@ -1,24 +1,27 @@
 ---
-allowed-tools: [Read, Write, Task, Bash, Grep, Glob, mcp__sequential-thinking__sequentialthinking]
-argument-hint: "[file/directory] [--spec requirements.md] [--systematic] [--semantic]"
-description: "Code review: bugs, design flaws, dead code, with prioritized action plan"
+name: review
+description: This skill should be used when the user asks to "review this code", "check for bugs", "code review", "find issues", "review my changes", "look for problems", or when evaluating code quality, finding bugs, or identifying improvements.
+allowed-tools: [Read, Write, Task, Bash, Grep, Glob, mcp__sequential-thinking__sequentialthinking, mcp__serena__find_symbol, mcp__serena__search_for_pattern, mcp__serena__get_symbols_overview, mcp__serena__find_referencing_symbols]
 ---
 
 # Code Review
 
 Practical code review focused on bugs, design issues, and maintainability.
 
-**Input**: $ARGUMENTS
+## When This Triggers
 
-## Usage
+- "Review this code" / "review my changes"
+- "Check for bugs"
+- "Find issues in this code"
+- "Look for problems"
+- "Code review please"
+- Evaluating code quality
 
-```bash
-/review                        # Review entire project
-/review src/auth.py            # Review specific file
-/review --spec design.md       # Validate against requirements
-/review --systematic           # Structured reasoning for complex code
-/review --semantic             # Use Serena (70-90% token reduction)
-```
+## Flags (if explicitly passed)
+
+- `--systematic`: Structured reasoning for complex code
+- `--semantic`: Use Serena (70-90% token reduction)
+- `--spec requirements.md`: Validate against requirements
 
 ## Focus Areas
 
