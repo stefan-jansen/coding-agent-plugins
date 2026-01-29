@@ -1,6 +1,6 @@
 ---
 name: plan-start
-description: This skill should be used when the user asks to "let's plan", "start planning", "plan out", "I want to implement", "help me plan", "plan a feature", "begin planning", or when starting a development task that needs tracked work unit creation before entering plan mode.
+description: This skill should be used when the user wants to PLAN before implementing. Triggers: "let's plan", "help me plan", "plan this feature", "plan out", "start planning". Creates a tracked work unit and enters plan mode for systematic planning BEFORE coding begins.
 allowed-tools: [Read, Write, Edit, Bash, Glob, Grep, EnterPlanMode]
 ---
 
