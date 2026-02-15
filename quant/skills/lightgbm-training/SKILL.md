@@ -1,6 +1,7 @@
 ---
 name: lightgbm-training
-description: Use when training LightGBM models with time-series cross-validation. Covers lightgbm.cv usage, hyperparameter relationships (depth vs leaves), regularization patterns, and iteration exploration without look-ahead bias from early stopping.
+description: This skill should be used when the user asks to "train LightGBM", "lightgbm cv", "gradient boosting", "hyperparameter tuning LightGBM", or when training LightGBM models with time-series cross-validation, handling depth vs leaves relationships, or avoiding look-ahead bias from early stopping.
+compatibility: Requires lightgbm Python package
 allowed-tools: Read,Write,Edit,Bash(python:*),Grep
 version: 1.0.0
 ---

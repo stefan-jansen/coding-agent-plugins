@@ -1,6 +1,7 @@
 ---
 name: ml-cv-pipeline
-description: Use when setting up time-series cross-validation, computing labels/thresholds, or generating out-of-sample predictions. Covers walk-forward CV, train-only percentile computation, and long/short signal generation without look-ahead bias.
+description: This skill should be used when the user asks about "time-series CV", "cross-validation setup", "walk-forward validation", "out-of-sample predictions", or when setting up ML cross-validation pipelines, computing labels/thresholds, or generating OOS predictions without look-ahead bias.
+compatibility: Requires scikit-learn, pandas
 allowed-tools: Read,Write,Edit,Bash(python:*),Grep
 version: 1.0.0
 ---

@@ -1,6 +1,6 @@
 ---
 name: distinctive-design
-description: Create distinctive, memorable web interfaces by committing to a bold aesthetic direction. Use when designs feel generic or need to stand out. Philosophy-driven, not checklist-driven.
+description: This skill should be used when the user asks to "make this distinctive", "avoid generic design", "create memorable UI", "bold aesthetic", or when designs feel generic, need to stand out, or require philosophy-driven creative direction.
 version: 2.0.0
 ---
 

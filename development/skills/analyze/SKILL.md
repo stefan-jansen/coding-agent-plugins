@@ -1,6 +1,6 @@
 ---
 name: analyze
-description: This skill should be used when the user asks to "analyze this code", "understand the architecture", "examine the codebase", "project structure", "how is this organized", or when exploring an unfamiliar codebase to understand its patterns, components, and design.
+description: This skill should be used when the user asks to "analyze this code", "understand the architecture", "examine the codebase", "project structure", "how is this organized", or when exploring an unfamiliar codebase to understand its patterns, components, and design. Do NOT use for simple file reads or grep searches.
 allowed-tools: [Read, Write, Grep, Bash, LS, Task, mcp__sequential-thinking__sequentialthinking, mcp__serena__find_symbol, mcp__serena__search_for_pattern, mcp__serena__get_symbols_overview, mcp__serena__find_referencing_symbols]
 ---
 

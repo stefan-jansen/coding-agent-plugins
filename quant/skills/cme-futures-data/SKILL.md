@@ -1,6 +1,6 @@
 ---
 name: cme-futures-data
-description: Use when working with CME futures minute data - session dates vs calendar dates, Sunday 5pm CT boundaries, forward returns with break handling, and invalid timestamp filtering. Essential for any CME data preparation.
+description: This skill should be used when the user asks about "CME futures data", "session dates", "Sunday 5pm boundary", "forward returns", or when working with CME futures minute data, handling session vs calendar dates, or filtering invalid timestamps during breaks.
 allowed-tools: Read,Write,Edit,Bash(python:*),Grep
 version: 1.0.0
 ---
