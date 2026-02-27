@@ -32,10 +32,10 @@ List and manage tracked work units.
 ## List Display
 
 ```
-📝 2025-01-25_01_feature  [planning]      awaiting capture
-📋 2025-01-25_02_api      [planned]       5 tasks
-🟢 2025-01-24_01_auth     [implementing]  3/5 (60%)
-✅ 2025-01-22_01_setup    [completed]     4/4
+📝 2025-01-25-01-feature  [planning]      awaiting capture
+📋 2025-01-25-02-api      [planned]       5 tasks
+🟢 2025-01-24-01-auth     [implementing]  3/5 (60%)
+✅ 2025-01-22-01-setup    [completed]     4/4
 ```
 
 ## Work Unit Location
@@ -43,7 +43,7 @@ List and manage tracked work units.
 ```
 .claude/work/
 ├── ACTIVE_WORK
-└── YYYY-MM-DD_NN_topic/
+└── YYYY-MM-DD-NN-topic/
     ├── metadata.json
     ├── plan.md
     └── state.json

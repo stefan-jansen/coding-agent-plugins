@@ -13,7 +13,7 @@ Claude Code includes a built-in `EnterPlanMode` that provides enhanced reasoning
 | Feature | Built-in Plan Mode | Our Workflow |
 |---------|-------------------|--------------|
 | **Storage** | Global `~/.claude/plans/` | Project-local `.claude/work/` |
-| **Naming** | Auto-generated (`zany-cooking-wombat`) | Date-based (`2025-11-27_01_feature`) |
+| **Naming** | Auto-generated (`zany-cooking-wombat`) | Date-based (`2025-11-27-01-feature`) |
 | **Execution** | Implements entire plan at once | Incremental via `/next` |
 | **State tracking** | None | `state.json` with task progress |
 | **Session resume** | Cannot resume mid-plan | Work units persist across handoffs |
