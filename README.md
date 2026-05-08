@@ -106,7 +106,7 @@ Our plugin framework provides guardrails that work productively within these con
 ### Systematic Task Execution: /explore → /plan → /next → /ship
 
 > **Note on Claude's Built-in Plan Mode**: Claude Code now includes a built-in `EnterPlanMode` that creates plans in `~/.claude/plans/` with auto-generated names. Our workflow complements this by providing:
-> - **Project-local storage** (`.claude/work/` not global `~/.claude/plans/`)
+> - **Project-local storage** (`.agents/work/` not global `~/.claude/plans/`)
 > - **Meaningful names** (date-based `2025-11-27_01_feature` not `zany-cooking-wombat`)
 > - **Task state tracking** (`state.json` with progress)
 > - **Incremental execution** (`/next` runs one task at a time)
@@ -152,7 +152,7 @@ Our plugin framework provides guardrails that work productively within these con
 /work switch 2025-11-15_01_feature_name  # Switch to different work unit
 ```
 
-**Work units** are organized as: `.claude/work/YYYY-MM-DD_NN_description/`
+**Work units** are organized as: `.agents/work/YYYY-MM-DD_NN_description/`
 - Date-based chronological ordering
 - No lost counters
 - Simple flat structure
@@ -178,7 +178,7 @@ This is especially valuable for long-running projects where you need to understa
 ```bash
 /handoff
 # When to use: At 70% perceived usage (~85% actual)
-# Creates: .claude/transitions/YYYY-MM-DD/HHMMSS.md
+# Creates: .agents/transitions/YYYY-MM-DD/HHMMSS.md
 # Preserves: Active work, decisions, next steps, current task state
 ```
 
@@ -187,16 +187,16 @@ This is especially valuable for long-running projects where you need to understa
 # After /clear:
 continue
 # Or explicitly:
-continue from .claude/transitions/2025-11-15/223452.md
+continue from .agents/transitions/2026-05-08/223452.md
 ```
 
-**Transition files become project history**: Over time, `.claude/transitions/` becomes a chronological record of project evolution—far more useful than generic commit messages.
+**Transition files become project history**: Over time, `.agents/transitions/` becomes a chronological record of project evolution—far more useful than generic commit messages.
 
 **`/index [--update] [focus_area]`** - Create persistent project knowledge base
 ```bash
 /index
 # Analyzes: Project structure, patterns, conventions
-# Generates: Memory files in .claude/memory/ loaded via @import
+# Generates: Memory files in .agents/memory/ loaded via @import from AGENTS.md
 ```
 
 **CRITICAL**: `/handoff` at 70% perceived usage prevents quality degradation. Context perception error means "64% shown" = "92% actual". By the time you notice quality issues, hallucinations have already entered output.
@@ -363,21 +363,21 @@ pwd  # Should be your project root, not ~/.claude/
 **Solution**: Claude Code may ignore the continue command and check running processes first (internal command structure). Use explicit path:
 ```bash
 # Copy the transition file path from /handoff output
-continue from .claude/transitions/2025-11-15/223452.md
+continue from .agents/transitions/2026-05-08/223452.md
 ```
 
 **6. Work units in wrong location**
 
 **Problem**: Work units created in `~/.claude/work/` instead of project.
 
-**Solution**: Ensure project has `.claude/` directory:
+**Solution**: Ensure project has `.agents/` directory:
 ```bash
 # Initialize if missing
 /setup:existing
 
 # Verify structure
-ls .claude/work/
-# Should show: 2025-11-XX_NN_description/ directories
+ls .agents/work/
+# Should show: 2026-05-XX_NN_description/ directories
 ```
 
 ---
