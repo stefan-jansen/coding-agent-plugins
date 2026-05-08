@@ -55,7 +55,7 @@ Comprehensive view of work state, git status, and system health.
 
 ## Checks Performed
 
-- Active work unit in `.claude/work/ACTIVE_WORK`
+- Active work unit in `.agents/work/ACTIVE_WORK`
 - Work unit state from `state.json`
 - Git branch and changes
 - Framework directory structure
