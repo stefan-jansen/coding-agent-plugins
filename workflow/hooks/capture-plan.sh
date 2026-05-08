@@ -8,7 +8,7 @@
 set -e
 
 PLAN_DIR="$HOME/.claude/plans"
-WORK_DIR=".claude/work"
+WORK_DIR=".agents/work"
 
 # Find most recent plan (cross-platform: works on both Linux and macOS)
 LATEST=$(ls -t "$PLAN_DIR"/*.md 2>/dev/null | head -1)

@@ -41,7 +41,7 @@ List and manage tracked work units.
 ## Work Unit Location
 
 ```
-.claude/work/
+.agents/work/
 ├── ACTIVE_WORK
 └── YYYY-MM-DD-NN-topic/
     ├── metadata.json

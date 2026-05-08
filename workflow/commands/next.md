@@ -6,7 +6,7 @@ description: "Execute next task(s) from implementation plan"
 
 # Execute Next Task
 
-Execute pending tasks from `.claude/work/ACTIVE_WORK` work unit.
+Execute pending tasks from `.agents/work/ACTIVE_WORK` work unit.
 
 **Arguments**: $ARGUMENTS
 
