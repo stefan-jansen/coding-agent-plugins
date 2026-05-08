@@ -8,10 +8,10 @@ The Memory plugin provides tools to manage Claude Code's persistent memory syste
 
 ## Memory System
 
-Claude Code uses a file-based memory system located in `.claude/memory/`:
+Claude Code uses a file-based memory system located in `.agents/memory/`:
 
 ```
-.claude/memory/
+.agents/memory/
 ├── project_state.md       # Current project status and structure
 ├── decisions.md           # Architectural and design decisions
 ├── lessons_learned.md     # Insights and patterns discovered
@@ -40,7 +40,7 @@ Claude Code uses a file-based memory system located in `.claude/memory/`:
 Display current memory state with timestamps, sizes, and staleness indicators.
 
 **What it does**:
-- Lists all memory files in `.claude/memory/`
+- Lists all memory files in `.agents/memory/`
 - Shows file sizes and line counts
 - Displays last modified timestamps
 - Identifies stale entries (>30 days old)
@@ -218,7 +218,7 @@ Apply changes? [y/N]
 **Safety Features**:
 - Shows what will be removed before doing it
 - Requires confirmation for destructive operations
-- Backs up before cleanup (`.claude/memory/.backup/`)
+- Backs up before cleanup (`.agents/memory/.backup/`)
 - Dry-run mode for safe preview
 
 **When to use**:
@@ -274,7 +274,7 @@ Create transition documents with context analysis for session continuity.
 ```
 
 **Output**:
-- `.claude/transitions/YYYY-MM-DD_NNN/handoff.md`
+- `.agents/transitions/YYYY-MM-DD_NNN/handoff.md`
 - Session summary and progress
 - Current work state and next steps
 - Context health metrics
@@ -292,7 +292,7 @@ Create transition documents with context analysis for session continuity.
 Auto-load and resume from the most recent handoff document with verification.
 
 **What it does**:
-- Finds latest handoff via `.claude/transitions/latest/handoff.md` symlink
+- Finds latest handoff via `.agents/transitions/latest/handoff.md` symlink
 - Verifies symlink points to actual newest handoff (not stale)
 - Loads handoff context automatically
 - Briefs you on session focus, active work, and next steps
@@ -305,7 +305,7 @@ Auto-load and resume from the most recent handoff document with verification.
 
 **Output Example**:
 ```
-📋 Continuing from: .claude/transitions/2025-10-18_005/handoff.md
+📋 Continuing from: .agents/transitions/2025-10-18_005/handoff.md
 
 Session Focus: Plugin v1.0.0 delivery
 Active Work: Completed work unit 009, shipped v1.0.0
@@ -687,7 +687,7 @@ View with:
 ## Troubleshooting
 
 ### Memory files not loading
-- **Check location**: Files must be in `.claude/memory/`
+- **Check location**: Files must be in `.agents/memory/`
 - **Check syntax**: Valid markdown required
 - **Check permissions**: Files must be readable
 
