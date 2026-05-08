@@ -58,7 +58,7 @@ requires_state: drafted
 
 ## Editorial Review Output
 
-**File**: `.claude/work/content/[content-piece-name]/editorial-review-v1.md`
+**File**: `.agents/work/content/[content-piece-name]/editorial-review-v1.md`
 
 **Structure**:
 ```markdown
@@ -378,7 +378,7 @@ Overall assessment: PASS WITH REVISIONS
 - Important issues: 4 (CTA prominence, 3 evidence gaps)
 - Minor issues: 5 (clarity tweaks, flow improvements)
 
-Editorial review created: .claude/work/content/caf-white-paper/editorial-review-v1.md
+Editorial review created: .agents/work/content/caf-white-paper/editorial-review-v1.md
 ✓ Recommendation: Revise per feedback, no re-review needed
 ✓ Next command: /revise
 
