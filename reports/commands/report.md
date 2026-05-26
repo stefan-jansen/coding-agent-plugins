@@ -19,7 +19,7 @@ I'll create a professional report from your data using the report-generator agen
 /report technical ml_experiment.json --output reports/
 /report business quarterly_metrics.csv --format notebook
 /report executive incident_data.json --sections "summary,impact,actions"
-/report --audience technical --data .agents/work/current/analysis.json
+/report --audience technical --data .workspace/work/current/analysis.json
 ```
 
 ## Audience Types
@@ -62,8 +62,8 @@ echo ""
 # Validate data source
 if [ -z "$DATA_SOURCE" ]; then
     # Try to find recent analysis data
-    if [ -d ".agents/work/current" ]; then
-        DATA_SOURCE=$(find .agents/work/current -name "*.json" -o -name "*.csv" | head -1)
+    if [ -d ".workspace/work/current" ]; then
+        DATA_SOURCE=$(find .workspace/work/current -name "*.json" -o -name "*.csv" | head -1)
         if [ -n "$DATA_SOURCE" ]; then
             echo "📁 Auto-detected data source: $DATA_SOURCE"
         else

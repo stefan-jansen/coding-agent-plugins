@@ -5,7 +5,7 @@
 #   { "reason": "clear"|"logout"|"prompt_input_exit"|"other" }
 #
 # Appends a session-end marker to the current transition file at
-# .agents/transitions/YYYY-MM-DD/HH.md.
+# .workspace/transitions/YYYY-MM-DD/HH.md.
 
 INPUT=$(cat)
 
@@ -21,7 +21,7 @@ PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 TODAY=$(date +%Y-%m-%d)
 HOUR=$(date +%H)
 NOW=$(date +%H:%M)
-DIR="$PROJECT_ROOT/.agents/transitions/$TODAY"
+DIR="$PROJECT_ROOT/.workspace/transitions/$TODAY"
 FILE="$DIR/${HOUR}.md"
 
 mkdir -p "$DIR"

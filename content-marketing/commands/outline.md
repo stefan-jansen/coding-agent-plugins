@@ -101,7 +101,7 @@ Level 4: Details and elaboration (depth as needed)
 
 ## Outline Output
 
-**File**: `.agents/work/content/[content-piece-name]/outline.md`
+**File**: `.workspace/work/content/[content-piece-name]/outline.md`
 
 **Structure**:
 ```markdown
@@ -414,7 +414,7 @@ Validating against positioning:
 ✓ NOT-covering topics excluded
 ✓ All arguments support core message
 
-Outline created: .agents/work/content/caf-white-paper/outline.md
+Outline created: .workspace/work/content/caf-white-paper/outline.md
 ✓ 5 sections, 3 major arguments
 ✓ Research mapping complete
 ✓ Next command: /draft

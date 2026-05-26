@@ -29,7 +29,7 @@ This command automates the continuation workflow after `/clear` by:
 Dynamically finds the most recent transition using:
 
 ```bash
-TRANSITIONS_ROOT=".agents/transitions"
+TRANSITIONS_ROOT=".workspace/transitions"
 
 # Find most recent date directory
 LATEST_DATE=$(ls -1 "$TRANSITIONS_ROOT/" | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort -r | head -1)
@@ -54,7 +54,7 @@ Tells you:
 ## Example Output
 
 ```
-📋 Continuing from: .agents/transitions/2026-05-08/124933.md
+📋 Continuing from: .workspace/transitions/2026-05-08/124933.md
    Handoff created: 2026-05-08 12:49:33 UTC
 
 Session Focus: Handoff Command Refactoring - UTC Timestamp-based Organization
@@ -75,7 +75,7 @@ Ready to continue. What would you like to work on?
 If issues detected:
 - **No date directories found**: Alerts you to create first handoff with `/handoff`
 - **No transitions in latest date**: Indicates corruption or incomplete handoff
-- **Wrong directory**: Verifies `.agents/transitions/` exists before proceeding
+- **Wrong directory**: Verifies `.workspace/transitions/` exists before proceeding
 
 ## Why This Exists
 

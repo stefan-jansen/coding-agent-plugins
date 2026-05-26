@@ -24,6 +24,6 @@
 
 ## Infrastructure
 
-- Memory + transitions live at `.agents/` (shared by Claude and Codex). NOT `.claude/memory/`.
+- Memory + transitions live at `.workspace/` (shared by Claude and Codex). NOT `.claude/memory/`.
 - `.claude/` holds only Claude-specific config: `settings.json`, `hooks/`, `commands/`. Different schema from Codex; can't be unified.
-- Every project session writes progress to `.agents/transitions/YYYY-MM-DD/HH.md`.
+- Every project session writes progress to `.workspace/transitions/YYYY-MM-DD/HH.md`.

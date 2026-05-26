@@ -24,7 +24,7 @@ echo "Detecting project characteristics..."
 # - Framework (FastAPI, Django, Next.js, Express, etc.)
 # - Tools (pytest, Jest, etc.)
 
-# Create .agents/ structure (shared by Claude + Codex)
+# Create .workspace/ structure (shared by Claude + Codex)
 mkdir -p $AGENTS_DIR/memory
 mkdir -p $AGENTS_DIR/transitions
 mkdir -p $AGENTS_DIR/work
@@ -35,14 +35,14 @@ touch $AGENTS_DIR/work/.gitkeep
 mkdir -p $CLAUDE_DIR/hooks
 mkdir -p $CLAUDE_DIR/commands
 
-# Create hourly transition hook (writes to .agents/transitions/)
+# Create hourly transition hook (writes to .workspace/transitions/)
 cat > $CLAUDE_DIR/hooks/init-transition.sh << 'HOOK_EOF'
 #!/bin/bash
 # Initialize hourly transition file for session progress tracking
-# Format: .agents/transitions/YYYY-MM-DD/HH.md
+# Format: .workspace/transitions/YYYY-MM-DD/HH.md
 set -e
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-TRANSITIONS_DIR="$PROJECT_ROOT/.agents/transitions"
+TRANSITIONS_DIR="$PROJECT_ROOT/.workspace/transitions"
 TODAY=$(date +%Y-%m-%d)
 HOUR=$(date +%H)
 TODAY_DIR="$TRANSITIONS_DIR/$TODAY"
@@ -57,7 +57,7 @@ fi
 exit 0
 HOOK_EOF
 chmod +x $CLAUDE_DIR/hooks/init-transition.sh
-echo "✅ Created .claude/hooks/init-transition.sh (writes to .agents/transitions/)"
+echo "✅ Created .claude/hooks/init-transition.sh (writes to .workspace/transitions/)"
 
 # Get absolute path for hook
 HOOK_PATH="$(pwd)/$CLAUDE_DIR/hooks/init-transition.sh"
@@ -134,9 +134,9 @@ cat > $AGENTS_DIR/memory/conventions.md << 'EOF'
 
 ## Infrastructure
 
-- Memory + transitions live at `.agents/` (shared by Claude and Codex). NOT `.claude/memory/`.
+- Memory + transitions live at `.workspace/` (shared by Claude and Codex). NOT `.claude/memory/`.
 - `.claude/` holds only Claude-specific config: `settings.json`, `hooks/`, `commands/`.
-- Every project session writes progress to `.agents/transitions/YYYY-MM-DD/HH.md`.
+- Every project session writes progress to `.workspace/transitions/YYYY-MM-DD/HH.md`.
 EOF
 fi
 
@@ -183,16 +183,16 @@ cat > AGENTS.md << EOF
 
 Persistent project state — survives \`/clear\` for Claude, read on demand by Codex:
 
-@.agents/memory/project_state.md
-@.agents/memory/conventions.md
-@.agents/memory/decisions.md
+@.workspace/memory/project_state.md
+@.workspace/memory/conventions.md
+@.workspace/memory/decisions.md
 
-Session progress goes to \`.agents/transitions/YYYY-MM-DD/HH.md\` — the hook
+Session progress goes to \`.workspace/transitions/YYYY-MM-DD/HH.md\` — the hook
 auto-creates the hourly file on each prompt. Append progress every
 15–20 min or at milestones; both Claude and Codex sessions share it.
 
 \`\`\`bash
-ls -r .agents/transitions/\$(date +%Y-%m-%d)/*.md   # newest first
+ls -r .workspace/transitions/\$(date +%Y-%m-%d)/*.md   # newest first
 \`\`\`
 
 ## Agent infrastructure layout
@@ -200,7 +200,7 @@ ls -r .agents/transitions/\$(date +%Y-%m-%d)/*.md   # newest first
 \`\`\`
 AGENTS.md                  # this file — Codex reads natively
 CLAUDE.md                  # one line: @AGENTS.md
-.agents/                   # SHARED state for both Claude and Codex
+.workspace/                   # SHARED state for both Claude and Codex
   memory/                  #   persistent context (referenced above via @-include)
   transitions/             #   hourly session progress
   work/                    #   active work units / plans
@@ -221,11 +221,11 @@ echo ""
 echo "Created:"
 echo "  AGENTS.md             - Canonical project doc (Claude + Codex)"
 echo "  CLAUDE.md             - One-line @AGENTS.md include"
-echo "  .agents/memory/       - Persistent project state (project_state, conventions, decisions)"
-echo "  .agents/transitions/  - Hourly session progress (auto-created by hook)"
-echo "  .agents/work/         - Active work units"
+echo "  .workspace/memory/       - Persistent project state (project_state, conventions, decisions)"
+echo "  .workspace/transitions/  - Hourly session progress (auto-created by hook)"
+echo "  .workspace/work/         - Active work units"
 echo "  .claude/settings.json - Plugins + UserPromptSubmit transition hook"
-echo "  .claude/hooks/        - init-transition.sh (writes to .agents/transitions/)"
+echo "  .claude/hooks/        - init-transition.sh (writes to .workspace/transitions/)"
 echo ""
-echo "Next: Edit AGENTS.md (purpose, layout, commands) and .agents/memory/ files for your project."
+echo "Next: Edit AGENTS.md (purpose, layout, commands) and .workspace/memory/ files for your project."
 ```

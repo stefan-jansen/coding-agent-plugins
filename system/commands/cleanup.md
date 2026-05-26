@@ -20,7 +20,7 @@ Clean up clutter from Claude development sessions.
 | `reports --auto` | Auto-consolidate without prompts |
 | `root` | Clean misplaced files from root directory |
 | `tests` | Move test files to tests/ |
-| `work` | Clean .agents/work directory |
+| `work` | Clean .workspace/work directory |
 | `all` | Full cleanup (default) |
 | `--dry-run` | Preview without changes |
 
@@ -29,13 +29,13 @@ Clean up clutter from Claude development sessions.
 **Root clutter**: Random .md files, one-off scripts, misplaced configs
 **Test files outside tests/**: `test_*.py`, `debug_*.py`, `temp_*.py`
 **Report proliferation**: `*_REPORT.md`, `*_ANALYSIS.md`, `*_PLAN.md`
-**Work directory**: Completed work >7 days, abandoned units (`.agents/work/`)
+**Work directory**: Completed work >7 days, abandoned units (`.workspace/work/`)
 
 ## Consolidation Logic
 
 Reports classified by content and filename:
-- **Work-related** (`analysis`, `findings`) → `.agents/work/current/`
-- **Architecture docs** (`design`, `pattern`) → `.agents/reference/`
+- **Work-related** (`analysis`, `findings`) → `.workspace/work/current/`
+- **Architecture docs** (`design`, `pattern`) → `.workspace/reference/`
 - **General insights** → Append to `README.md`
 
 ## Process
@@ -53,7 +53,7 @@ project/
 ├── README.md              # Main docs
 ├── AGENTS.md              # Canonical agent doc (Claude + Codex)
 ├── CLAUDE.md              # one-liner: @AGENTS.md
-├── .agents/
+├── .workspace/
 │   ├── memory/            # Persistent project state
 │   ├── transitions/       # Session progress
 │   └── work/              # All work units

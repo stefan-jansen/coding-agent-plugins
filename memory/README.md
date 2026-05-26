@@ -1,33 +1,33 @@
 # Memory Plugin
 
-Active memory management for Claude Code projects using the `.agents/`-shared layout. Keep persistent context fresh, organized, and relevant — across both Claude and Codex sessions.
+Active memory management for Claude Code projects using the `.workspace/`-shared layout. Keep persistent context fresh, organized, and relevant — across both Claude and Codex sessions.
 
 ## Overview
 
-Memory lives at `.agents/memory/` and is referenced by `AGENTS.md` via `@-include` so Claude loads it on every session and Codex reads it on demand. The seed is intentionally small (3 files) — add more only when a recurring need emerges.
+Memory lives at `.workspace/memory/` and is referenced by `AGENTS.md` via `@-include` so Claude loads it on every session and Codex reads it on demand. The seed is intentionally small (3 files) — add more only when a recurring need emerges.
 
 ```
-.agents/memory/
+.workspace/memory/
 ├── project_state.md   # What's working, stubbed, decisions to make
 ├── conventions.md     # Code, data, testing, commits, infrastructure rules
 └── decisions.md       # Load-bearing choices with rationale
 ```
 
 How it works:
-- `AGENTS.md` includes the three files via `@.agents/memory/<file>.md`.
+- `AGENTS.md` includes the three files via `@.workspace/memory/<file>.md`.
 - `CLAUDE.md` is one line (`@AGENTS.md`), so Claude inherits the same context.
 - Stale content silently degrades agent quality — run `/memory-gc` periodically.
 
 ## Commands
 
 ### `/memory-review`
-List all `.agents/memory/` files with size, line count, and modification age. Flags entries >30 days old. Use before starting work, after long breaks, or before `/memory-gc` to preview.
+List all `.workspace/memory/` files with size, line count, and modification age. Flags entries >30 days old. Use before starting work, after long breaks, or before `/memory-gc` to preview.
 
 ### `/memory-update`
 Interactive add/update/remove/relocate workflow. Suggests entries based on recent commits and decisions. Apply after shipping a feature, making an architectural choice, or changing conventions.
 
 ### `/memory-gc`
-Identify and remove stale entries. Detects superseded decisions, completed temp tasks, and content that hasn't been touched in >30 days. Backs up to `.agents/work/archives/memory/` before destructive ops.
+Identify and remove stale entries. Detects superseded decisions, completed temp tasks, and content that hasn't been touched in >30 days. Backs up to `.workspace/work/archives/memory/` before destructive ops.
 
 ```bash
 /memory-gc            # analyze + suggest
@@ -65,7 +65,7 @@ Current snapshot — what's working, what's stubbed, decisions still open, recen
 ```
 
 ### conventions.md
-Code, data, testing, commits, infrastructure. Update when establishing or changing a pattern. The `## Infrastructure` section should always note that memory + transitions live at `.agents/` — not `.claude/memory/`.
+Code, data, testing, commits, infrastructure. Update when establishing or changing a pattern. The `## Infrastructure` section should always note that memory + transitions live at `.workspace/` — not `.claude/memory/`.
 
 ### decisions.md
 Load-bearing choices with the *why* and the trade-off accepted. Date every entry. Future agents read this before suggesting alternatives.
@@ -81,7 +81,7 @@ Load-bearing choices with the *why* and the trade-off accepted. Date every entry
 The seed is 3 files on purpose. Add a new memory file only when:
 - A category of context is referenced 3+ times in conversations
 - It doesn't fit cleanly in `project_state` / `conventions` / `decisions`
-- It's persistent (not session-local — that goes in `.agents/transitions/`)
+- It's persistent (not session-local — that goes in `.workspace/transitions/`)
 
 Common organic additions: `domain-terminology.md`, `infrastructure-topology.md`, `<vendor>-quirks.md`. Resist `lessons_learned.md` and `dependencies.md` — the first becomes a graveyard, the second drifts from the lockfile.
 
@@ -96,7 +96,7 @@ Do:
 
 Don't:
 - Copy code snippets — link to file:line
-- Document temporary state (use `.agents/transitions/`)
+- Document temporary state (use `.workspace/transitions/`)
 - Keep superseded decisions
 - Let memory grow beyond ~25KB (Claude reads it every session)
 - Forget to update after major changes
@@ -120,13 +120,13 @@ The plugin integrates with other workflow commands to suggest updates at the rig
 
 ## Troubleshooting
 
-**Memory not loading**: confirm `AGENTS.md` includes `@.agents/memory/<file>.md` lines and that `CLAUDE.md` contains `@AGENTS.md`. Check files are valid markdown.
+**Memory not loading**: confirm `AGENTS.md` includes `@.workspace/memory/<file>.md` lines and that `CLAUDE.md` contains `@AGENTS.md`. Check files are valid markdown.
 
-**`/memory-gc` removes too much**: increase the staleness threshold or run with `--dry-run` first. Backups land in `.agents/work/archives/memory/`.
+**`/memory-gc` removes too much**: increase the staleness threshold or run with `--dry-run` first. Backups land in `.workspace/work/archives/memory/`.
 
 **Memory growing beyond 25KB**: run `/memory-gc`, link to source files instead of pasting, split a file only if a section is regularly updated independently.
 
-**File at `.claude/memory/` instead of `.agents/memory/`**: pre-migration projects keep their old path. New work writes to `.agents/memory/`. To migrate: `mv .claude/memory .agents/memory` and update `AGENTS.md` includes.
+**File at `.claude/memory/` instead of `.workspace/memory/`**: pre-migration projects keep their old path. New work writes to `.workspace/memory/`. To migrate: `mv .claude/memory .workspace/memory` and update `AGENTS.md` includes.
 
 ## Configuration
 
@@ -141,4 +141,4 @@ None required. Optional: `sequential-thinking` MCP enhances analysis quality in 
 **Version**: 2.0.0
 **Category**: Core
 **Commands**: 5 (memory-review, memory-update, memory-gc, index, performance)
-**Layout**: `.agents/memory/` (shared with Codex via `AGENTS.md`)
+**Layout**: `.workspace/memory/` (shared with Codex via `AGENTS.md`)

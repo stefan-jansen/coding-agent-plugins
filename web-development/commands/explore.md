@@ -176,7 +176,7 @@ After task analysis, create work unit structure:
 
 ```bash
 # Work unit directory
-.agents/work/web/[task-slug]/
+.workspace/work/web/[task-slug]/
 
 # Files
 metadata.json       # Task metadata, agent assignments

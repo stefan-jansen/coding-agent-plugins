@@ -16,8 +16,8 @@ Show current memory files with metadata to help identify what needs updating, re
 #!/bin/bash
 
 # Constants
-MEMORY_DIR=".agents/memory"
-DOCUMENTATION_DIR=".agents/documentation"
+MEMORY_DIR=".workspace/memory"
+DOCUMENTATION_DIR=".workspace/documentation"
 STALENESS_THRESHOLD=30
 SIZE_LIMIT=5120
 CURRENT_DATE=$(date +%Y-%m-%d)

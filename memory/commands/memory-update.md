@@ -14,7 +14,7 @@ Regular housekeeping to capture learnings and maintain accurate project state wi
 ## What Gets Updated
 
 ### Core Memory Files
-Located in `.agents/memory/`:
+Located in `.workspace/memory/`:
 
 1. **project_state.md** - Current architecture, scope, key components
 2. **conventions.md** - Code patterns, naming standards, practices
@@ -55,7 +55,7 @@ Located in `.agents/memory/`:
 
 ### Use References, Not Duplication
 ❌ Copying full documentation into memory
-✅ "See @.agents/reference/api-spec.md for details"
+✅ "See @.workspace/reference/api-spec.md for details"
 
 ## Update Process
 
@@ -102,9 +102,9 @@ I'll:
 AGENTS.md references memory files (Claude reads it via `CLAUDE.md → @AGENTS.md`):
 ```markdown
 ## Project memory
-@.agents/memory/project_state.md
-@.agents/memory/conventions.md
-@.agents/memory/decisions.md
+@.workspace/memory/project_state.md
+@.workspace/memory/conventions.md
+@.workspace/memory/decisions.md
 ```
 
 This keeps AGENTS.md lean while maintaining comprehensive knowledge — and

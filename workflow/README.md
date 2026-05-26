@@ -12,7 +12,7 @@ Claude Code includes a built-in `EnterPlanMode` that provides enhanced reasoning
 
 | Feature | Built-in Plan Mode | Our Workflow |
 |---------|-------------------|--------------|
-| **Storage** | Global `~/.claude/plans/` | Project-local `.agents/work/` |
+| **Storage** | Global `~/.claude/plans/` | Project-local `.workspace/work/` |
 | **Naming** | Auto-generated (`zany-cooking-wombat`) | Date-based (`2025-11-27-01-feature`) |
 | **Execution** | Implements entire plan at once | Incremental via `/next` |
 | **State tracking** | None | `state.json` with task progress |
@@ -348,7 +348,7 @@ Time-boxed exploration in isolated branch for investigating uncertain approaches
 The workflow creates and maintains this structure:
 
 ```
-.agents/work/current/[work-unit]/
+.workspace/work/current/[work-unit]/
 ├── metadata.json              # Work unit metadata
 ├── exploration.md             # /explore findings
 ├── implementation-plan.md     # /plan task breakdown

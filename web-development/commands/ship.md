@@ -197,7 +197,7 @@ Create comprehensive delivery summary:
 # Delivery Summary: [Feature Name]
 
 **Delivered**: 2025-10-16
-**Work Unit**: .agents/work/web/[task-slug]/
+**Work Unit**: .workspace/work/web/[task-slug]/
 **Classification**: [Frontend | Backend | Full-stack]
 **Total Time**: [X] hours over [Y] days
 
@@ -364,7 +364,7 @@ python manage.py collectstatic  # Collect Tailwind CSS
 
 ```bash
 # Archive work unit
-mv .agents/work/web/[task-slug]/ .agents/work/archives/web-[task-slug]-2025-10-16/
+mv .workspace/work/web/[task-slug]/ .workspace/work/archives/web-[task-slug]-2025-10-16/
 
 # Update ACTIVE_WORK pointer (if this was active)
 # [Handled automatically by framework]
@@ -632,7 +632,7 @@ After all verification complete:
 
 ---
 
-Work unit archived to: .agents/work/archives/web-[task-slug]-2025-10-16/
+Work unit archived to: .workspace/work/archives/web-[task-slug]-2025-10-16/
 
 **Want to deploy now?** Review deployment notes in delivery-summary.md
 ```

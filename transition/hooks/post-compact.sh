@@ -4,7 +4,7 @@
 # Receives JSON on stdin with:
 #   { "trigger": "manual"|"auto", "compact_summary": "..." }
 #
-# Writes the summary to .agents/transitions/YYYY-MM-DD/HH.md
+# Writes the summary to .workspace/transitions/YYYY-MM-DD/HH.md
 # The hook script does the file I/O — no Claude permissions needed.
 #
 # Exit 0: stdout shown to user (we stay silent)
@@ -31,12 +31,12 @@ except: print('unknown')
 # Skip if no summary
 [ -z "$SUMMARY" ] && exit 0
 
-# Write to transition file at .agents/transitions/
+# Write to transition file at .workspace/transitions/
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 TODAY=$(date +%Y-%m-%d)
 HOUR=$(date +%H)
 NOW=$(date +%H:%M)
-DIR="$PROJECT_ROOT/.agents/transitions/$TODAY"
+DIR="$PROJECT_ROOT/.workspace/transitions/$TODAY"
 FILE="$DIR/${HOUR}.md"
 
 mkdir -p "$DIR"

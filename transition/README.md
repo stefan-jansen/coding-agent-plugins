@@ -15,7 +15,7 @@ Beyond just session continuity, transitions create an **automatic project histor
 
 Over time, transitions become more valuable than commit history—they capture the *thinking* behind changes, not just the changes themselves.
 
-**Storage location**: Hooks write to `.agents/transitions/` (shared workspace for Claude Code and Codex). Run `/setup:existing` or `/setup:transitions` first to scaffold `.agents/`.
+**Storage location**: Hooks write to `.workspace/transitions/` (shared workspace for Claude Code and Codex). Run `/setup:existing` or `/setup:transitions` first to scaffold `.workspace/`.
 
 ---
 
@@ -37,7 +37,7 @@ Creates a comprehensive handoff document capturing:
 /transition:handoff
 ```
 
-**Output**: Time-stamped handoff document in `.agents/transitions/YYYY-MM-DD/HHMMSS.md`
+**Output**: Time-stamped handoff document in `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`
 
 **When to use**:
 - Context usage >80% (quality degrading)
@@ -103,7 +103,7 @@ Loads the most recent handoff document and provides:
 ## File Organization
 
 ```
-.agents/transitions/          # shared with Codex
+.workspace/transitions/          # shared with Codex
 ├── 2026-05-08/
 │   ├── 171530.md      # Handoff at 5:15:30 PM
 │   ├── 194215.md      # Handoff at 7:42:15 PM

@@ -14,11 +14,11 @@ shared-state convention.
 **What it creates**:
 - `AGENTS.md` - Canonical project doc (Claude reads via `@AGENTS.md`; Codex reads natively)
 - `CLAUDE.md` - One line: `@AGENTS.md`
-- `.agents/memory/` - Persistent project state (project_state.md, conventions.md, decisions.md)
-- `.agents/transitions/` - Hourly session progress (auto-created by hook)
-- `.agents/work/` - Active work units / plans
+- `.workspace/memory/` - Persistent project state (project_state.md, conventions.md, decisions.md)
+- `.workspace/transitions/` - Hourly session progress (auto-created by hook)
+- `.workspace/work/` - Active work units / plans
 - `.claude/settings.json` - Plugin marketplace + enabled plugins + transition hook
-- `.claude/hooks/init-transition.sh` - Writes hourly file to `.agents/transitions/`
+- `.claude/hooks/init-transition.sh` - Writes hourly file to `.workspace/transitions/`
 - `.claude/commands/` - Project-specific slash-commands (empty initially)
 
 **Invocation**: Ask Claude to set up the project, or use @project-setup/content.md
