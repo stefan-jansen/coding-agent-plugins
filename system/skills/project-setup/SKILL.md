@@ -6,16 +6,20 @@ invocation: "/system:setup [python|javascript|existing]"
 
 # Project Setup Skill
 
-Initialize `.claude/` infrastructure for Claude Code projects.
+Initialize agent infrastructure for new projects following the Claude + Codex
+shared-state convention.
 
-**When to use**: New project or adding Claude framework to existing project.
+**When to use**: New project or adding agent infrastructure to existing project.
 
 **What it creates**:
-- `.claude/settings.json` - Plugin marketplace + enabled plugins
-- `.claude/work/` - Work unit tracking
-- `.claude/memory/` - Project knowledge persistence
-- `.claude/hooks/` - Session hooks (transitions)
-- `CLAUDE.md` - Project instructions
+- `AGENTS.md` - Canonical project doc (Claude reads via `@AGENTS.md`; Codex reads natively)
+- `CLAUDE.md` - One line: `@AGENTS.md`
+- `.workspace/memory/` - Persistent project state (project_state.md, conventions.md, decisions.md)
+- `.workspace/transitions/` - Hourly session progress (auto-created by hook)
+- `.workspace/work/` - Active work units / plans
+- `.claude/settings.json` - Plugin marketplace + enabled plugins + transition hook
+- `.claude/hooks/init-transition.sh` - Writes hourly file to `.workspace/transitions/`
+- `.claude/commands/` - Project-specific slash-commands (empty initially)
 
 **Invocation**: Ask Claude to set up the project, or use @project-setup/content.md
 

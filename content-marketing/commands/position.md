@@ -29,7 +29,7 @@ requires_agent: positioning-facilitator
 
 ## What This Command Does
 
-1. **Creates content work unit** in `.claude/work/content/[content-piece-name]/`
+1. **Creates content work unit** in `.workspace/work/content/[content-piece-name]/`
 2. **Invokes positioning-facilitator agent** to guide 7-question session
 3. **Captures answers** through interactive conversation
 4. **Generates positioning manifest** (JSON file with strategic constraints)
@@ -80,7 +80,7 @@ The positioning-facilitator agent will ask:
 
 ## Output: Positioning Manifest
 
-File: `.claude/work/content/[content-piece-name]/positioning-manifest.json`
+File: `.workspace/work/content/[content-piece-name]/positioning-manifest.json`
 
 ```json
 {
@@ -109,7 +109,7 @@ File: `.claude/work/content/[content-piece-name]/positioning-manifest.json`
 
 **Creates work unit structure**:
 ```
-.claude/work/content/[content-piece-name]/
+.workspace/work/content/[content-piece-name]/
 ├── metadata.json                 # Content piece metadata
 ├── state.json                   # Current workflow phase
 └── positioning-manifest.json    # Strategic constraints (OUTPUT)
@@ -245,7 +245,7 @@ File: `.claude/work/content/[content-piece-name]/positioning-manifest.json`
 ```bash
 $ /position caf-white-paper "White paper on Claude Agent Framework"
 
-Creating content work unit: .claude/work/content/caf-white-paper/
+Creating content work unit: .workspace/work/content/caf-white-paper/
 
 Invoking positioning-facilitator agent to guide strategic session...
 
@@ -261,7 +261,7 @@ A: Transform Claude Code from out-of-box coding agent into specialized domain ag
 
 Generating positioning manifest...
 
-✓ Positioning manifest created: .claude/work/content/caf-white-paper/positioning-manifest.json
+✓ Positioning manifest created: .workspace/work/content/caf-white-paper/positioning-manifest.json
 ✓ Workflow state initialized
 ✓ Next command: /research
 

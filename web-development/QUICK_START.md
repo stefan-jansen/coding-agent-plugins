@@ -417,7 +417,7 @@ get-library-docs("/tailwindlabs/tailwindcss", topic="responsive design")
 
 **Check Work Units**:
 ```bash
-ls -la .claude/work/web/
+ls -la .workspace/work/web/
 # Review previous tasks to see patterns
 ```
 

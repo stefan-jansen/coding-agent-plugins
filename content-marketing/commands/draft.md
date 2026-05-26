@@ -64,7 +64,7 @@ requires_skill: excellent-writing
 
 ## Draft Output
 
-**File**: `.claude/work/content/[content-piece-name]/draft-v1.md`
+**File**: `.workspace/work/content/[content-piece-name]/draft-v1.md`
 
 **Structure** (follows outline):
 ```markdown
@@ -302,7 +302,7 @@ Validating against positioning:
 ✓ NOT-covering: "Deep theory, development history" - Excluded
 ✓ Length: 3150 words (90% of 3500 max) ✓
 
-Draft created: .claude/work/content/caf-white-paper/draft-v1.md
+Draft created: .workspace/work/content/caf-white-paper/draft-v1.md
 ✓ Word count: 3150 / 3500 target
 ✓ Citations: 12 integrated
 ✓ Next command: /review

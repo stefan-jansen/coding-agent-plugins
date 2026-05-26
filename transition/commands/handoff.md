@@ -17,7 +17,7 @@ Creates a structured handoff document that:
 ## What Gets Created
 
 ### Transition Document
-**Location**: `.claude/transitions/YYYY-MM-DD/HHMMSS.md` (UTC timestamps)
+**Location**: `.workspace/transitions/YYYY-MM-DD/HHMMSS.md` (UTC timestamps) — shared with Codex.
 
 Contains:
 - **Current Work Context**: What was being worked on, why, and current state
@@ -27,10 +27,10 @@ Contains:
 - **Session-Specific State**: File changes, test results, temporary findings
 
 ### Memory Updates (if needed)
-Updates `.claude/memory/` files with durable knowledge:
+Updates `.workspace/memory/` files with durable knowledge:
 - **project_state.md**: Architecture changes, new components
 - **conventions.md**: Discovered patterns, coding standards
-- **dependencies.md**: New integrations, API changes
+- **decisions.md**: Load-bearing choices and rationale
 
 ## Usage
 
@@ -55,8 +55,14 @@ I'll analyze our conversation and execute these steps:
 # ALWAYS check PWD first
 pwd
 
-# Verify .claude/transitions/ exists
-[ -d ".claude/transitions" ] || echo "ERROR: Wrong directory!"
+# Verify .workspace/ exists
+if [ ! -d .agents ]; then
+    echo "ERROR: No .workspace/ directory found at $(pwd)."
+    echo "Run /setup:existing or /setup:transitions to scaffold .workspace/"
+    exit 1
+fi
+
+TRANSITIONS_ROOT=".workspace/transitions"
 ```
 
 **Stop if not in correct directory** - Do not proceed with file creation.
@@ -69,15 +75,15 @@ UTC_DATE=$(date -u +%Y-%m-%d)
 UTC_TIME=$(date -u +%H%M%S)
 
 # Create date directory
-mkdir -p ".claude/transitions/$UTC_DATE"
+mkdir -p "$TRANSITIONS_ROOT/$UTC_DATE"
 
 # Create transition file
-TRANSITION_FILE=".claude/transitions/$UTC_DATE/$UTC_TIME.md"
+TRANSITION_FILE="$TRANSITIONS_ROOT/$UTC_DATE/$UTC_TIME.md"
 ```
 
 ### Step 3: Write Handoff Content
 
-1. **Identify Durable Knowledge** → Update `.claude/memory/` files if needed
+1. **Identify Durable Knowledge** → Update `.workspace/memory/` files if needed
 2. **Extract Session Context** → Write comprehensive transition document
 3. **Include UTC Timestamp** → Header: `# Handoff: YYYY-MM-DD HH:MM:SS UTC`
 
@@ -86,7 +92,7 @@ TRANSITION_FILE=".claude/transitions/$UTC_DATE/$UTC_TIME.md"
 **IMPORTANT**: After I complete the handoff document, you must manually continue:
 
 1. Run `/clear` (the CLI command, not a slash command)
-2. Use `/memory:continue` OR say: "continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md"
+2. Use `/transition:continue` OR say: "continue from .workspace/transitions/YYYY-MM-DD/HHMMSS.md"
 
 **Note**: Claude Code may ignore the continue command and check running processes first (internal command structure behavior). If this happens, run the command again or provide the explicit transition file path.
 
@@ -102,13 +108,13 @@ After I create the handoff document:
 **Step 2**: Resume work using ONE of these methods:
 ```
 # Option 1: Use the continue command (searches for latest transition)
-/memory:continue
+/transition:continue
 
 # Option 2: Provide explicit file path (more reliable)
-continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md
+continue from .workspace/transitions/YYYY-MM-DD/HHMMSS.md
 ```
 
-⚠️ **Note**: `/memory:continue` may sometimes prioritize other activities before loading the transition. If this happens, either run it again or use Option 2 with the explicit file path.
+⚠️ **Note**: `/transition:continue` may sometimes prioritize other activities before loading the transition. If this happens, either run it again or use Option 2 with the explicit file path.
 
 **Recommendation**: Always copy the transition file location when it's created, so you can provide it explicitly if needed for a smooth transition.
 
@@ -135,7 +141,7 @@ continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md
 ## Example Transition Structure
 
 ```markdown
-# Handoff: 2025-09-18 14:32:15 UTC
+# Handoff: 2026-05-08 14:32:15 UTC
 
 ## Active Work
 Implementing MCP memory system with two-flow approach
@@ -146,14 +152,14 @@ Implementing MCP memory system with two-flow approach
 - 4 MCP tools operational (Sequential Thinking, Context7, Serena, Firecrawl)
 
 ## Recent Decisions
-- Use .claude/memory/ for durable knowledge referenced by CLAUDE.md
-- Transition documents in .claude/transitions/ for session handoffs
-- Keep README.md deliberately concise
+- Use .workspace/memory/ for durable knowledge referenced by AGENTS.md
+- Transition documents in .workspace/transitions/ for session handoffs
+- Keep AGENTS.md deliberately concise
 
 ## Next Steps
 1. Test /handoff command with real scenario
-2. Configure .claude/memory/ structure
-3. Update CLAUDE.md to reference memory modules
+2. Configure .workspace/memory/ structure
+3. Update AGENTS.md to reference memory modules
 
 ## Session Context
 Working in: /home/stefan/agents/claude_code
@@ -165,20 +171,21 @@ Open PR: feature/sophisticated-hook-system
 
 ### Critical: Working Directory Verification
 
-**BEFORE creating any files**, verify you're in a project directory with `.claude/` infrastructure:
+**BEFORE creating any files**, verify you're in a project directory with transition infrastructure:
 
 ```bash
 # Step 1: Check current directory
 pwd
 
-# Step 2: Verify .claude/transitions/ exists
-if [ ! -d ".claude/transitions" ]; then
-    echo "ERROR: Not in a project with .claude/ infrastructure"
+# Step 2: Verify .workspace/ exists
+if [ ! -d .agents ]; then
+    echo "ERROR: Not in a project with .workspace/ infrastructure"
     echo "Current directory: $(pwd)"
     exit 1
 fi
 
 # Step 3: Proceed with handoff creation
+TRANSITIONS_ROOT=".workspace/transitions"
 ```
 
 **Common mistake**: Claude creates transition files in random directories when not checking PWD first. Always verify location before writing files.
@@ -187,15 +194,17 @@ fi
 
 **Directory Structure** (UTC timestamps):
 ```bash
+TRANSITIONS_ROOT=".workspace/transitions"
+
 # Get current UTC timestamp
 UTC_DATE=$(date -u +%Y-%m-%d)
 UTC_TIME=$(date -u +%H%M%S)
 
 # Create date directory if needed
-mkdir -p ".claude/transitions/$UTC_DATE"
+mkdir -p "$TRANSITIONS_ROOT/$UTC_DATE"
 
 # Create transition file
-TRANSITION_FILE=".claude/transitions/$UTC_DATE/$UTC_TIME.md"
+TRANSITION_FILE="$TRANSITIONS_ROOT/$UTC_DATE/$UTC_TIME.md"
 ```
 
 **Benefits**:
@@ -211,14 +220,16 @@ TRANSITION_FILE=".claude/transitions/$UTC_DATE/$UTC_TIME.md"
 **Dynamic lookup** (no symlink needed):
 
 ```bash
+TRANSITIONS_ROOT=".workspace/transitions"
+
 # Find most recent date directory
-LATEST_DATE=$(ls -1 .claude/transitions/ | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort -r | head -1)
+LATEST_DATE=$(ls -1 "$TRANSITIONS_ROOT/" | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' | sort -r | head -1)
 
 # Find most recent timestamp in that directory
-LATEST_TIME=$(ls -1 ".claude/transitions/$LATEST_DATE/" | grep -E '^[0-9]{6}\.md$' | sort -r | head -1)
+LATEST_TIME=$(ls -1 "$TRANSITIONS_ROOT/$LATEST_DATE/" | grep -E '^[0-9]{6}\.md$' | sort -r | head -1)
 
 # Full path to most recent transition
-LATEST_TRANSITION=".claude/transitions/$LATEST_DATE/$LATEST_TIME"
+LATEST_TRANSITION="$TRANSITIONS_ROOT/$LATEST_DATE/$LATEST_TIME"
 ```
 
 **Why no symlink**:
@@ -233,13 +244,13 @@ After creating handoff, I will tell you:
 ```
 ✅ Handoff complete!
 
-Location: .claude/transitions/YYYY-MM-DD/HHMMSS.md
+Location: .workspace/transitions/YYYY-MM-DD/HHMMSS.md
 
 To continue this work:
 1. Run /clear (the CLI command)
-2. Use /memory:continue command OR say: "continue from .claude/transitions/YYYY-MM-DD/HHMMSS.md"
+2. Use /transition:continue command OR say: "continue from .workspace/transitions/YYYY-MM-DD/HHMMSS.md"
 
-⚠️ **Note**: /memory:continue may sometimes prioritize other activities first. If this happens, run it again or provide the explicit file path above.
+⚠️ **Note**: /transition:continue may sometimes prioritize other activities first. If this happens, run it again or provide the explicit file path above.
 ```
 
 **Important**: You must explicitly tell me to continue after `/clear`.
@@ -261,13 +272,13 @@ To continue this work:
 
 ```bash
 # List today's transitions
-ls -lh .claude/transitions/$(date -u +%Y-%m-%d)/
+ls -lh .workspace/transitions/$(date -u +%Y-%m-%d)/
 
 # List all transitions from last 3 days
-find .claude/transitions/ -type f -name "*.md" -mtime -3
+find .workspace/transitions/ -type f -name "*.md" -mtime -3
 
 # Find transitions from specific date
-ls -lh .claude/transitions/2025-10-19/
+ls -lh .workspace/transitions/2026-05-08/
 ```
 
 ### Time-Based Lookups
@@ -275,35 +286,31 @@ ls -lh .claude/transitions/2025-10-19/
 ```bash
 # Transitions from last 5 hours (approximately)
 FIVE_HOURS_AGO=$(date -u -d '5 hours ago' +%Y-%m-%d)
-find .claude/transitions/$FIVE_HOURS_AGO/ -type f -name "*.md"
-
-# Transitions created after specific time today
-UTC_DATE=$(date -u +%Y-%m-%d)
-find .claude/transitions/$UTC_DATE/ -type f -name "*.md" -newer .claude/transitions/$UTC_DATE/120000.md
+find .workspace/transitions/$FIVE_HOURS_AGO/ -type f -name "*.md"
 
 # Most recent 5 transitions
-find .claude/transitions/ -type f -name "*.md" | sort -r | head -5
+find .workspace/transitions/ -type f -name "*.md" | sort -r | head -5
 ```
 
 ### Archive Old Transitions
 
 ```bash
 # Archive transitions older than 30 days
-find .claude/transitions/ -type d -name "2025-*" -mtime +30 -exec mv {} .claude/transitions/archive/ \;
+find .workspace/transitions/ -type d -name "2026-*" -mtime +30 -exec mv {} .workspace/transitions/archive/ \;
 
 # Or delete old date directories
-find .claude/transitions/ -type d -name "2025-*" -mtime +90 -exec rm -rf {} \;
+find .workspace/transitions/ -type d -name "2026-*" -mtime +90 -exec rm -rf {} \;
 ```
 
 ### Compare Transitions
 
 ```bash
 # Compare two transitions
-diff .claude/transitions/2025-10-19/143022.md .claude/transitions/2025-10-19/165530.md
+diff .workspace/transitions/2026-05-08/143022.md .workspace/transitions/2026-05-08/165530.md
 
 # See what changed in last transition
-LATEST=$(readlink -f .claude/transitions/latest)
-PREVIOUS=$(find .claude/transitions/ -type f -name "*.md" | sort -r | sed -n '2p')
+LATEST=$(find .workspace/transitions/ -type f -name "*.md" | sort -r | head -1)
+PREVIOUS=$(find .workspace/transitions/ -type f -name "*.md" | sort -r | sed -n '2p')
 diff "$PREVIOUS" "$LATEST"
 ```
 

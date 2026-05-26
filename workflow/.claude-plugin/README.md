@@ -176,7 +176,7 @@ The workflow plugin automatically loads memory context:
 
 **Work Unit Structure**:
 ```
-.claude/work/current/[work-unit-id]/
+.workspace/work/current/[work-unit-id]/
 ├── metadata.json              # Work unit metadata
 ├── state.json                 # Task tracking state
 ├── exploration.md             # From /explore
@@ -392,7 +392,7 @@ Support for parallel work streams:
 
 **Solution**: Review `state.json` and fix manually:
 ```bash
-cat .claude/work/current/*/state.json       # Review state
+cat .workspace/work/current/*/state.json       # Review state
 # Edit state.json to fix
 /next --status                              # Verify fix
 ```

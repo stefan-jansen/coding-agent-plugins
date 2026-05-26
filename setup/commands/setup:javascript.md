@@ -12,6 +12,7 @@ I'll set up a new JavaScript/Node.js project with Jest, ESLint, Prettier, and th
 ```bash
 # Constants
 readonly CLAUDE_DIR=".claude"
+readonly AGENTS_DIR=".agents"
 PROJECT_NAME="${1}"
 
 # If no project name provided, use current directory name
@@ -121,16 +122,49 @@ EOF
 
 echo "✅ JavaScript project structure created"
 echo ""
-echo "🔧 Adding Claude Code Framework..."
+echo "🔧 Adding agent infrastructure..."
 
-# Create .claude directory structure (using shared-setup-patterns skill)
-mkdir -p $CLAUDE_DIR/work
-mkdir -p $CLAUDE_DIR/memory
-mkdir -p $CLAUDE_DIR/reference
+# Create .workspace/ structure (shared by Claude + Codex)
+mkdir -p $AGENTS_DIR/memory
+mkdir -p $AGENTS_DIR/transitions
+mkdir -p $AGENTS_DIR/work
+touch $AGENTS_DIR/transitions/.gitkeep
+touch $AGENTS_DIR/work/.gitkeep
+
+# Create .claude/ structure (Claude-specific only)
 mkdir -p $CLAUDE_DIR/hooks
+mkdir -p $CLAUDE_DIR/commands
 
-# Create settings.json with plugins (from shared-setup-patterns skill template)
-cat > $CLAUDE_DIR/settings.json << 'SETTINGS_EOF'
+# Create transition hook (writes to .workspace/transitions/)
+cat > $CLAUDE_DIR/hooks/init-transition.sh << 'HOOK_EOF'
+#!/bin/bash
+# Initialize hourly transition file for session progress tracking
+# Format: .workspace/transitions/YYYY-MM-DD/HH.md
+set -e
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+TRANSITIONS_DIR="$PROJECT_ROOT/.workspace/transitions"
+TODAY=$(date +%Y-%m-%d)
+HOUR=$(date +%H)
+TODAY_DIR="$TRANSITIONS_DIR/$TODAY"
+HOURLY_FILE="$TODAY_DIR/${HOUR}.md"
+mkdir -p "$TODAY_DIR"
+if [ ! -f "$HOURLY_FILE" ]; then
+    cat > "$HOURLY_FILE" << EOF
+# Session Progress: $TODAY ${HOUR}:00
+
+---
+
+EOF
+fi
+exit 0
+HOOK_EOF
+chmod +x $CLAUDE_DIR/hooks/init-transition.sh
+
+# Get absolute path for hook
+HOOK_PATH="$(pwd)/$CLAUDE_DIR/hooks/init-transition.sh"
+
+# Create settings.json with plugins + transition hook
+cat > $CLAUDE_DIR/settings.json << SETTINGS_EOF
 {
   "extraKnownMarketplaces": {
     "local": {
@@ -146,44 +180,136 @@ cat > $CLAUDE_DIR/settings.json << 'SETTINGS_EOF'
     "memory@local": true,
     "development@local": true,
     "transition@local": true
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$HOOK_PATH"
+          }
+        ]
+      }
+    ]
   }
 }
 SETTINGS_EOF
-echo "✅ Created .claude/settings.json with core plugins (including transition for /handoff)"
+echo "✅ Created .claude/settings.json with core plugins + transition hook"
 
-# Create project CLAUDE.md
-cat > CLAUDE.md << EOF
+# Seed memory templates
+cat > $AGENTS_DIR/memory/project_state.md << EOF
+# Project state — $PROJECT_NAME
+
+## What's working
+
+-
+
+## What's stubbed or absent
+
+-
+
+## Decisions to make
+
+-
+EOF
+
+cat > $AGENTS_DIR/memory/conventions.md << 'EOF'
+# Conventions
+
+## Code
+
+- **JavaScript**: Node 20+, ESLint + Prettier. `git safe-commit` (NOT `git commit`).
+
+## Commits
+
+- Use `git safe-commit -m "..."`. Never `--no-verify`.
+- Conventional-commit style: `feat:`, `fix:`, `chore:`, `docs:`.
+
+## Infrastructure
+
+- Memory + transitions live at `.workspace/` (shared by Claude and Codex). NOT `.claude/memory/`.
+- `.claude/` holds only Claude-specific config: `settings.json`, `hooks/`, `commands/`.
+- Every project session writes progress to `.workspace/transitions/YYYY-MM-DD/HH.md`.
+EOF
+
+cat > $AGENTS_DIR/memory/decisions.md << 'EOF'
+# Decisions
+
+Record load-bearing choices with the reasoning. Future agents read this
+before suggesting alternatives.
+
+## YYYY-MM-DD: <Decision title>
+
+**Why**:
+
+**Trade-off**:
+EOF
+
+# Create AGENTS.md (canonical project doc)
+cat > AGENTS.md << EOF
 # $PROJECT_NAME
 
-JavaScript/Node.js project with modern tooling.
+## Purpose
 
-## Project Knowledge
-@.claude/memory/project_state.md
-@.claude/memory/dependencies.md
-@.claude/memory/conventions.md
-@.claude/memory/decisions.md
+<one-paragraph statement of what this project is and who it's for>
 
-## Current Work
-@.claude/work/current/README.md
+## Code vs data layout
+
+| Path | Purpose |
+|---|---|
+| \`src/\` | Source code |
+| \`tests/\` | Tests (Jest) |
+
+## Common bash invocations
+
+\`\`\`bash
+npm install       # install dependencies
+npm test          # run tests
+npm run lint      # eslint
+npm run format    # prettier
+npm start         # run app
+\`\`\`
+
+## Slash commands (Claude Code)
+
+- See \`.claude/commands/\` for project-specific commands.
+
+## Project memory
+
+Persistent project state — survives \`/clear\` for Claude, read on demand by Codex:
+
+@.workspace/memory/project_state.md
+@.workspace/memory/conventions.md
+@.workspace/memory/decisions.md
+
+Session progress goes to \`.workspace/transitions/YYYY-MM-DD/HH.md\` — the hook
+auto-creates the hourly file on each prompt. Append progress every
+15–20 min or at milestones; both Claude and Codex sessions share it.
+
+\`\`\`bash
+ls -r .workspace/transitions/\$(date +%Y-%m-%d)/*.md   # newest first
+\`\`\`
+
+## Agent infrastructure layout
+
+\`\`\`
+AGENTS.md                  # this file — Codex reads natively
+CLAUDE.md                  # one line: @AGENTS.md
+.workspace/                   # SHARED state for both Claude and Codex
+  memory/                  #   persistent context (referenced above via @-include)
+  transitions/             #   hourly session progress
+  work/                    #   active work units / plans
+.claude/                   # CLAUDE-SPECIFIC ONLY (different schema from Codex)
+  settings.json            #   plugins, hooks, permissions
+  hooks/                   #   init-transition.sh
+  commands/                #   project slash-commands
+\`\`\`
 EOF
 
-# Generate memory files from shared skill templates
-echo "I'll create memory files (.claude/memory/*) using templates from the shared-setup-patterns skill."
-
-# Create work README
-cat > $CLAUDE_DIR/work/current/README.md << 'EOF'
-# Current Work
-
-Track active development tasks here. Use work units for larger features:
-
-```
-.claude/work/current/
-├── 001_feature_name/
-│   ├── requirements.md
-│   ├── implementation.md
-│   └── notes.md
-```
-EOF
+# CLAUDE.md is one line — single source of truth via AGENTS.md
+echo "@AGENTS.md" > CLAUDE.md
 
 echo ""
 echo "✅ JavaScript project setup complete!"
@@ -197,5 +323,8 @@ echo ""
 echo "Project structure:"
 echo "  src/         - Source code"
 echo "  tests/       - Test files"
-echo "  .claude/     - Claude framework"
+echo "  AGENTS.md    - Canonical project doc (Claude + Codex)"
+echo "  CLAUDE.md    - One-line @AGENTS.md include"
+echo "  .workspace/     - Shared agent state (memory, transitions, work)"
+echo "  .claude/     - Claude-specific (settings, hooks, commands)"
 ```

@@ -37,7 +37,7 @@ requires_state: positioned
 **Checks**:
 ```bash
 # Verify positioning manifest exists
-if [ ! -f .claude/work/content/${CONTENT_PIECE}/positioning-manifest.json ]; then
+if [ ! -f .workspace/work/content/${CONTENT_PIECE}/positioning-manifest.json ]; then
   echo "Error: Positioning manifest not found. Run /position first."
   exit 1
 fi
@@ -87,7 +87,7 @@ fi
 
 ## Research Output: Research Report
 
-**File**: `.claude/work/content/[content-piece-name]/research-report.md`
+**File**: `.workspace/work/content/[content-piece-name]/research-report.md`
 
 **Structure**:
 ```markdown
@@ -348,7 +348,7 @@ Synthesizing findings...
 ✓ Exclusions documented per NOT-covering list
 ✓ Research gaps identified
 
-Research report created: .claude/work/content/caf-white-paper/research-report.md
+Research report created: .workspace/work/content/caf-white-paper/research-report.md
 ✓ 28 pages, 18 sources cited
 ✓ Next command: /outline
 

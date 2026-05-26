@@ -45,7 +45,7 @@ This creates a work unit, enters plan mode for thorough planning, then you captu
 ## Legacy Support
 
 This command previously created work units directly. That workflow still works:
-- Creates `.claude/work/YYYY-MM-DD_NN_topic/` if no active unit
+- Creates `.workspace/work/YYYY-MM-DD-NN-topic/` if no active unit
 - Generates requirements.md and exploration.md
 - For simple tasks, auto-generates state.json
 

@@ -70,20 +70,6 @@
       "keywords": ["web", "django", "tailwind", "fullstack"]
     },
     {
-      "name": "ml3t-researcher",
-      "source": "./ml3t-researcher",
-      "description": "Academic research assistant for ML for Trading - paper discovery, fact-checking, and knowledge extraction with Qdrant RAG",
-      "version": "2.0.0",
-      "keywords": ["research", "papers", "citations", "ml3t", "qdrant"]
-    },
-    {
-      "name": "ml3t-coauthor",
-      "source": "./ml3t-coauthor",
-      "description": "Book production orchestration framework for ML for Trading - 4-phase workflow with research integration, content generation, and quality gates",
-      "version": "1.1.0",
-      "keywords": ["writing", "co-authoring", "books", "ml3t"]
-    },
-    {
       "name": "diagrams",
       "source": "./diagrams",
       "description": "High-quality D2 diagram generation with visual design expertise - produces visually appealing diagrams through encoded D2 proficiency and visual design principles",
@@ -103,6 +89,13 @@
       "description": "Shared writing methodology skills library - 10 skills including SEO copywriting, concise web copy, and search intent alignment",
       "version": "1.1.0",
       "keywords": ["writing", "skills", "seo", "methodology", "library"]
+    },
+    {
+      "name": "codex",
+      "source": "./codex",
+      "description": "Use Codex from Claude Code to review code or delegate tasks",
+      "version": "1.0.2",
+      "keywords": ["codex", "openai", "review", "delegation"]
     }
   ]
 }

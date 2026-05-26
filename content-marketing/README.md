@@ -291,7 +291,7 @@ cd ~/applied-ai/content-marketing/my-content-piece/
 ```
 
 Answer 7 strategic questions. Positioning manifest created at:
-`.claude/work/content/my-content-piece/positioning-manifest.json`
+`.workspace/work/content/my-content-piece/positioning-manifest.json`
 
 **4. Conduct research**
 ```bash

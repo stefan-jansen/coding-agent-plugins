@@ -72,7 +72,7 @@ I'm invoking the **frontend-engineer agent** for this task.
 2. Add horizontal nav for desktop
 3. Verify with Chrome DevTools
 
-**Work Unit**: .claude/work/web/responsive-navbar/
+**Work Unit**: .workspace/work/web/responsive-navbar/
 **Artifacts to Create**: Updated base.html, screenshots for verification
 
 ---
@@ -106,7 +106,7 @@ I'm invoking the **backend-django agent** for this task.
 4. Write tests for all endpoints
 5. Document API contract
 
-**Work Unit**: .claude/work/web/user-profile-api/
+**Work Unit**: .workspace/work/web/user-profile-api/
 **Artifacts to Create**: serializers.py, views.py, tests.py, api-contract.md
 
 ---
@@ -129,8 +129,8 @@ I'm invoking the **backend-django agent** for this task.
 
 ```bash
 # Read from work unit
-cat .claude/work/web/[task-slug]/implementation-plan.md
-cat .claude/work/web/[task-slug]/state.json
+cat .workspace/work/web/[task-slug]/implementation-plan.md
+cat .workspace/work/web/[task-slug]/state.json
 ```
 
 **state.json format:**

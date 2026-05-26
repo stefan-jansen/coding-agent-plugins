@@ -11,6 +11,7 @@ I'll add the Claude Code Framework to your existing project, auto-detecting the 
 
 ```bash
 readonly CLAUDE_DIR=".claude"
+readonly AGENTS_DIR=".agents"
 
 echo "🔧 Adding Claude Code Framework to existing project..."
 echo ""
@@ -23,20 +24,25 @@ echo "Detecting project characteristics..."
 # - Framework (FastAPI, Django, Next.js, Express, etc.)
 # - Tools (pytest, Jest, etc.)
 
-# Create .claude directory structure
-mkdir -p $CLAUDE_DIR/work
-mkdir -p $CLAUDE_DIR/memory
-mkdir -p $CLAUDE_DIR/reference
-mkdir -p $CLAUDE_DIR/hooks
-mkdir -p $CLAUDE_DIR/transitions
+# Create .workspace/ structure (shared by Claude + Codex)
+mkdir -p $AGENTS_DIR/memory
+mkdir -p $AGENTS_DIR/transitions
+mkdir -p $AGENTS_DIR/work
+touch $AGENTS_DIR/transitions/.gitkeep
+touch $AGENTS_DIR/work/.gitkeep
 
-# Create hourly transition hook
+# Create .claude/ structure (Claude-specific only)
+mkdir -p $CLAUDE_DIR/hooks
+mkdir -p $CLAUDE_DIR/commands
+
+# Create hourly transition hook (writes to .workspace/transitions/)
 cat > $CLAUDE_DIR/hooks/init-transition.sh << 'HOOK_EOF'
 #!/bin/bash
 # Initialize hourly transition file for session progress tracking
+# Format: .workspace/transitions/YYYY-MM-DD/HH.md
 set -e
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-TRANSITIONS_DIR="$PROJECT_ROOT/.claude/transitions"
+TRANSITIONS_DIR="$PROJECT_ROOT/.workspace/transitions"
 TODAY=$(date +%Y-%m-%d)
 HOUR=$(date +%H)
 TODAY_DIR="$TRANSITIONS_DIR/$TODAY"
@@ -51,7 +57,7 @@ fi
 exit 0
 HOOK_EOF
 chmod +x $CLAUDE_DIR/hooks/init-transition.sh
-echo "✅ Created .claude/hooks/init-transition.sh (hourly progress tracking)"
+echo "✅ Created .claude/hooks/init-transition.sh (writes to .workspace/transitions/)"
 
 # Get absolute path for hook
 HOOK_PATH="$(pwd)/$CLAUDE_DIR/hooks/init-transition.sh"
@@ -91,87 +97,135 @@ cat > $CLAUDE_DIR/settings.json << SETTINGS_EOF
 SETTINGS_EOF
 echo "✅ Created .claude/settings.json with plugins + transition hook"
 echo ""
-echo "I'll also create:"
-echo "  - .claude/memory/* (project knowledge files)"
-echo "  - CLAUDE.md (project instructions)"
-echo ""
 
-# Create project CLAUDE.md with progress tracking
+# Seed memory templates if missing (don't overwrite existing)
 PROJECT_NAME=$(basename "$PWD")
-cat > CLAUDE.md << 'CLAUDE_EOF'
-# PROJECT_NAME_PLACEHOLDER
 
-## 🔄 Session Progress Tracking (MANDATORY)
+if [ ! -f $AGENTS_DIR/memory/project_state.md ]; then
+cat > $AGENTS_DIR/memory/project_state.md << EOF
+# Project state — $PROJECT_NAME
 
-**Write progress to the current hourly transition file throughout the session.**
+## What's working
 
-**File**: `.claude/transitions/YYYY-MM-DD/HH.md` (hook creates this automatically)
+-
 
-### When to Update (Every 15-20 minutes or at milestones)
+## What's stubbed or absent
 
-Append to the **current hour's file** with:
-```markdown
-## HH:MM - [Brief Title]
-- What was accomplished
-- Current state
-- Next steps if interrupted
-```
+-
 
-### Why This Matters
-- Context can be lost unexpectedly (auto-compact, /clear)
-- CLAUDE.md persists but conversation history does not
-- Progress file enables seamless continuation
+## Decisions to make
 
-### Quick Update
-```bash
-cat >> .claude/transitions/$(date +%Y-%m-%d)/$(date +%H).md << 'EOF'
-## HH:MM - Title
-- Progress notes
+-
 EOF
-```
+fi
 
----
+if [ ! -f $AGENTS_DIR/memory/conventions.md ]; then
+cat > $AGENTS_DIR/memory/conventions.md << 'EOF'
+# Conventions
 
-## Project Knowledge
-@.claude/memory/project_state.md
-@.claude/memory/dependencies.md
-@.claude/memory/conventions.md
-@.claude/memory/decisions.md
+## Code
 
-## Current Work
-@.claude/work/README.md
-CLAUDE_EOF
+-
 
-# Replace placeholder with actual project name
-sed -i "s/PROJECT_NAME_PLACEHOLDER/$PROJECT_NAME/" CLAUDE.md
+## Commits
 
-# Create work README
-cat > $CLAUDE_DIR/work/README.md << 'EOF'
-# Work Units
+- Use `git safe-commit -m "..."`. Never `--no-verify`.
+- Conventional-commit style: `feat:`, `fix:`, `chore:`, `docs:`.
 
-Active development work units are organized here with date-prefixed directories:
-- YYYY-MM-DD_NN_topic/ - Work unit format with date and running counter
+## Infrastructure
 
-Each work unit contains:
-- metadata.json - Work unit metadata and status
-- state.json - Task tracking and implementation plan
-- Other relevant files for the work
-
-See workflow plugin commands (/explore, /plan, /next, /ship) for managing work units.
+- Memory + transitions live at `.workspace/` (shared by Claude and Codex). NOT `.claude/memory/`.
+- `.claude/` holds only Claude-specific config: `settings.json`, `hooks/`, `commands/`.
+- Every project session writes progress to `.workspace/transitions/YYYY-MM-DD/HH.md`.
 EOF
+fi
+
+if [ ! -f $AGENTS_DIR/memory/decisions.md ]; then
+cat > $AGENTS_DIR/memory/decisions.md << 'EOF'
+# Decisions
+
+Record load-bearing choices with the reasoning. Future agents read this
+before suggesting alternatives.
+
+## YYYY-MM-DD: <Decision title>
+
+**Why**:
+
+**Trade-off**:
+EOF
+fi
+
+# Create AGENTS.md (skip if exists — don't overwrite)
+if [ ! -f AGENTS.md ]; then
+cat > AGENTS.md << EOF
+# $PROJECT_NAME
+
+## Purpose
+
+<one-paragraph statement of what this project is and who it's for>
+
+## Code vs data layout
+
+| Path | Purpose |
+|---|---|
+| | |
+
+## Common bash invocations
+
+\`\`\`bash
+\`\`\`
+
+## Slash commands (Claude Code)
+
+- See \`.claude/commands/\` for project-specific commands.
+
+## Project memory
+
+Persistent project state — survives \`/clear\` for Claude, read on demand by Codex:
+
+@.workspace/memory/project_state.md
+@.workspace/memory/conventions.md
+@.workspace/memory/decisions.md
+
+Session progress goes to \`.workspace/transitions/YYYY-MM-DD/HH.md\` — the hook
+auto-creates the hourly file on each prompt. Append progress every
+15–20 min or at milestones; both Claude and Codex sessions share it.
+
+\`\`\`bash
+ls -r .workspace/transitions/\$(date +%Y-%m-%d)/*.md   # newest first
+\`\`\`
+
+## Agent infrastructure layout
+
+\`\`\`
+AGENTS.md                  # this file — Codex reads natively
+CLAUDE.md                  # one line: @AGENTS.md
+.workspace/                   # SHARED state for both Claude and Codex
+  memory/                  #   persistent context (referenced above via @-include)
+  transitions/             #   hourly session progress
+  work/                    #   active work units / plans
+.claude/                   # CLAUDE-SPECIFIC ONLY (different schema from Codex)
+  settings.json            #   plugins, hooks, permissions
+  hooks/                   #   init-transition.sh
+  commands/                #   project slash-commands
+\`\`\`
+EOF
+fi
+
+# CLAUDE.md is one line — single source of truth via AGENTS.md
+# (overwrite is safe — content is canonical)
+echo "@AGENTS.md" > CLAUDE.md
 
 echo "✅ Claude Code Framework added!"
 echo ""
 echo "Created:"
-echo "  .claude/              - Framework directory"
-echo "  .claude/hooks/        - Transition hook (auto-creates hourly progress files)"
-echo "  .claude/transitions/  - Session progress tracking"
-echo "  CLAUDE.md             - Project instructions (with progress tracking)"
+echo "  AGENTS.md             - Canonical project doc (Claude + Codex)"
+echo "  CLAUDE.md             - One-line @AGENTS.md include"
+echo "  .workspace/memory/       - Persistent project state (project_state, conventions, decisions)"
+echo "  .workspace/transitions/  - Hourly session progress (auto-created by hook)"
+echo "  .workspace/work/         - Active work units"
+echo "  .claude/settings.json - Plugins + UserPromptSubmit transition hook"
+echo "  .claude/hooks/        - init-transition.sh (writes to .workspace/transitions/)"
 echo ""
-echo "Features:"
-echo "  - Hourly progress files: .claude/transitions/YYYY-MM-DD/HH.md"
-echo "  - Auto-created on each prompt via UserPromptSubmit hook"
-echo "  - CLAUDE.md instructions persist after /clear"
-echo ""
-echo "Next: Review and customize CLAUDE.md and .claude/memory/ files for your project."
+echo "Next: Edit AGENTS.md (purpose, layout, commands) and .workspace/memory/ files for your project."
 ```

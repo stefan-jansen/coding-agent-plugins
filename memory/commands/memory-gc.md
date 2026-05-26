@@ -16,8 +16,8 @@ Memory should reflect CURRENT reality, not history. Remove entries proven wrong,
 #!/bin/bash
 
 # Constants
-MEMORY_DIR=".claude/memory"
-ARCHIVE_DIR=".claude/work/archives/memory"
+MEMORY_DIR=".workspace/memory"
+ARCHIVE_DIR=".workspace/work/archives/memory"
 CURRENT_DATE=$(date +%Y-%m-%d)
 STALENESS_THRESHOLD=30
 

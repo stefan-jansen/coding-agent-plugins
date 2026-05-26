@@ -6,12 +6,13 @@ description: Add hourly session progress tracking to existing project (migration
 
 # Add Session Progress Tracking
 
-This command adds automatic hourly transition file tracking to your project.
+This command adds automatic hourly transition file tracking to your project (writing to `.workspace/transitions/`).
 
 **What it does:**
 1. Creates `.claude/hooks/init-transition.sh` - Hook that creates hourly progress files
-2. Updates `.claude/settings.json` - Adds UserPromptSubmit hook
-3. Updates `CLAUDE.md` - Adds progress tracking instructions
+2. Creates `.workspace/transitions/` directory (shared with Codex)
+3. Updates `.claude/settings.json` - Adds UserPromptSubmit hook
+4. Updates `AGENTS.md` (if present) - Adds progress tracking section
 
 ## Implementation
 
@@ -25,21 +26,23 @@ fi
 echo "🔄 Adding session progress tracking..."
 echo ""
 
-# Create hooks directory
+# Create hooks directory and shared agents transitions dir
 mkdir -p .claude/hooks
+mkdir -p .workspace/transitions
+touch .workspace/transitions/.gitkeep
 
-# Create the transition hook
+# Create the transition hook (writes to .workspace/transitions/)
 cat > .claude/hooks/init-transition.sh << 'HOOK_EOF'
 #!/bin/bash
 # Initialize hourly transition file for session progress tracking
 # This hook runs on UserPromptSubmit to ensure the hourly file exists
-# Format: .claude/transitions/YYYY-MM-DD/HH.md (e.g., 19.md for 7pm hour)
+# Format: .workspace/transitions/YYYY-MM-DD/HH.md (e.g., 19.md for 7pm hour)
 
 set -e
 
-# Get project root (where .claude/ directory is)
+# Get project root
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-TRANSITIONS_DIR="$PROJECT_ROOT/.claude/transitions"
+TRANSITIONS_DIR="$PROJECT_ROOT/.workspace/transitions"
 TODAY=$(date +%Y-%m-%d)
 HOUR=$(date +%H)
 TODAY_DIR="$TRANSITIONS_DIR/$TODAY"
@@ -63,7 +66,7 @@ exit 0
 HOOK_EOF
 
 chmod +x .claude/hooks/init-transition.sh
-echo "✅ Created .claude/hooks/init-transition.sh"
+echo "✅ Created .claude/hooks/init-transition.sh (writes to .workspace/transitions/)"
 ```
 
 Now update settings.json to add the hook:
@@ -94,20 +97,20 @@ echo '  }]'
 echo ""
 ```
 
-Now I'll add the progress tracking instructions to CLAUDE.md:
+Now I'll add the progress tracking instructions to AGENTS.md:
 
-**Progress Tracking Section for CLAUDE.md:**
+**Progress Tracking Section for AGENTS.md (or CLAUDE.md if AGENTS.md is missing):**
 
 ```markdown
-## 🔄 Session Progress Tracking (MANDATORY)
+## Session progress tracking (mandatory)
 
 **Write progress to the current hourly transition file throughout the session.**
 
-**File**: `.claude/transitions/YYYY-MM-DD/HH.md` (hook creates this automatically)
+**File**: `.workspace/transitions/YYYY-MM-DD/HH.md` (hook creates this automatically; shared with Codex)
 
-Example: `.claude/transitions/2025-12-15/19.md` for the 7pm hour
+Example: `.workspace/transitions/2026-05-08/19.md` for the 7pm hour
 
-### When to Update (Every 15-20 minutes or at milestones)
+### When to update (every 15-20 minutes or at milestones)
 
 Append to the **current hour's file** with:
 ```markdown
@@ -117,15 +120,15 @@ Append to the **current hour's file** with:
 - Next steps if interrupted
 ```
 
-### Why Hourly Files
+### Why hourly files
 - 20+ auto-compact events can happen per day
 - Easier to pinpoint specific time windows
 - Read files in reverse order to find latest context
 - Smaller files = faster to scan
 
-### Quick Update Command
+### Quick update command
 ```bash
-cat >> .claude/transitions/$(date +%Y-%m-%d)/$(date +%H).md << 'EOF'
+cat >> .workspace/transitions/$(date +%Y-%m-%d)/$(date +%H).md << 'EOF'
 ## HH:MM - Title
 - Progress notes here
 EOF
@@ -153,9 +156,9 @@ After running this command:
 }
 ```
 
-2. **Add the progress tracking section** to the top of your CLAUDE.md (after the title)
+2. **Add the progress tracking section** to AGENTS.md (Codex reads it natively; Claude sees it via `CLAUDE.md → @AGENTS.md`)
 
-3. **Test**: Send a message - hook should create `.claude/transitions/YYYY-MM-DD/HH.md`
+3. **Test**: Send a message - hook should create `.workspace/transitions/YYYY-MM-DD/HH.md`
 
 ---
 

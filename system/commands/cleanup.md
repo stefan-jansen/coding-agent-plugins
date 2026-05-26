@@ -20,7 +20,7 @@ Clean up clutter from Claude development sessions.
 | `reports --auto` | Auto-consolidate without prompts |
 | `root` | Clean misplaced files from root directory |
 | `tests` | Move test files to tests/ |
-| `work` | Clean .claude/work directory |
+| `work` | Clean .workspace/work directory |
 | `all` | Full cleanup (default) |
 | `--dry-run` | Preview without changes |
 
@@ -29,13 +29,13 @@ Clean up clutter from Claude development sessions.
 **Root clutter**: Random .md files, one-off scripts, misplaced configs
 **Test files outside tests/**: `test_*.py`, `debug_*.py`, `temp_*.py`
 **Report proliferation**: `*_REPORT.md`, `*_ANALYSIS.md`, `*_PLAN.md`
-**Work directory**: Completed work >7 days, abandoned units
+**Work directory**: Completed work >7 days, abandoned units (`.workspace/work/`)
 
 ## Consolidation Logic
 
 Reports classified by content and filename:
-- **Work-related** (`analysis`, `findings`) → `.claude/work/current/`
-- **Architecture docs** (`design`, `pattern`) → `.claude/reference/`
+- **Work-related** (`analysis`, `findings`) → `.workspace/work/current/`
+- **Architecture docs** (`design`, `pattern`) → `.workspace/reference/`
 - **General insights** → Append to `README.md`
 
 ## Process
@@ -51,11 +51,16 @@ Reports classified by content and filename:
 ```
 project/
 ├── README.md              # Main docs
-├── CLAUDE.md              # AI context
+├── AGENTS.md              # Canonical agent doc (Claude + Codex)
+├── CLAUDE.md              # one-liner: @AGENTS.md
+├── .workspace/
+│   ├── memory/            # Persistent project state
+│   ├── transitions/       # Session progress
+│   └── work/              # All work units
 ├── .claude/
-│   ├── work/              # All work units
-│   ├── reference/         # Permanent docs
-│   └── memory/            # Memory files
+│   ├── settings.json      # Plugins, hooks, permissions
+│   ├── hooks/             # Claude-specific hooks
+│   └── commands/          # Project slash-commands
 ├── tests/                 # ALL test files
 ├── scripts/               # Utility scripts
 └── src/                   # Source code

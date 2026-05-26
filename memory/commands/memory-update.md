@@ -14,12 +14,11 @@ Regular housekeeping to capture learnings and maintain accurate project state wi
 ## What Gets Updated
 
 ### Core Memory Files
-Located in `.claude/memory/`:
+Located in `.workspace/memory/`:
 
 1. **project_state.md** - Current architecture, scope, key components
 2. **conventions.md** - Code patterns, naming standards, practices
-3. **dependencies.md** - External services, APIs, integrations
-4. **decisions.md** - Architectural choices and rationale
+3. **decisions.md** - Architectural choices and rationale
 
 ### Update Triggers
 - After implementing significant features
@@ -56,7 +55,7 @@ Located in `.claude/memory/`:
 
 ### Use References, Not Duplication
 ❌ Copying full documentation into memory
-✅ "See @.claude/reference/api-spec.md for details"
+✅ "See @.workspace/reference/api-spec.md for details"
 
 ## Update Process
 
@@ -98,18 +97,18 @@ I'll:
 - 80% coverage minimum
 ```
 
-## Integration with CLAUDE.md
+## Integration with AGENTS.md
 
-CLAUDE.md references memory files:
+AGENTS.md references memory files (Claude reads it via `CLAUDE.md → @AGENTS.md`):
 ```markdown
-## Project Knowledge
-@.claude/memory/project_state.md
-@.claude/memory/conventions.md
-@.claude/memory/dependencies.md
-@.claude/memory/decisions.md
+## Project memory
+@.workspace/memory/project_state.md
+@.workspace/memory/conventions.md
+@.workspace/memory/decisions.md
 ```
 
-This keeps CLAUDE.md lean while maintaining comprehensive knowledge.
+This keeps AGENTS.md lean while maintaining comprehensive knowledge — and
+Codex reads the same file natively.
 
 ## Benefits
 

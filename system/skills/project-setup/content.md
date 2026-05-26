@@ -16,14 +16,9 @@
     "system@local": true,
     "workflow@local": true,
     "memory@local": true,
-    "development@local": true
-  }
-}
-```
-
-**Add hooks for session transitions**:
-```json
-{
+    "development@local": true,
+    "transition@local": true
+  },
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -45,9 +40,10 @@
 ```bash
 #!/bin/bash
 # Initialize hourly transition file for session progress tracking
+# Format: .agents/transitions/YYYY-MM-DD/HH.md
 set -e
 PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-TRANSITIONS_DIR="$PROJECT_ROOT/.claude/transitions"
+TRANSITIONS_DIR="$PROJECT_ROOT/.agents/transitions"
 TODAY=$(date +%Y-%m-%d)
 HOUR=$(date +%H)
 TODAY_DIR="$TRANSITIONS_DIR/$TODAY"
@@ -71,50 +67,69 @@ Make executable: `chmod +x .claude/hooks/init-transition.sh`
 ## Directory Structure
 
 ```
-.claude/
-├── settings.json      # Plugin config
-├── work/              # Work units
-│   └── ACTIVE_WORK    # Current work pointer
-├── memory/            # Project knowledge
+AGENTS.md                  # canonical project doc (Codex reads natively)
+CLAUDE.md                  # one line: @AGENTS.md
+.agents/                   # SHARED state for both Claude and Codex
+├── memory/
 │   ├── project_state.md
+│   ├── conventions.md
 │   └── decisions.md
-├── hooks/             # Session hooks
+├── transitions/           # YYYY-MM-DD/HH.md (auto-created)
+└── work/                  # active work units
+.claude/                   # CLAUDE-SPECIFIC ONLY
+├── settings.json          # plugins, hooks, permissions
+├── hooks/
 │   └── init-transition.sh
-└── transitions/       # Session handoffs
-    └── YYYY-MM-DD/
-        └── HH.md
+└── commands/              # project slash-commands
 ```
 
-## CLAUDE.md Template
+## AGENTS.md Template
 
 ```markdown
 # [Project Name]
 
-[Brief project description]
+## Purpose
 
-## Project Knowledge
-@.claude/memory/project_state.md
-@.claude/memory/decisions.md
+<one-paragraph statement>
 
-## Session Progress Tracking (MANDATORY)
+## Code vs data layout
 
-**File**: `.claude/transitions/YYYY-MM-DD/HH.md` (hook creates automatically)
+| Path | Purpose |
+|---|---|
+| | |
 
-### When to Update (Every 15-20 minutes or at milestones)
-Append progress with:
-- What was accomplished
-- Current state
-- Next steps if interrupted
+## Common bash invocations
 
-## Current Work
-@.claude/work/ACTIVE_WORK
+```bash
+```
+
+## Slash commands (Claude Code)
+
+- See `.claude/commands/`
+
+## Project memory
+
+@.agents/memory/project_state.md
+@.agents/memory/conventions.md
+@.agents/memory/decisions.md
+
+Session progress goes to `.agents/transitions/YYYY-MM-DD/HH.md` — the hook
+auto-creates the hourly file on each prompt.
+```
+
+## CLAUDE.md (one line)
+
+```markdown
+@AGENTS.md
 ```
 
 ## Quick Setup Commands
 
 ```bash
 # Create structure
-mkdir -p .claude/{work,memory,hooks,transitions}
+mkdir -p .agents/{memory,transitions,work}
+mkdir -p .claude/{hooks,commands}
+touch .agents/transitions/.gitkeep .agents/work/.gitkeep
 
 # Create settings.json (edit path for your system)
 cat > .claude/settings.json << 'EOF'
@@ -127,9 +142,12 @@ cat > .claude/hooks/init-transition.sh << 'HOOK'
 HOOK
 chmod +x .claude/hooks/init-transition.sh
 
+# CLAUDE.md is one line
+echo "@AGENTS.md" > CLAUDE.md
+
 # Initialize git if needed
 git init
-echo ".claude/transitions/" >> .gitignore  # Optional: exclude transitions
+echo ".agents/transitions/" >> .gitignore  # Optional: exclude transitions
 ```
 
 ## Language-Specific Additions
@@ -138,4 +156,4 @@ echo ".claude/transitions/" >> .gitignore  # Optional: exclude transitions
 
 **JavaScript**: Claude can generate package.json, tsconfig.json, eslint config on demand.
 
-**Existing projects**: Just add .claude/ directory and CLAUDE.md to existing project.
+**Existing projects**: Add the structure above; existing source code stays put.

@@ -1,6 +1,6 @@
 ---
 name: shared-setup-patterns
-description: Shared configuration patterns for project setup commands. Provides security hooks, Claude framework structure templates, and framework detection patterns used across multiple setup commands.
+description: Shared configuration patterns for project setup commands. Provides security hooks, agent infrastructure templates (.agents/ + AGENTS.md + CLAUDE.md), and framework detection patterns used across multiple setup commands.
 ---
 
 # Shared Setup Patterns
@@ -18,7 +18,7 @@ description: Shared configuration patterns for project setup commands. Provides 
 This skill contains ONLY patterns shared by multiple setup commands:
 
 1. **Security Hooks** - PreToolUse and PostToolUse hooks for all project types
-2. **Claude Framework Structure** - .claude/ directory templates and memory files
+2. **Agent Infrastructure Layout** - `AGENTS.md` + `.agents/` + `.claude/` templates
 3. **Framework Detection** - Patterns for auto-detecting project languages and frameworks
 
 Language-specific templates (Python, JavaScript, etc.) are kept inline in their respective commands.
@@ -53,14 +53,25 @@ Used by: ALL setup commands that create projects
 
 ---
 
-## 3. Claude Framework Structure
+## 3. Agent Infrastructure Layout
 
-Located: `templates/claude_framework/`
+Located: `templates/agent_framework/`
 
-Templates for .claude/ directory structure:
-- `structure.md` - Directory layout and purpose
-- `memory_templates/` - project_state.md, dependencies.md, conventions.md, decisions.md
-- `work_structure.md` - Work directory organization
+Templates for the canonical agent layout:
+- `structure.md` - Directory layout: `AGENTS.md` + `CLAUDE.md` + `.agents/` + `.claude/`
+- `memory_templates/` - `project_state.md`, `conventions.md`, `decisions.md` (seed for `.agents/memory/`)
+- `agents_md_template.md` - Skeleton for project-root `AGENTS.md`
+
+**Path convention** (codified in `~/.claude/CLAUDE.md`):
+
+| Path | Audience | Purpose |
+|---|---|---|
+| `AGENTS.md` | Codex (native), Claude (via `@AGENTS.md`) | Canonical project instructions |
+| `CLAUDE.md` | Claude only | One line: `@AGENTS.md` |
+| `.agents/memory/*.md` | Both | Persistent project state |
+| `.agents/transitions/YYYY-MM-DD/HH.md` | Both | Hourly session progress |
+| `.agents/work/` | Both | Active work units |
+| `.claude/settings.json`, `.claude/hooks/`, `.claude/commands/` | Claude only | Claude-specific config |
 
 Used by: ALL setup commands
 
@@ -89,7 +100,7 @@ skills: [shared-setup-patterns]
 Then access specific templates:
 - **Settings (REQUIRED)**: Copy `templates/settings.json` to `.claude/settings.json`
 - Security hooks: Load from `templates/security_hooks.json`
-- Framework structure: Generate from `templates/claude_framework/` templates
+- Agent infrastructure: Generate from `templates/agent_framework/` templates
 - Detection: Use patterns from `templates/framework_detection.md`
 
 ---
