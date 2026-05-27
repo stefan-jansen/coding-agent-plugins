@@ -68,26 +68,26 @@ out-of-sync state, agent infrastructure follows a strict path convention:
 |---|---|---|
 | `AGENTS.md` (project root) | Codex (native), Claude (via `@AGENTS.md` include) | **Canonical project instructions.** Codex reads natively; Claude includes via `CLAUDE.md` one-liner. |
 | `CLAUDE.md` (project root) | Claude only | One line: `@AGENTS.md`. Single source of truth, both agents see it. |
-| `.agents/memory/*.md` | Claude (via `@-include` from AGENTS.md), Codex (read-on-demand) | **Persistent project state.** `project_state.md`, `conventions.md`, `decisions.md`. Survives `/clear`. |
-| `.agents/transitions/YYYY-MM-DD/HH.md` | Both | **Hourly session progress.** Hook auto-creates the file; append every 15-20 min. Shared between Claude and Codex sessions. |
-| `.agents/work/` | Both | **Active work units / plans.** Multi-session work tracking. |
+| `.workspace/memory/*.md` | Claude (via `@-include` from AGENTS.md), Codex (read-on-demand) | **Persistent project state.** `project_state.md`, `conventions.md`, `decisions.md`. Survives `/clear`. |
+| `.workspace/transitions/YYYY-MM-DD/HH.md` | Both | **Hourly session progress.** Hook auto-creates the file; append every 15-20 min. Shared between Claude and Codex sessions. |
+| `.workspace/work/` | Both | **Active work units / plans.** Multi-session work tracking. |
 | `.claude/settings.json`, `.claude/hooks/`, `.claude/commands/` | Claude only | Claude Code config, hooks, slash-commands. Different schema from Codex; cannot be unified. |
 | `~/.codex/` | Codex only | Codex global config + per-machine state. |
 
-**Rule for new projects**: agent infrastructure is `.agents/`-shaped from
+**Rule for new projects**: agent infrastructure is `.workspace/`-shaped from
 day one. Setup commands (`/setup:python`, `/setup:javascript`, `/setup:existing`)
 produce this layout. Do NOT seed `.claude/memory/`, `.claude/transitions/`, or
 `.claude/work/` for new projects.
 
 **Rule for existing projects**: leave pre-migration data in `.claude/` alone
-(still readable on demand) but write new state to `.agents/`. The first time
-work touches an old project, scaffold `.agents/` and update `AGENTS.md` /
+(still readable on demand) but write new state to `.workspace/`. The first time
+work touches an old project, scaffold `.workspace/` and update `AGENTS.md` /
 `CLAUDE.md` accordingly.
 
 ## Context Management
 
 - At 80%+ context: create handoff with `/handoff`
-- Handoff format: `.agents/transitions/YYYY-MM-DD/HHMMSS.md`
+- Handoff format: `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`
 
 ## Working Style
 
@@ -126,17 +126,23 @@ follows a shared path convention so both agents access the same memory:
 |---|---|---|
 | `AGENTS.md` (project root) | Codex (native), Claude (via `@AGENTS.md` include) | Canonical project instructions. |
 | `CLAUDE.md` (project root) | Claude only | One line: `@AGENTS.md`. |
-| `.agents/memory/*.md` | Both | Persistent project state — `project_state.md`, `conventions.md`, `decisions.md`. AGENTS.md `@-includes` them so Codex sees them on every run. |
-| `.agents/transitions/YYYY-MM-DD/HH.md` | Both | Hourly session progress. Append every 15-20 min. |
-| `.agents/work/` | Both | Active work units. |
+| `.workspace/memory/*.md` | Both | Persistent project state — `project_state.md`, `conventions.md`, `decisions.md`. AGENTS.md `@-includes` them so Codex sees them on every run. |
+| `.workspace/transitions/YYYY-MM-DD/HH.md` | Both | Hourly session progress. Append every 15-20 min. |
+| `.workspace/work/` | Both | Active work units. |
 | `.codex/` | Codex only | Codex per-project state if any. |
 | `.claude/` | Claude only | Claude Code settings, hooks, slash-commands. |
 | `~/.codex/` | Codex only | Codex global config. |
 | `~/.claude/` | Claude only | Claude Code global config. |
 
-**Rule for new projects**: scaffold `AGENTS.md` + `.agents/` from day one.
+**Rule for new projects**: scaffold `AGENTS.md` + `.workspace/` from day one.
 **Rule for existing projects**: read pre-migration data in `.claude/` if
-present; write new state to `.agents/`.
+present; write new state to `.workspace/`.
+
+**Codex sandbox note**: `workspace-write` protects `.git`, `.agents`, and
+`.codex` as read-only by default — `.agents/` is Codex's own skills/roles
+namespace. That is why shared state lives in `.workspace/` (not a protected
+name): Codex can write `memory/transitions/work` there with no carve-out.
+Do not put mutable state under `.agents/`; reserve it for Codex skills.
 
 ## Working Conventions
 
@@ -157,8 +163,8 @@ present; write new state to `.agents/`.
 
 ## Context Management
 
-- Project memory lives at `.agents/memory/` — read on demand
-- Session progress at `.agents/transitions/YYYY-MM-DD/HH.md` — shared with Claude
+- Project memory lives at `.workspace/memory/` — read on demand
+- Session progress at `.workspace/transitions/YYYY-MM-DD/HH.md` — shared with Claude
 EOF
         echo "✅ Created Codex user config at: $USER_CODEX_FILE"
     fi
