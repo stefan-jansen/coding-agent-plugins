@@ -1,7 +1,7 @@
 {
   "name": "web-development",
-  "version": "1.3.0",
-  "description": "Full-stack web development with design expertise and intelligent agent routing for Django + Tailwind CSS projects",
+  "version": "1.4.0",
+  "description": "Full-stack web development (Django + Tailwind) with intelligent agent routing. Design guidance comes from frontend-design@claude-plugins-official.",
   "author": {
     "name": "Stefan"
   },
@@ -14,8 +14,5 @@
   "agents": [
     "./agents/frontend-engineer.md",
     "./agents/backend-django.md"
-  ],
-  "skills": [
-    "./skills/distinctive-design"
   ]
 }

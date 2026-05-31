@@ -1,10 +1,31 @@
 # Web Development Plugin
 
-**Version**: 1.0.0
+**Version**: 1.4.0
 **Author**: Stefan
 **Created**: 2025-10-16
 
 Full-stack web development plugin with intelligent agent routing for Django + Tailwind CSS projects.
+
+## Design guidance
+
+Design quality (anti-AI-slop aesthetic discipline) is now provided by
+the Anthropic-maintained `frontend-design@claude-plugins-official`
+plugin — broader auto-trigger, kept current upstream. Enable it
+alongside `web-development` for any project that needs design work:
+
+```json
+"enabledPlugins": {
+  "web-development@local": true,
+  "frontend-design@claude-plugins-official": true
+}
+```
+
+Project-specific design systems (e.g. Applied AI's "Analytical
+Warmth") live in the project's `.workspace/memory/design_system.md`,
+not in this plugin. The deprecated `distinctive-design` skill was
+removed in v1.4.0 (2026-05-14); see
+`~/applied-ai/website/.workspace/memory/design_system.md` for the
+project-specific overlay pattern.
 
 ## Overview
 
