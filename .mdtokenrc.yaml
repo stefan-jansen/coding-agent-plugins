@@ -29,5 +29,9 @@ exclude:
   - ".git/**"
   - ".archive/**"
   - "*.backup"
+  # Memory tooling test fixtures: crafted test data, not plugin docs. The
+  # oversized-file fixture intentionally exceeds the cap to exercise
+  # measure_memory.sh, so it must be exempt from the markdown token gate.
+  - "memory/bin/fixtures/**"
 
 total_limit: 350000
