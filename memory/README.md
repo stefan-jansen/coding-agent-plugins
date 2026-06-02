@@ -48,6 +48,85 @@ Build or refresh project understanding into `.claude/PROJECT_MAP.md` — archite
 ### `/performance`
 Show token usage by component (conversation, MCP, memory, system). Recommends optimizations when context climbs past 70/80/90% thresholds.
 
+## MEMORY_INDEX.md format
+
+`MEMORY_INDEX.md` lives at `.workspace/memory/MEMORY_INDEX.md` and is the
+single, authoritative manifest of a project's memory. It is what `AGENTS.md`
+should `@-include` so a session auto-loads a bounded index instead of every
+memory file in full. The companion `bin/verify_index.sh` checks its integrity.
+
+**The index is authoritative.** Where a memory file's own frontmatter disagrees
+with the index, the index wins; tooling reports the mismatch and proposes
+syncing the file down to the index value. Treat the index as source of truth,
+the file frontmatter as informational.
+
+### Structure
+
+YAML frontmatter, then one `##` entry per memory file:
+
+```markdown
+---
+auto_loaded_cap: 5000
+---
+
+# Memory Index
+
+## project_state.md
+- status: active
+- last_referenced: 2026-06-01
+- tokens: 320
+- anchors: src/auth/jwt.py, bin/migrate.sh
+
+## conventions.md
+- status: dormant
+- last_referenced: 2026-05-01
+- tokens: 210
+- anchors:
+
+## old_architecture.md
+- status: superseded-by: project_state.md
+- last_referenced: 2026-04-01
+- tokens: 90
+- anchors: none
+```
+
+**Frontmatter**
+
+- `auto_loaded_cap: <n>` — the token ceiling for auto-loaded memory, per-project
+  overridable. Recommended (a missing cap is a warning, not an error).
+
+**Per-file entry** — heading is the memory filename relative to the memory
+directory (e.g. `## project_state.md`). Each entry carries all four required
+fields:
+
+| Field | Meaning |
+|---|---|
+| `status` | One of `active`, `dormant`, `deprecated`, or `superseded-by:<slug>` (the slug is another memory's filename). |
+| `last_referenced` | `YYYY-MM-DD` of the last time a signal touched the file, or `never`. |
+| `tokens` | Estimated token count (integer), from the shared `bin/token_count.py`. |
+| `anchors` | Comma-separated file paths / commands / symbols the memory describes. Leave empty (or `none` / `n/a`) when there are none. |
+
+The index does **not** list itself, and `.index_state.json` (the gitignored
+signal sidecar) is runtime state, not an entry.
+
+### Verifying the index
+
+```bash
+memory/bin/verify_index.sh              # verify current project's .workspace/memory/
+memory/bin/verify_index.sh --dir DIR    # verify a specific memory directory
+memory/bin/verify_index.sh --strict     # treat warnings (e.g. frontmatter drift) as failures
+memory/bin/verify_index.sh --quiet      # show problems only
+```
+
+Exit codes: `0` every memory file has a complete, valid entry (0 missing);
+`1` an integrity failure (a file with no entry, an entry missing a required
+field, or an out-of-vocabulary status); `2` an environment error (no memory
+directory, or no `MEMORY_INDEX.md` to verify against).
+
+Claude's own auto-memory at `~/.claude/projects/.../memory/` is **recognized for
+display only** — `verify_index.sh` notes the shape and lists its files but never
+manages it (no writes, no redirects). Only `.workspace/memory/` is managed.
+
 ## Memory file guidelines
 
 ### project_state.md
