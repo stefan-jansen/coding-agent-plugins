@@ -88,13 +88,21 @@ file on demand when its topic is relevant.
 
 `CLAUDE.md` remains the one-line `@AGENTS.md` re-export.
 
-### 4. Gitignore the sidecar
+### 4. Gitignore the sidecar (and the hook's lockfile)
 
 ```bash
-echo '.workspace/memory/.index_state.json' >> .gitignore
+cat >> .gitignore <<'EOF'
+.workspace/memory/.index_state.json
+.workspace/memory/.index_state.lock
+EOF
 git add .gitignore .workspace/memory/MEMORY_INDEX.md
 git commit -m "feat(memory): adopt index-first auto-load (γ)"
 ```
+
+The PreToolUse hook creates `.index_state.lock` as an fcntl lockfile
+when capturing references concurrently. Neither file belongs in source
+control — `.index_state.json` is runtime state, `.index_state.lock` is
+machine-local synchronization.
 
 ### 5. Verify
 
