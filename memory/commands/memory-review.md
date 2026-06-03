@@ -1,161 +1,62 @@
 ---
 title: memory-review
 aliases: [/memory-review]
-description: Display current memory state with timestamps, sizes, and staleness indicators
+description: Index-aware view of `.workspace/memory/` — status counts (active/dormant/deprecated), per-entry table, and auto-loaded tokens vs cap.
 ---
 
-# Memory Review
+# Memory Review (γ — index-driven)
 
-Display comprehensive view of current memory state to support active memory maintenance.
+`/memory-review` summarizes a project's memory in terms of the
+`MEMORY_INDEX.md` it auto-loads, not in terms of disk size + mtime. It
+combines four sources:
 
-## What This Command Does
+- `MEMORY_INDEX.md` for status, tokens, anchors
+- `.index_state.json` for per-file `last_referenced` (newer of index vs
+  sidecar wins) and project-level `last_gc_run`
+- `bin/measure_memory.sh` for the actual auto-loaded total to check
+  against the `auto_loaded_cap` from the index frontmatter
 
-Show current memory files with metadata to help identify what needs updating, removing, or relocating.
+Recognizes Claude's auto-memory shape at
+`~/.claude/projects/<slug>/memory/` as display-only (listed but not
+analyzed for status — we don't manage it).
+
+## Usage
 
 ```bash
-#!/bin/bash
-
-# Constants
-MEMORY_DIR=".workspace/memory"
-DOCUMENTATION_DIR=".workspace/documentation"
-STALENESS_THRESHOLD=30
-SIZE_LIMIT=5120
-CURRENT_DATE=$(date +%Y-%m-%d)
-
-# Check if memory directory exists
-if [[ ! -d "$MEMORY_DIR" ]]; then
-    echo "❌ No memory directory found at $MEMORY_DIR"
-    echo "💡 Run /memory-update to create initial memory structure"
-    exit 1
-fi
-
-echo "Memory Review - $CURRENT_DATE"
-echo ""
-
-# Function to calculate days since date
-days_since() {
-    local date_str=$1
-    if [[ -z "$date_str" ]] || [[ "$date_str" == "N/A" ]]; then
-        echo "999"
-        return
-    fi
-    local date_epoch=$(date -d "$date_str" +%s 2>/dev/null || date -j -f "%Y-%m-%d" "$date_str" "+%s" 2>/dev/null || echo 0)
-    local current_epoch=$(date +%s)
-    local diff_days=$(( (current_epoch - date_epoch) / 86400 ))
-    echo $diff_days
-}
-
-# Analyze memory files
-echo "📁 Memory Files ($MEMORY_DIR/):"
-
-total_size=0
-fresh_count=0
-stale_count=0
-oversized_count=0
-file_count=0
-
-for file in "$MEMORY_DIR"/*.md; do
-    if [[ -f "$file" ]]; then
-        filename=$(basename "$file")
-        size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null)
-        size_human=$(numfmt --to=iec-i --suffix=B $size 2>/dev/null || echo "${size} bytes")
-
-        # Extract last validated date
-        last_validated=$(grep -oP "Last (validated|updated).*?(\d{4}-\d{2}-\d{2})" "$file" | tail -1 | grep -oP "\d{4}-\d{2}-\d{2}" || echo "N/A")
-
-        status="✅"
-        note=""
-
-        # Check staleness
-        if [[ "$last_validated" != "N/A" ]]; then
-            days=$(days_since "$last_validated")
-            if [[ $days -gt $STALENESS_THRESHOLD ]]; then
-                status="🔴"
-                note="(Stale: $days days)"
-                stale_count=$((stale_count + 1))
-            elif [[ $days -gt 7 ]]; then
-                status="⚠️"
-                note="(Aging: $days days)"
-                stale_count=$((stale_count + 1))
-            else
-                note="(Fresh)"
-                fresh_count=$((fresh_count + 1))
-            fi
-        else
-            status="⚠️"
-            note="(No timestamp)"
-            stale_count=$((stale_count + 1))
-        fi
-
-        # Check size
-        if [[ $size -gt $SIZE_LIMIT ]]; then
-            status="⚠️"
-            note="$note (Oversized: >5KB)"
-            oversized_count=$((oversized_count + 1))
-        fi
-
-        printf "  %s %-25s %-12s %-20s %s\n" "$status" "$filename" "$size_human" "$last_validated" "$note"
-
-        total_size=$((total_size + size))
-        file_count=$((file_count + 1))
-    fi
-done
-
-echo ""
-
-# Analyze documentation files
-if [[ -d "$DOCUMENTATION_DIR" ]]; then
-    echo "📁 Documentation Files ($DOCUMENTATION_DIR/):"
-    for file in "$DOCUMENTATION_DIR"/*.md; do
-        if [[ -f "$file" ]]; then
-            filename=$(basename "$file")
-            size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null)
-            size_human=$(numfmt --to=iec-i --suffix=B $size 2>/dev/null || echo "${size} bytes")
-            created=$(date -r "$file" +%Y-%m-%d 2>/dev/null || stat -f "%Sm" -t "%Y-%m-%d" "$file" 2>/dev/null || echo "Unknown")
-            printf "  ✅ %-25s %-12s Created: %s\n" "$filename" "$size_human" "$created"
-        fi
-    done
-    echo ""
-fi
-
-# Summary
-total_size_human=$(numfmt --to=iec-i --suffix=B $total_size 2>/dev/null || echo "${total_size} bytes")
-
-echo "📊 Summary:"
-echo "  Total memory: $total_size_human ($file_count files)"
-echo "  Fresh: $fresh_count files (validated <7 days)"
-echo "  Stale: $stale_count files (validated >7 days or no timestamp)"
-echo "  Oversized: $oversized_count files (>5KB)"
-echo ""
-
-# Recommendations
-if [[ $stale_count -gt 0 ]] || [[ $oversized_count -gt 0 ]]; then
-    echo "⚠️  Actions Recommended:"
-    if [[ $stale_count -gt 0 ]]; then
-        echo "  - Review stale files with /memory-update"
-        echo "  - Run /memory-gc to clean up stale content"
-    fi
-    if [[ $oversized_count -gt 0 ]]; then
-        echo "  - Split oversized files into smaller modules"
-    fi
-else
-    echo "✅ Memory health: Good"
-    echo "   All files are fresh, properly sized, and timestamped"
-fi
-
-echo ""
-echo "💡 Next steps:"
-echo "   - /memory-update  : Update or add memory entries"
-echo "   - /memory-gc      : Clean up stale content"
-echo "   - /status         : Check overall project health"
+/memory-review              # default: current project (.workspace/memory)
+/memory-review --dir DIR    # explicit memory directory
 ```
+
+## Plan (Claude executes)
+
+Invoke the shared helper:
+
+```bash
+BIN="${CLAUDE_PLUGIN_ROOT}/bin"
+[[ -z "$CLAUDE_PLUGIN_ROOT" ]] && BIN="$HOME/agents/coding/plugins/memory/bin"
+python3 "$BIN/memory_review.py"        # current project
+# python3 "$BIN/memory_review.py" --dir "$path"   # alternate path
+```
+
+Show the output verbatim. If `auto_loaded` > `cap`, recommend
+`/memory-gc` to demote stale entries (or revisit the cap value).
+
+## What the output covers
+
+- **Per-entry table** — file, status, last_referenced (best signal),
+  tokens, anchors.
+- **Status counts** — how many `active` / `dormant` / `deprecated` /
+  `superseded-by:*`.
+- **Inventory tokens** — sum of `tokens` across all index entries
+  (what could be loaded on demand).
+- **Auto-loaded** — what's actually loaded at session start via the
+  AGENTS.md @-include chain, vs the cap.
+- **last_gc_run** — date + days-ago. Drives the SessionStart nudge.
 
 ## Integration
 
-**Called by**: `/status`, `/ship`
-**Related**: `/memory-update`, `/memory-gc`
-
----
-
-**Plugin**: claude-code-memory v1.0.0
-**Status**: ✅ Implemented and tested
+| Plugin | Touchpoint |
+|---|---|
+| `system` | `/system:status` may surface the status counts + cap line |
+| `workflow` | `/ship` reads memory for context; consult `/memory-review` if context tax feels high |
+| `memory` (this plugin) | Run `/memory-gc` to act on whatever `/memory-review` surfaces |

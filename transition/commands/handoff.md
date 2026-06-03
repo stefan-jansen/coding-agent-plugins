@@ -87,6 +87,23 @@ TRANSITION_FILE="$TRANSITIONS_ROOT/$UTC_DATE/$UTC_TIME.md"
 2. **Extract Session Context** → Write comprehensive transition document
 3. **Include UTC Timestamp** → Header: `# Handoff: YYYY-MM-DD HH:MM:SS UTC`
 
+### Step 3b: Keep MEMORY_INDEX.md current (if memory was touched)
+
+If Step 3.1 wrote/edited any file under `.workspace/memory/`, refresh
+the index so its `tokens` field and any new entries are picked up
+before the next session loads it:
+
+```bash
+# Memory plugin's index seeder is idempotent — safe to re-run.
+BIN="$HOME/agents/coding/plugins/memory/bin"
+[[ -d "$BIN" ]] && bash "$BIN/memory_init_index.sh" --quiet
+```
+
+This keeps `MEMORY_INDEX.md` consistent with the files on disk so the
+SessionStart nudge, `/memory-review`, and `/memory-gc` all see the
+updated state at the next session. Skip the call if Step 3.1 didn't
+touch memory.
+
 ### Step 4: Inform User
 
 **IMPORTANT**: After I complete the handoff document, you must manually continue:
