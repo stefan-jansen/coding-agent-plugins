@@ -4,19 +4,38 @@ Active memory management for Claude Code projects using the `.workspace/`-shared
 
 ## Overview
 
-Memory lives at `.workspace/memory/` and is referenced by `AGENTS.md` via `@-include` so Claude loads it on every session and Codex reads it on demand. The seed is intentionally small (3 files) — add more only when a recurring need emerges.
+Memory lives at `.workspace/memory/` and is referenced by `AGENTS.md`
+through a single auto-loaded **index** so Claude pays a bounded
+context tax at session start and Codex reads the same surface natively.
+Individual memory files are read on demand when their topic is relevant.
 
 ```
 .workspace/memory/
-├── project_state.md   # What's working, stubbed, decisions to make
-├── conventions.md     # Code, data, testing, commits, infrastructure rules
-└── decisions.md       # Load-bearing choices with rationale
+├── MEMORY_INDEX.md       # the only file auto-loaded by AGENTS.md
+├── .index_state.json     # gitignored — runtime sidecar (signals)
+├── project_state.md      # read on demand
+├── conventions.md
+└── decisions.md
 ```
 
 How it works:
-- `AGENTS.md` includes the three files via `@.workspace/memory/<file>.md`.
+- `AGENTS.md` includes only `@.workspace/memory/MEMORY_INDEX.md`.
 - `CLAUDE.md` is one line (`@AGENTS.md`), so Claude inherits the same context.
-- Stale content silently degrades agent quality — run `/memory-gc` periodically.
+- Stale content silently degrades agent quality — `/memory-gc` consumes
+  observed signals (`last_referenced`, `references`, anchor health) to
+  produce a proposed status diff; `--execute` applies it transactionally.
+
+This is the **γ memory-budget architecture**. See
+`docs/memory-budget-migration.md` for opting an existing project in.
+
+### Status vocabulary
+
+| Status | When it applies |
+|---|---|
+| `active` | Currently relevant; read recently or load-bearing |
+| `dormant` | Hasn't been touched in `--stale` days (default 90d) — still indexable; demoted from active |
+| `deprecated` | Past `--deprecated` days (default 180d) with no signals — terminal status |
+| `superseded-by:<slug>` | User-set link to the entry that supersedes this one — never touched by GC |
 
 ## Commands
 

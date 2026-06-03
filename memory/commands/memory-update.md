@@ -99,16 +99,43 @@ I'll:
 
 ## Integration with AGENTS.md
 
-AGENTS.md references memory files (Claude reads it via `CLAUDE.md → @AGENTS.md`):
+AGENTS.md references memory through the index (Claude reads it via
+`CLAUDE.md → @AGENTS.md`):
+
 ```markdown
 ## Project memory
-@.workspace/memory/project_state.md
-@.workspace/memory/conventions.md
-@.workspace/memory/decisions.md
+@.workspace/memory/MEMORY_INDEX.md
 ```
 
-This keeps AGENTS.md lean while maintaining comprehensive knowledge — and
-Codex reads the same file natively.
+Index-only auto-load keeps the session-start context tax bounded —
+individual memory files are read on demand when their topic is relevant.
+Codex reads the same `AGENTS.md` natively.
+
+## Keep the index current (mandatory step)
+
+After **any** write to `.workspace/memory/` — adding a new file,
+editing an existing one, or relocating — refresh `MEMORY_INDEX.md` so
+its `tokens` field stays accurate and any new file gets an entry:
+
+```bash
+BIN="${CLAUDE_PLUGIN_ROOT}/bin"
+[[ -z "$CLAUDE_PLUGIN_ROOT" ]] && BIN="$HOME/agents/coding/plugins/memory/bin"
+bash "$BIN/memory_init_index.sh" --quiet
+```
+
+`memory_init_index.sh` is idempotent: it recomputes tokens, adds entries
+for new files, drops entries for deleted files from the sidecar, and
+preserves manually-set fields (status / anchors / supersession links).
+Then verify integrity:
+
+```bash
+bash "$BIN/verify_index.sh"
+```
+
+A clean exit means the index is internally consistent (every memory file
+has a complete entry; statuses are in the allowed vocabulary). Without
+this step, downstream tools (`/memory-gc`, the SessionStart nudge,
+`/memory-review`) will under-report or skip the new content.
 
 ## Benefits
 
