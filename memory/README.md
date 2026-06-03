@@ -188,6 +188,22 @@ The plugin integrates with other workflow commands to suggest updates at the rig
 - After `/fix`: optional addition to `decisions.md` if the fix encoded a non-obvious choice
 - After `/review`: convention updates if recurring issues found
 
+## Hooks
+
+The plugin registers two hooks via `hooks/hooks.json` (auto-enabled when the
+plugin is installed). Both are stdlib Python 3 with no third-party deps.
+
+| Hook | Where | What it does |
+|---|---|---|
+| `PreToolUse` (matcher `Read\|Grep`) | `hooks/pre_tooluse_memory_ref.py` | Bumps `last_referenced` to today + increments `references` in `.workspace/memory/.index_state.json` whenever the agent reads or greps a `.workspace/memory/<file>.md` (excluding `MEMORY_INDEX.md`). Idempotent; never blocks a tool call. |
+| `SessionStart` | `hooks/session_start.py` | Reads `last_gc_run` from the sidecar. If older than 7 days (or null), prints a one-line nudge to the session-start banner. With `memory.auto_gc: true` in `.claude/settings.json`, also prints a dry-run of proposed status changes (files unread for >90 days proposed `active → dormant`). Bounded: stat + JSON read only, <100ms on a Factory-shaped fixture (verified by `bin/test_hooks.sh`). |
+
+`bin/stamp_gc_run.sh` writes `last_gc_run` after `/memory-gc` runs so the
+nudge resets for the next week. The transition plugin's `pre-compact.sh` is
+extended (additive, non-replacing) to also surface the nudge during
+compaction — making compaction an additional effective trigger for the
+relevance review on top of session start.
+
 ## Integration
 
 | Plugin | Touchpoint |
@@ -195,7 +211,7 @@ The plugin integrates with other workflow commands to suggest updates at the rig
 | workflow | `/ship` and `/explore` trigger update suggestions |
 | development | `/review` proposes convention updates |
 | system | `/system:status` shows memory size; `/cleanup` archives unused files |
-| transition | `/handoff` and `/continue` (in transition plugin, not memory) read memory for session context |
+| transition | `/handoff` and `/continue` read memory for session context; `pre-compact.sh` extended to also fire the memory-budget nudge when `/memory-gc` is stale |
 
 ## Troubleshooting
 
