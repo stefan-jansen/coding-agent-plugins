@@ -57,7 +57,7 @@
       "name": "transition",
       "source": "./transition",
       "description": "Session transition and handoff management - seamless context continuity across sessions",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "keywords": [
         "transition",
         "handoff",

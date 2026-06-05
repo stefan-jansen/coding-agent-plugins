@@ -19,6 +19,28 @@ Over time, transitions become more valuable than commit history—they capture t
 
 ---
 
+## Hooks (plugin-owned, v1.1.0+)
+
+The plugin registers its own `UserPromptSubmit` hook via `hooks/hooks.json`, so
+projects no longer need to copy `init-transition.sh` into
+`<project>/.claude/hooks/` or wire it into their `settings.json`.
+Enabling `transition@local` (or the marketplace equivalent) is sufficient.
+
+- **Script**: `hooks/init-transition.sh` — creates the current hourly
+  `YYYY-MM-DD/HH.md` file under `.workspace/transitions/` if absent.
+- **Routing**:
+  - `.workspace/` exists → `.workspace/transitions/<date>/HH.md`
+  - `.workspace/` absent → `.claude/transitions/<date>/HH.md`
+    (pre-migration legacy fallback only).
+- **Silence**: writes a file at most once per hour; no stdout in the happy
+  path.
+
+Pre-existing per-project copies of `init-transition.sh` can be removed
+after the project enables this plugin. See the marketplace consolidation
+notes for the migration sequence.
+
+---
+
 ## Commands (2)
 
 ### `/transition:handoff`
@@ -124,5 +146,5 @@ Loads the most recent handoff document and provides:
 
 ---
 
-**Version**: 1.0.0
+**Version**: 1.1.0
 **License**: MIT
