@@ -18,7 +18,6 @@
     "./commands/memory-update.md",
     "./commands/performance.md"
   ],
-  "hooks": "./hooks/hooks.json",
   "repository": "https://github.com/yourusername/claude-code-plugins",
   "license": "MIT"
 }

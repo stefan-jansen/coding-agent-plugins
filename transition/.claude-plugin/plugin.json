@@ -16,7 +16,6 @@
     "./commands/continue.md",
     "./commands/handoff.md"
   ],
-  "hooks": "./hooks/hooks.json",
   "repository": "https://github.com/yourusername/claude-code-plugins",
   "license": "MIT"
 }
