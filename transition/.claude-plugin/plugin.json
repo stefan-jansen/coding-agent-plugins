@@ -1,6 +1,6 @@
 {
   "name": "transition",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Session transition and handoff management for Claude Code",
   "author": {
     "name": "Claude Code Framework"
@@ -16,6 +16,7 @@
     "./commands/continue.md",
     "./commands/handoff.md"
   ],
+  "hooks": "./hooks/hooks.json",
   "repository": "https://github.com/yourusername/claude-code-plugins",
   "license": "MIT"
 }
