@@ -1,0 +1,16 @@
+{
+  "name": "roborev",
+  "version": "0.1.0",
+  "description": "RoboRev integration for Claude Code - SessionStart open-reviews summary and setup-time install hooks",
+  "author": {
+    "name": "Claude Code Framework"
+  },
+  "keywords": [
+    "roborev",
+    "code-review",
+    "session",
+    "hooks"
+  ],
+  "repository": "https://github.com/applied-artificial-intelligence/claude_code_plugins",
+  "license": "MIT"
+}
