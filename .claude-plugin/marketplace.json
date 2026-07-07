@@ -1,0 +1,118 @@
+{
+  "name": "local",
+  "owner": {
+    "name": "Stefan Jansen"
+  },
+  "description": "Plugin marketplace for coding-agent-toolkit - modular development, workflow, memory, and code-quality plugins for Claude Code",
+  "homepage": "https://github.com/stefan-jansen/coding-agent-plugins",
+  "plugins": [
+    {
+      "name": "system",
+      "source": "./system",
+      "description": "System configuration and health management",
+      "version": "1.0.0",
+      "keywords": [
+        "utilities",
+        "system",
+        "setup",
+        "audit"
+      ]
+    },
+    {
+      "name": "workflow",
+      "source": "./workflow",
+      "description": "Structured development workflow - explore, plan, implement, deliver",
+      "version": "1.0.0",
+      "keywords": [
+        "workflow",
+        "tasks",
+        "planning"
+      ]
+    },
+    {
+      "name": "development",
+      "source": "./development",
+      "description": "Code development and quality assurance tools - analyze, test, fix, review",
+      "version": "1.0.0",
+      "keywords": [
+        "development",
+        "testing",
+        "code-review",
+        "git"
+      ]
+    },
+    {
+      "name": "memory",
+      "source": "./memory",
+      "description": "Active memory management and maintenance for Claude Code framework",
+      "version": "1.0.0",
+      "keywords": [
+        "memory",
+        "knowledge",
+        "persistence",
+        "handoff"
+      ]
+    },
+    {
+      "name": "transition",
+      "source": "./transition",
+      "description": "Session transition and handoff management - seamless context continuity across sessions",
+      "version": "1.1.0",
+      "keywords": [
+        "transition",
+        "handoff",
+        "session",
+        "context"
+      ]
+    },
+    {
+      "name": "setup",
+      "source": "./setup",
+      "description": "Project initialization and Claude Code configuration",
+      "version": "1.0.0",
+      "keywords": [
+        "setup",
+        "initialization",
+        "configuration",
+        "project"
+      ]
+    },
+    {
+      "name": "codex",
+      "source": "./codex",
+      "description": "Use Codex from Claude Code to review code or delegate tasks",
+      "version": "1.0.2",
+      "keywords": [
+        "codex",
+        "openai",
+        "review",
+        "delegation"
+      ]
+    },
+    {
+      "name": "roborev",
+      "source": "./roborev",
+      "description": "SessionStart summary of open roborev reviews on the current branch — pairs with /setup:* roborev init step",
+      "version": "0.1.0",
+      "keywords": [
+        "roborev",
+        "code-review",
+        "session-start",
+        "agent-loop"
+      ]
+    },
+    {
+      "name": "observer",
+      "source": "./observer",
+      "description": "Automatic cross-session memory via batched claude -p observation processing",
+      "version": "1.0.0",
+      "keywords": [
+        "observer",
+        "memory",
+        "automatic",
+        "cross-session",
+        "context"
+      ]
+    }
+  ]
+}

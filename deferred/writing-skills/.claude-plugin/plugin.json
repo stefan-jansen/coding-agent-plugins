@@ -1,0 +1,15 @@
+{
+  "name": "writing-skills",
+  "version": "2.1.0",
+  "description": "Core authoring skills for book and document writing: structured organization, clear prose, and presentation/deck content",
+  "author": {
+    "name": "Factory"
+  },
+  "skills": [
+    "./skills/structured-writing",
+    "./skills/clear-writing",
+    "./skills/diataxis-framework",
+    "./skills/presentation-writing"
+  ],
+  "license": "MIT"
+}

@@ -1,0 +1,18 @@
+{
+  "extraKnownMarketplaces": {
+    "local": {
+      "source": {
+        "source": "directory",
+        "path": "~/path/to/coding-agent-plugins"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "system@local": true,
+    "workflow@local": true,
+    "memory@local": true,
+    "development@local": true,
+    "transition@local": true
+  },
+  "autoMemoryDirectory": "./.workspace/memory/auto"
+}

@@ -1,0 +1,23 @@
+{
+  "name": "reports",
+  "version": "1.0.0",
+  "description": "Professional stakeholder report generation - technical, business, and executive reports from data",
+  "author": {
+    "name": "Claude Code Framework"
+  },
+  "keywords": [
+    "reports",
+    "stakeholder",
+    "communication",
+    "documentation",
+    "business"
+  ],
+  "commands": [
+    "./commands/report.md"
+  ],
+  "agents": [
+    "./agents/report-generator.md"
+  ],
+  "repository": "https://github.com/stefan-jansen/coding-agent-plugins",
+  "license": "MIT"
+}

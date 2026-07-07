@@ -1,0 +1,22 @@
+{
+  "name": "system",
+  "version": "1.2.0",
+  "description": "System health, maintenance, and project setup",
+  "author": {
+    "name": "Claude Code Framework"
+  },
+  "keywords": ["system", "health", "audit", "maintenance", "setup"],
+  "commands": [
+    "./commands/audit.md",
+    "./commands/cleanup.md",
+    "./commands/system:status.md"
+  ],
+  "agents": [
+    "./agents/auditor.md",
+    "./agents/reasoning-specialist.md"
+  ],
+  "skills": [
+    "./skills/project-setup"
+  ],
+  "license": "MIT"
+}

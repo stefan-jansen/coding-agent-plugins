@@ -1,0 +1,16 @@
+{
+  "description": "Transition plugin hooks — UserPromptSubmit creates the current hourly transition file under .workspace/transitions/ (fallback .claude/transitions/).",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/init-transition.sh\"",
+            "timeout": 3
+          }
+        ]
+      }
+    ]
+  }
+}

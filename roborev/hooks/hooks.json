@@ -1,0 +1,16 @@
+{
+  "description": "roborev plugin hooks — SessionStart summary of open reviews on the current branch.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/roborev-session-start.sh\"",
+            "timeout": 1
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "observer",
+  "version": "1.0.0",
+  "description": "Automatic cross-session memory via batched claude -p observation processing",
+  "author": {
+    "name": "Claude Code Framework"
+  },
+  "keywords": [
+    "observer",
+    "memory",
+    "automatic",
+    "cross-session",
+    "context"
+  ],
+  "commands": [
+    "./commands/search.md"
+  ],
+  "repository": "https://github.com/stefan-jansen/coding-agent-plugins",
+  "license": "MIT"
+}

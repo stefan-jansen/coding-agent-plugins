@@ -1,0 +1,165 @@
+---
+allowed-tools: [Read, Write, Edit, Bash]
+argument-hint: ""
+description: Add hourly session progress tracking to existing project (migration command - retire when all projects updated)
+---
+
+# Add Session Progress Tracking
+
+This command adds automatic hourly transition file tracking to your project (writing to `.workspace/transitions/`).
+
+**What it does:**
+1. Creates `.claude/hooks/init-transition.sh` - Hook that creates hourly progress files
+2. Creates `.workspace/transitions/` directory (shared with Codex)
+3. Updates `.claude/settings.json` - Adds UserPromptSubmit hook
+4. Updates `AGENTS.md` (if present) - Adds progress tracking section
+
+## Implementation
+
+```bash
+# Check we're in a project with .claude directory
+if [ ! -d ".claude" ]; then
+    echo "❌ No .claude directory found. Run /setup:existing first."
+    exit 1
+fi
+
+echo "🔄 Adding session progress tracking..."
+echo ""
+
+# Create hooks directory and shared agents transitions dir
+mkdir -p .claude/hooks
+mkdir -p .workspace/transitions
+touch .workspace/transitions/.gitkeep
+
+# Create the transition hook (writes to .workspace/transitions/)
+cat > .claude/hooks/init-transition.sh << 'HOOK_EOF'
+#!/bin/bash
+# Initialize hourly transition file for session progress tracking
+# This hook runs on UserPromptSubmit to ensure the hourly file exists
+# Format: .workspace/transitions/YYYY-MM-DD/HH.md (e.g., 19.md for 7pm hour)
+
+set -e
+
+# Get project root
+PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+TRANSITIONS_DIR="$PROJECT_ROOT/.workspace/transitions"
+TODAY=$(date +%Y-%m-%d)
+HOUR=$(date +%H)
+TODAY_DIR="$TRANSITIONS_DIR/$TODAY"
+HOURLY_FILE="$TODAY_DIR/${HOUR}.md"
+
+# Create today's transition directory if it doesn't exist
+mkdir -p "$TODAY_DIR"
+
+# Initialize hourly file if it doesn't exist
+if [ ! -f "$HOURLY_FILE" ]; then
+    cat > "$HOURLY_FILE" << EOF
+# Session Progress: $TODAY ${HOUR}:00
+
+---
+
+EOF
+fi
+
+# Exit silently (hook output not visible to Claude anyway)
+exit 0
+HOOK_EOF
+
+chmod +x .claude/hooks/init-transition.sh
+echo "✅ Created .claude/hooks/init-transition.sh (writes to .workspace/transitions/)"
+```
+
+Now update settings.json to add the hook:
+
+```bash
+# Get absolute path to hook
+HOOK_PATH="$(pwd)/.claude/hooks/init-transition.sh"
+
+# Check if settings.json exists
+if [ ! -f ".claude/settings.json" ]; then
+    echo "❌ No .claude/settings.json found. Run /setup:existing first."
+    exit 1
+fi
+
+echo "📝 Updating .claude/settings.json..."
+```
+
+I'll update the settings.json to add the UserPromptSubmit hook configuration. Let me read the current settings and merge the hook configuration.
+
+```bash
+# Show what will be added
+echo ""
+echo "Hook configuration to add:"
+echo '  "UserPromptSubmit": [{'
+echo '    "matcher": "",'
+echo '    "hooks": [{"type": "command", "command": "PATH/.claude/hooks/init-transition.sh"}]'
+echo '  }]'
+echo ""
+```
+
+Now I'll add the progress tracking instructions to AGENTS.md:
+
+**Progress Tracking Section for AGENTS.md (or CLAUDE.md if AGENTS.md is missing):**
+
+```markdown
+## Session progress tracking (mandatory)
+
+**Write progress to the current hourly transition file throughout the session.**
+
+**File**: `.workspace/transitions/YYYY-MM-DD/HH.md` (hook creates this automatically; shared with Codex)
+
+Example: `.workspace/transitions/2026-05-08/19.md` for the 7pm hour
+
+### When to update (every 15-20 minutes or at milestones)
+
+Append to the **current hour's file** with:
+```markdown
+## HH:MM - [Brief Title]
+- What was accomplished
+- Current state
+- Next steps if interrupted
+```
+
+### Why hourly files
+- 20+ auto-compact events can happen per day
+- Easier to pinpoint specific time windows
+- Read files in reverse order to find latest context
+- Smaller files = faster to scan
+
+### Quick update command
+```bash
+cat >> .workspace/transitions/$(date +%Y-%m-%d)/$(date +%H).md << 'EOF'
+## HH:MM - Title
+- Progress notes here
+EOF
+```
+```
+
+## Final Steps
+
+After running this command:
+
+1. **Manually add the hook to settings.json** if not auto-merged:
+```json
+"hooks": {
+  "UserPromptSubmit": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "/absolute/path/to/project/.claude/hooks/init-transition.sh"
+        }
+      ]
+    }
+  ]
+}
+```
+
+2. **Add the progress tracking section** to AGENTS.md (Codex reads it natively; Claude sees it via `CLAUDE.md → @AGENTS.md`)
+
+3. **Test**: Send a message - hook should create `.workspace/transitions/YYYY-MM-DD/HH.md`
+
+---
+
+**Migration Note**: This command can be retired once all projects have been updated and new projects include this by default via `/setup:existing`.

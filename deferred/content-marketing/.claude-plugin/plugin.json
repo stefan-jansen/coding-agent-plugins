@@ -1,0 +1,39 @@
+{
+  "name": "content-marketing",
+  "version": "1.4.0",
+  "description": "Editorial workflow framework for professional content production with positioning-first process. Includes SEO/web copy skills. Optional: writing-skills plugin for structured authoring frameworks.",
+  "author": {
+    "name": "Applied AI / Factory"
+  },
+  "keywords": [
+    "content",
+    "marketing",
+    "editorial",
+    "writing",
+    "positioning",
+    "website",
+    "seo",
+    "copywriting"
+  ],
+  "commands": [
+    "./commands/position.md",
+    "./commands/research.md",
+    "./commands/outline.md",
+    "./commands/draft.md",
+    "./commands/review.md",
+    "./commands/website-landing.md",
+    "./commands/website-service.md"
+  ],
+  "agents": [
+    "./agents/positioning-facilitator.md",
+    "./agents/researcher.md",
+    "./agents/architect.md",
+    "./agents/author.md",
+    "./agents/editor.md"
+  ],
+  "skills": [
+    "./skills/seo-copywriting",
+    "./skills/concise-web-copy",
+    "./skills/search-intent-alignment"
+  ]
+}

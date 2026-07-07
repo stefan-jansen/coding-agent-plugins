@@ -1,0 +1,23 @@
+{
+  "name": "memory",
+  "version": "2.0.0",
+  "description": "Index-first, signal-driven memory management for Claude Code + Codex projects (γ memory-budget architecture)",
+  "author": {
+    "name": "Claude Code Framework"
+  },
+  "keywords": [
+    "memory",
+    "maintenance",
+    "context",
+    "management"
+  ],
+  "commands": [
+    "./commands/index.md",
+    "./commands/memory-gc.md",
+    "./commands/memory-review.md",
+    "./commands/memory-update.md",
+    "./commands/performance.md"
+  ],
+  "repository": "https://github.com/stefan-jansen/coding-agent-plugins",
+  "license": "MIT"
+}

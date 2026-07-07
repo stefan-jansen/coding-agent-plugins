@@ -1,0 +1,29 @@
+{
+  "name": "development",
+  "version": "1.2.0",
+  "description": "Code development and quality assurance - skills: analyze, review, docs; commands: test, fix, git",
+  "author": {
+    "name": "Claude Code Framework"
+  },
+  "keywords": [
+    "development",
+    "testing",
+    "quality",
+    "analysis",
+    "debugging",
+    "git"
+  ],
+  "commands": [
+    "./commands/fix.md",
+    "./commands/git.md",
+    "./commands/prepare-review.md",
+    "./commands/test.md"
+  ],
+  "agents": [
+    "./agents/architect.md",
+    "./agents/code-reviewer.md",
+    "./agents/test-engineer.md"
+  ],
+  "repository": "https://github.com/stefan-jansen/coding-agent-plugins",
+  "license": "MIT"
+}

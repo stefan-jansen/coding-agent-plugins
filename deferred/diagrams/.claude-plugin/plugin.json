@@ -1,0 +1,20 @@
+{
+  "name": "diagrams",
+  "version": "1.0.0",
+  "description": "High-quality D2 diagram generation with visual design expertise. Produces visually appealing diagrams that communicate clearly through encoded D2 proficiency and visual design principles.",
+  "author": {
+    "name": "Factory"
+  },
+  "keywords": [
+    "diagrams",
+    "d2",
+    "visualization",
+    "architecture",
+    "visual-design",
+    "documentation"
+  ],
+  "commands": [
+    "./commands/diagram.md"
+  ],
+  "license": "MIT"
+}

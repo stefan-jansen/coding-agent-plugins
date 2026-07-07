@@ -1,0 +1,27 @@
+{
+  "name": "workflow",
+  "version": "1.1.0",
+  "description": "Structured development workflow with plan mode integration",
+  "author": {
+    "name": "Claude Code Framework"
+  },
+  "keywords": [
+    "workflow",
+    "work",
+    "plan",
+    "next",
+    "ship",
+    "skills"
+  ],
+  "commands": [
+    "./commands/explore.md",
+    "./commands/next.md",
+    "./commands/plan.md",
+    "./commands/ship.md",
+    "./commands/spike.md",
+    "./commands/work.md"
+  ],
+  "skills": [],
+  "repository": "https://github.com/stefan-jansen/coding-agent-plugins",
+  "license": "MIT"
+}

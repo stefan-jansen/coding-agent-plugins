@@ -1,0 +1,37 @@
+{
+  "name": "quant",
+  "version": "1.0.0",
+  "description": "Quantitative finance ML framework - strategy development, validation, and deployment",
+  "author": {
+    "name": "Claude Code Framework"
+  },
+  "keywords": [
+    "quant",
+    "finance",
+    "ml",
+    "trading",
+    "strategy",
+    "validation"
+  ],
+  "commands": [
+    "./commands/explore.md",
+    "./commands/plan.md",
+    "./commands/next.md",
+    "./commands/ship.md",
+    "./commands/experiment.md",
+    "./commands/evaluate.md"
+  ],
+  "agents": [
+    "./agents/quant-ml-validator.md",
+    "./agents/quant-backtest-validator.md",
+    "./agents/quant-risk-validator.md",
+    "./agents/data-scientist.md"
+  ],
+  "skills": [
+    "./skills/cme-futures-data",
+    "./skills/ml-cv-pipeline",
+    "./skills/lightgbm-training"
+  ],
+  "repository": "https://github.com/stefan-jansen/coding-agent-plugins",
+  "license": "MIT"
+}
