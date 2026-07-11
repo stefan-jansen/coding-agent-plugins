@@ -6,7 +6,7 @@
 
 set -e
 
-PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 
 if [ -d "$PROJECT_ROOT/.workspace" ]; then
     TRANSITIONS_DIR="$PROJECT_ROOT/.workspace/transitions"

@@ -17,7 +17,7 @@ try:
 except: print('unknown')
 " 2>/dev/null)
 
-PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 TODAY=$(date +%Y-%m-%d)
 HOUR=$(date +%H)
 NOW=$(date +%H:%M)

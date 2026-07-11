@@ -24,7 +24,7 @@ EOF
 
 # Memory-relevance nudge (additive — only emits when the project opts in by
 # having a memory plugin sidecar, and only when /memory-gc is stale).
-PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 SIDECAR="$PROJECT_ROOT/.workspace/memory/.index_state.json"
 if [[ -f "$SIDECAR" ]]; then
     python3 - "$SIDECAR" <<'PY' 2>/dev/null || true
