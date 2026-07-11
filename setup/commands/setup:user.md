@@ -57,7 +57,7 @@ config paths are symlinks to it.
 
 ## Style
 
-- Never use the em dash "-". Use plain dash "-" instead.
+- Never use the em dash "—". Use plain dash "-" instead.
 - Do not repeat what the codebase already shows; point to the authoritative file or command instead. Prefer rewriting or pruning existing entries over appending new ones.
 
 ## Making technical decisions
