@@ -67,7 +67,8 @@ All must pass:
 feat|fix|docs: Brief description
 
 Detailed explanation of changes.
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
+
+Do NOT add `Co-Authored-By: Claude ...` or a `🤖 Generated with Claude Code`
+footer. Ship commits are the author's own work; agent attribution belongs in
+PR descriptions or session transitions, not commit trailers.

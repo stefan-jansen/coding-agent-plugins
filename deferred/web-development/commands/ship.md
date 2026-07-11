@@ -396,10 +396,11 @@ feat: Add user profile API and responsive navbar
 Tests: All passing
 Verification: Chrome DevTools + pytest
 Deployment: Ready for production
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>
 ```
+
+Do NOT add `Co-Authored-By: Claude ...` or a `🤖 Generated with Claude Code`
+footer. Ship commits are the author's own work; agent attribution belongs in
+PR descriptions or session transitions, not commit trailers.
 
 **Commit command**:
 ```bash

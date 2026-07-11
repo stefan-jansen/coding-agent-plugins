@@ -1,176 +1,187 @@
 ---
 allowed-tools: [Read, Write, Bash]
-argument-hint: "[--force] [--claude-only|--codex-only]"
-description: Initialize user-level Claude and/or Codex configuration with the interop convention
+argument-hint: "[--force] [--from-existing] [--claude-only] [--codex-only] [--opencode]"
+description: Initialize user-level agent configuration as a single canonical ~/AGENTS.md symlinked into each agent's config location. Cross-agent by design (Claude + Codex + optionally opencode).
 ---
 
 # User Configuration Setup
 
-I'll initialize your user-level agent configuration files (`~/.claude/CLAUDE.md`,
-`~/.codex/AGENTS.md`) with the Claude+Codex interop convention baked in.
+Installs the "single AGENTS.md, symlink fanout" pattern popularized by
+kunchenguid. One canonical `~/AGENTS.md` becomes the source of truth; each
+agent's config path (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`,
+`~/.config/opencode/AGENTS.md`) is a symlink to it. Edit once, all agents see it.
 
-By default seeds both. Use `--claude-only` or `--codex-only` to limit. Use
-`--force` to overwrite existing files.
+Flags:
+
+- `--force`             Overwrite existing `~/AGENTS.md` or replace non-symlink targets.
+- `--from-existing`     If a target is already a real file, back it up (append `.pre-symlink-TIMESTAMP`) then symlink. Default: refuse and warn.
+- `--claude-only`       Only link `~/.claude/CLAUDE.md`.
+- `--codex-only`        Only link `~/.codex/AGENTS.md`.
+- `--opencode`          Also link `~/.config/opencode/AGENTS.md`. Off by default.
 
 ```bash
-USER_CLAUDE_DIR="$HOME/.claude"
-USER_CLAUDE_FILE="$USER_CLAUDE_DIR/CLAUDE.md"
-USER_CODEX_DIR="$HOME/.codex"
-USER_CODEX_FILE="$USER_CODEX_DIR/AGENTS.md"
+CANONICAL="$HOME/AGENTS.md"
+CLAUDE_TARGET="$HOME/.claude/CLAUDE.md"
+CODEX_TARGET="$HOME/.codex/AGENTS.md"
+OPENCODE_TARGET="$HOME/.config/opencode/AGENTS.md"
 
-FORCE_FLAG=false
-SEED_CLAUDE=true
-SEED_CODEX=true
+FORCE=false
+FROM_EXISTING=false
+LINK_CLAUDE=true
+LINK_CODEX=true
+LINK_OPENCODE=false
 
 for arg in "$@"; do
     case "$arg" in
-        --force)        FORCE_FLAG=true ;;
-        --claude-only)  SEED_CODEX=false ;;
-        --codex-only)   SEED_CLAUDE=false ;;
+        --force)          FORCE=true ;;
+        --from-existing)  FROM_EXISTING=true ;;
+        --claude-only)    LINK_CODEX=false ;;
+        --codex-only)     LINK_CLAUDE=false ;;
+        --opencode)       LINK_OPENCODE=true ;;
     esac
 done
 
-echo "🔧 Initializing user-level agent configuration..."
-echo ""
+TS=$(date -u +%Y-%m-%dT%H%M%S)
 
-write_if_safe() {
-    local target="$1"
-    local label="$2"
-    if [ -f "$target" ] && [ "$FORCE_FLAG" != true ]; then
-        echo "⚠️  $label already exists at: $target"
-        echo "   Use --force to overwrite, or edit manually."
-        return 1
-    fi
-    return 0
-}
+# --- Step 1: canonical ~/AGENTS.md --------------------------------------
 
-# --- Claude user config ---------------------------------------------------
-if [ "$SEED_CLAUDE" = true ]; then
-    mkdir -p "$USER_CLAUDE_DIR"
-    if write_if_safe "$USER_CLAUDE_FILE" "Claude user config"; then
-        cat > "$USER_CLAUDE_FILE" << 'EOF'
-# Claude Code - User Guidelines
+if [ -f "$CANONICAL" ] && [ "$FORCE" != true ]; then
+    echo "SKIP $CANONICAL already exists. Use --force to overwrite, or edit manually."
+else
+    cat > "$CANONICAL" << 'EOF'
+# Personal Agent Guidelines
 
-## Git
+Canonical user-level rules for all coding agents. This file is the single source
+of truth; `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, and any future agent
+config paths are symlinks to it.
 
-**Always use `git safe-commit`** instead of `git commit` (when available):
-```bash
-git safe-commit -m "feat: message"
-```
-This runs pre-commit hooks and quality checks. Never bypass with `--no-verify`.
+## Style
 
-## Agent interop convention (Claude + Codex)
+- Never use the em dash "-". Use plain dash "-" instead.
+- Do not repeat what the codebase already shows; point to the authoritative file or command instead. Prefer rewriting or pruning existing entries over appending new ones.
 
-Most projects are worked on with both Claude and Codex. To avoid duplicated /
-out-of-sync state, agent infrastructure follows a strict path convention:
+## Making technical decisions
 
-| Path | Audience | Purpose |
-|---|---|---|
-| `AGENTS.md` (project root) | Codex (native), Claude (via `@AGENTS.md` include) | **Canonical project instructions.** Codex reads natively; Claude includes via `CLAUDE.md` one-liner. |
-| `CLAUDE.md` (project root) | Claude only | One line: `@AGENTS.md`. Single source of truth, both agents see it. |
-| `.workspace/memory/*.md` | Claude (via `@-include` from AGENTS.md), Codex (read-on-demand) | **Persistent project state.** `project_state.md`, `conventions.md`, `decisions.md`. Survives `/clear`. |
-| `.workspace/transitions/YYYY-MM-DD/HH.md` | Both | **Hourly session progress.** Hook auto-creates the file; append every 15-20 min. Shared between Claude and Codex sessions. |
-| `.workspace/work/` | Both | **Active work units / plans.** Multi-session work tracking. |
-| `.claude/settings.json`, `.claude/hooks/`, `.claude/commands/` | Claude only | Claude Code config, hooks, slash-commands. Different schema from Codex; cannot be unified. |
-| `~/.codex/` | Codex only | Codex global config + per-machine state. |
+- Do not give much weight to development cost when choosing between approaches. Prefer quality, simplicity, robustness, scalability, and long-term maintainability. Agents run continuously; human calendar estimates ("this will take weeks") do not apply.
 
-**Rule for new projects**: agent infrastructure is `.workspace/`-shaped from
-day one. Setup commands (`/setup:python`, `/setup:javascript`, `/setup:existing`)
-produce this layout. Do NOT seed `.claude/memory/`, `.claude/transitions/`, or
-`.claude/work/` for new projects.
+## Bug fixes
 
-**Rule for existing projects**: leave pre-migration data in `.claude/` alone
-(still readable on demand) but write new state to `.workspace/`. The first time
-work touches an old project, scaffold `.workspace/` and update `AGENTS.md` /
-`CLAUDE.md` accordingly.
+- Always start with reproducing the bug in an E2E setting as closely aligned with how an end user would experience it as possible. Only then diagnose and fix.
 
-## Context Management
+## Engineering excellence
 
-- At 80%+ context: create handoff with `/handoff`
-- Handoff format: `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`
-
-## Working Style
-
-Add personal preferences here:
-
-- Code style preferences
-- Communication preferences
-- Project organization preferences
-EOF
-        echo "✅ Created Claude user config at: $USER_CLAUDE_FILE"
-    fi
-fi
-
-# --- Codex user config ----------------------------------------------------
-if [ "$SEED_CODEX" = true ]; then
-    mkdir -p "$USER_CODEX_DIR"
-    if write_if_safe "$USER_CODEX_FILE" "Codex user config"; then
-        cat > "$USER_CODEX_FILE" << 'EOF'
-# Codex - User Guidelines
+- Apply high standards to engineering hygiene: lint, test failures, and test flakiness. If you see one, even if it is not caused by what you are working on right now, still get it fixed along the way.
+- For UI work, be picky about pixel perfection. Fix visible defects even when unrelated to the current task.
 
 ## Git
 
-**Use `git safe-commit`** when available (repos with pre-commit hooks):
-```bash
-git safe-commit -m "feat: message"
-```
-Falls back to `git commit` if safe-commit is not on PATH.
-Never bypass hooks with `--no-verify`.
+- Use plain `git commit`. Where a repo has pre-commit configured, run `pre-commit install` once so the quality checks fire on every commit.
+- Never bypass checks with `--no-verify` / `-n`. If a hook fails, investigate and fix the underlying cause.
+- Do NOT auto-add agent name as co-author in commit messages. No `Co-Authored-By: Claude ...` or `Generated with Claude Code` footer.
 
-## Agent interop convention (Claude + Codex)
+## Do not modify auto-generated files
 
-Most projects are worked on with both Codex and Claude. Agent infrastructure
-follows a shared path convention so both agents access the same memory:
+- Never manually edit `CHANGELOG.md` or any file marked as auto-generated. Regenerate via the appropriate tool.
+
+## Agent interop convention
+
+Most projects are worked on with multiple agents. Agent infrastructure follows
+a shared path convention so state stays in one place:
 
 | Path | Audience | Purpose |
 |---|---|---|
-| `AGENTS.md` (project root) | Codex (native), Claude (via `@AGENTS.md` include) | Canonical project instructions. |
+| `AGENTS.md` (project root) | All agents | Canonical project instructions. Codex reads natively; Claude includes via `CLAUDE.md` one-liner (`@AGENTS.md`). |
 | `CLAUDE.md` (project root) | Claude only | One line: `@AGENTS.md`. |
-| `.workspace/memory/*.md` | Both | Persistent project state — `project_state.md`, `conventions.md`, `decisions.md`. AGENTS.md `@-includes` them so Codex sees them on every run. |
-| `.workspace/transitions/YYYY-MM-DD/HH.md` | Both | Hourly session progress. Append every 15-20 min. |
-| `.workspace/work/` | Both | Active work units. |
-| `.codex/` | Codex only | Codex per-project state if any. |
-| `.claude/` | Claude only | Claude Code settings, hooks, slash-commands. |
+| `.workspace/memory/*.md` | All | Persistent project state. `project_state.md`, `conventions.md`, `decisions.md`. |
+| `.workspace/transitions/YYYY-MM-DD/HH.md` | All | Hourly session progress. Hook auto-creates the file. Shared across agents. |
+| `.workspace/work/` | All | Active work units. Multi-session tracking. |
+| `.claude/settings.json`, `.claude/hooks/`, `.claude/commands/` | Claude only | Claude Code config. |
 | `~/.codex/` | Codex only | Codex global config. |
-| `~/.claude/` | Claude only | Claude Code global config. |
 
-**Rule for new projects**: scaffold `AGENTS.md` + `.workspace/` from day one.
-**Rule for existing projects**: read pre-migration data in `.claude/` if
-present; write new state to `.workspace/`.
+**New projects**: scaffold `.workspace/`-shaped from day one. Setup commands
+(`/setup:python`, `/setup:javascript`, `/setup:existing`) produce this layout.
+Do NOT seed `.claude/memory/`, `.claude/transitions/`, or `.claude/work/`.
 
-**Codex sandbox note**: `workspace-write` protects `.git`, `.agents`, and
-`.codex` as read-only by default — `.agents/` is Codex's own skills/roles
-namespace. That is why shared state lives in `.workspace/` (not a protected
-name): Codex can write `memory/transitions/work` there with no carve-out.
-Do not put mutable state under `.agents/`; reserve it for Codex skills.
+**Existing projects**: leave pre-migration data in `.claude/` alone (still
+readable); write new state to `.workspace/`.
 
-## Working Conventions
+## File hygiene
 
-- **Package manager**: `uv` for Python projects (not pip/conda)
-- **Linter / formatter**: `ruff`
-- **Testing**: `pytest` via `uv run pytest`
-- **Type hints**: on public interfaces
-
-## File Hygiene
-
-- Do not create documentation files (*.md, README) unless explicitly requested
-- Do not add comments, docstrings, or type annotations to unchanged code
-- Avoid over-engineering: only make changes directly requested
+- Do not create documentation files (`*.md`, `README`) unless explicitly requested.
+- Do not add comments, docstrings, or type annotations to unchanged code.
+- Avoid over-engineering: only make the changes directly requested.
 
 ## Security
 
-- Never commit `.env`, `credentials.json`, or files containing secrets
+- Never commit `.env`, `credentials.json`, or files containing secrets.
 
-## Context Management
+## Context management
 
-- Project memory lives at `.workspace/memory/` — read on demand
-- Session progress at `.workspace/transitions/YYYY-MM-DD/HH.md` — shared with Claude
+- At 80%+ context: create handoff with `/handoff`.
+- Handoff format: `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`.
+
+## Goal-driven execution
+
+Before non-trivial work, restate the task as a verifiable goal, not an imperative:
+
+- "Add validation" -> "Write tests for invalid inputs, then make them pass"
+- "Fix the bug" -> "Write a test that reproduces it, then make it pass"
+- "Refactor X" -> "Tests pass before and after; no behavior change"
+
+Self-test before finishing: would a senior engineer call this overcomplicated?
+If yes, simplify before declaring done.
+
+## Working conventions
+
+Add your language/tooling preferences here. Examples:
+
+- Python: `uv`, `ruff` (100-char), `pytest` via `uv run pytest`.
+- JavaScript: preferred package manager, formatter, test runner.
+- Type checking: which tool and where it runs.
 EOF
-        echo "✅ Created Codex user config at: $USER_CODEX_FILE"
-    fi
+    echo "WROTE $CANONICAL"
 fi
 
+# --- Step 2: symlink each requested target -------------------------------
+
+link_target() {
+    local target="$1"
+    local label="$2"
+    local dir=$(dirname "$target")
+    mkdir -p "$dir"
+
+    if [ -L "$target" ]; then
+        local current=$(readlink "$target")
+        if [ "$current" = "$CANONICAL" ]; then
+            echo "SKIP $target already points at $CANONICAL"
+            return 0
+        fi
+        if [ "$FORCE" = true ]; then
+            rm "$target"
+        else
+            echo "WARN $target is a symlink to $current. Use --force to replace."
+            return 1
+        fi
+    elif [ -f "$target" ]; then
+        if [ "$FROM_EXISTING" = true ] || [ "$FORCE" = true ]; then
+            local backup="${target}.pre-symlink-${TS}"
+            mv "$target" "$backup"
+            echo "BACKUP $target -> $backup"
+        else
+            echo "WARN $target is a real file. Use --from-existing to back up and symlink, or --force to replace unconditionally."
+            return 1
+        fi
+    fi
+
+    ln -s "$CANONICAL" "$target"
+    echo "SYMLINK $target -> $CANONICAL"
+}
+
+[ "$LINK_CLAUDE"   = true ] && link_target "$CLAUDE_TARGET"   "Claude"
+[ "$LINK_CODEX"    = true ] && link_target "$CODEX_TARGET"    "Codex"
+[ "$LINK_OPENCODE" = true ] && link_target "$OPENCODE_TARGET" "opencode"
+
 echo ""
-echo "Next: edit your user config(s) to add personal preferences."
-echo "      The interop convention sections should stay — projects rely on them."
+echo "Done. Edit $CANONICAL to add personal preferences."
+echo "The interop convention sections should stay; setup commands rely on them."
 ```
