@@ -22,7 +22,7 @@
       "name": "workflow",
       "source": "./workflow",
       "description": "Structured development workflow - explore, plan, implement, deliver",
-      "version": "1.0.0",
+      "version": "1.2.0",
       "keywords": [
         "workflow",
         "tasks",
@@ -92,7 +92,7 @@
     {
       "name": "roborev",
       "source": "./roborev",
-      "description": "SessionStart summary of open roborev reviews on the current branch — pairs with /setup:* roborev init step",
+      "description": "SessionStart summary of open roborev reviews on the current branch \u2014 pairs with /setup:* roborev init step",
       "version": "0.1.0",
       "keywords": [
         "roborev",
@@ -112,6 +112,18 @@
         "automatic",
         "cross-session",
         "context"
+      ]
+    },
+    {
+      "name": "writing-skills",
+      "source": "./deferred/writing-skills",
+      "description": "Core authoring skills: structured-writing, clear-writing, diataxis-framework, presentation-writing",
+      "version": "2.1.0",
+      "keywords": [
+        "writing",
+        "presentation",
+        "docs",
+        "slides"
       ]
     }
   ]
