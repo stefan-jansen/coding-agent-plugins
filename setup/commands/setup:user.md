@@ -98,9 +98,9 @@ a shared path convention so state stays in one place:
 | `.claude/settings.json`, `.claude/hooks/`, `.claude/commands/` | Claude only | Claude Code config. |
 | `~/.codex/` | Codex only | Codex global config. |
 
-**New projects**: scaffold `.workspace/`-shaped from day one. Setup commands
-(`/setup:python`, `/setup:javascript`, `/setup:existing`) produce this layout.
-Do NOT seed `.claude/memory/`, `.claude/transitions/`, or `.claude/work/`.
+**New projects**: scaffold `.workspace/`-shaped from day one. `/setup` (in this
+plugin) produces this layout. Do NOT seed `.claude/memory/`,
+`.claude/transitions/`, or `.claude/work/`.
 
 **Existing projects**: leave pre-migration data in `.claude/` alone (still
 readable); write new state to `.workspace/`.

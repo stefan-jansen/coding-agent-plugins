@@ -26,8 +26,7 @@ The hook is silent when:
 - the command takes longer than the timeout
 
 This is the SessionStart hook only. The `roborev init` step that installs
-the post-commit reviewer hook is wired into `/setup:python`,
-`/setup:javascript`, and `/setup:existing` (default-Yes opt-in).
+the post-commit reviewer hook is wired into `/setup` (default-Yes opt-in).
 
 ## Install
 

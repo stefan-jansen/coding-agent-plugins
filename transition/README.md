@@ -15,7 +15,7 @@ Beyond just session continuity, transitions create an **automatic project histor
 
 Over time, transitions become more valuable than commit history—they capture the *thinking* behind changes, not just the changes themselves.
 
-**Storage location**: Hooks write to `.workspace/transitions/` (shared workspace for Claude Code and Codex). Run `/setup:existing` or `/setup:transitions` first to scaffold `.workspace/`.
+**Storage location**: Hooks write to `.workspace/transitions/` (shared workspace for Claude Code and Codex). Run `/setup` first to scaffold `.workspace/`.
 
 ---
 

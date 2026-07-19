@@ -1,173 +1,78 @@
 # Setup Plugin
 
-**Version**: 1.0.0
+**Version**: 2.0.0
 **Purpose**: Project initialization and Claude Code configuration
 
 ## Overview
 
-The setup plugin provides commands for initializing Claude Code in new and existing projects, configuring user-level settings, and setting up project-specific configurations.
+Two commands, one job each:
+
+- **`/setup`** — bootstrap *this* project (the current directory) to the
+  canonical Claude + Codex layout, through a short interview.
+- **`/setup:user`** — set up your *global* `~/AGENTS.md` (a different scope:
+  cross-agent user config, not a project).
+
+There used to be six overlapping setup commands (`python`, `javascript`,
+`existing`, `statusline`, `transitions`, plus a `system:project-setup` skill and
+a legacy user-level `setup-project` command). They produced drifted copies of
+the same templates and it was never clear which to run. `/setup` subsumes all of
+them: it detects the environment, asks only what the files can't tell it, and is
+idempotent.
 
 ## Commands
 
-### `/setup:python [project-name]`
-Set up a new Python project with modern tooling and Claude framework integration.
+### `/setup [project-name]`
 
-**Features**:
-- Poetry or pip + venv support
-- pytest, black, ruff, mypy
-- .claude/ framework structure
-- .gitignore, pyproject.toml
-- Optional MCP integration
+Bootstrap the current directory. Works on an empty folder or an existing repo.
 
-**Usage**:
-```bash
-/setup:python my-api
-/setup:python my-ml-project --minimal
-```
-
----
-
-### `/setup:javascript [project-name]`
-Set up a new JavaScript/Node.js project with modern tooling and Claude framework integration.
-
-**Features**:
-- npm/yarn support
-- TypeScript configuration
-- ESLint, Prettier
-- .claude/ framework structure
-- package.json, tsconfig.json
+**What it does**:
+1. **Detects** — git or not, empty or populated, already set up or not, language
+   (Python / Node / Go / Rust), and a local plugin marketplace to wire in.
+2. **Interviews** — a short, one-question-at-a-time pass to capture the project's
+   purpose, what it deliberately is NOT, and any hard rules. Skips anything the
+   detection already answered.
+3. **Generates** (idempotent — never clobbers existing files):
+   - `AGENTS.md` — canonical project doc, filled from the interview (not a
+     placeholder skeleton)
+   - `CLAUDE.md` — one line, `@AGENTS.md`
+   - `.workspace/{memory,transitions,work}` — shared Claude + Codex state,
+     including `memory/auto/` for Claude auto-memory
+   - `.claude/{settings.json,hooks/init-transition.sh,commands/}` — Claude-only config
+   - Optional Python tooling (pyproject/ruff/pre-commit) when the project is Python
+   - Optional roborev continuous review
 
 **Usage**:
 ```bash
-/setup:javascript my-app
-/setup:javascript my-frontend
+cd ~/my-new-project
+/setup
+/setup my-project      # name override (defaults to the directory name)
 ```
 
----
+### `/setup:user [--force] [--from-existing] [--claude-only] [--codex-only] [--opencode]`
 
-### `/setup:existing`
-Add Claude Code framework to an existing project with auto-detection.
-
-**Features**:
-- Auto-detects project language and framework
-- Adds .claude/ structure without disrupting existing setup
-- Configures plugins based on project type
-- Optional MCP server setup (Serena, Context7)
-
-**Usage**:
-```bash
-cd ~/my-existing-project
-/setup:existing
-```
-
----
-
-### `/setup:user [--force]`
-Initialize user-level Claude Code configuration (`~/.claude/CLAUDE.md`).
-
-**Features**:
-- Global settings and preferences
-- User-level commands
-- Shared memory files
-- Plugin marketplace configuration
-
-**Usage**:
-```bash
-/setup:user
-/setup:user --force  # Overwrite existing
-```
-
----
-
-### `/setup:statusline`
-Configure Claude Code statusline to show framework context.
-
-**Features**:
-- Shows current work unit
-- Displays active memory context
-- Token usage indicator
-- Project state summary
-
-**Usage**:
-```bash
-/setup:statusline
-```
-
----
-
-## Skills
-
-### shared-setup-patterns
-Common configuration patterns and templates used across all setup commands.
-
-**Provides**:
-- Security hooks (PreToolUse, PostToolUse)
-- Claude framework structure templates
-- Framework detection patterns
-
-**Token Impact**: ~1,700 tokens shared across 5 commands (saves ~3,200 tokens)
-
----
+Install the "single canonical `~/AGENTS.md`, symlink fanout" pattern: one
+user-level doc becomes the source of truth, symlinked into each agent's config
+path (`~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md`, optional opencode). Edit once,
+every agent sees it. This is user/global scope — it does not touch any project.
 
 ## Installation
 
-### Enable in Project
-
-Add to `.claude/settings.json`:
+Enable in a project's `.claude/settings.json`:
 ```json
 {
   "extraKnownMarketplaces": {
-    "local": {
-      "source": {
-        "source": "directory",
-        "path": "~/agents/coding/plugins"
-      }
-    }
+    "local": { "source": { "source": "directory", "path": "~/agents/coding/plugins" } }
   },
-  "enabledPlugins": {
-    "setup@local": true
-  }
+  "enabledPlugins": { "setup@local": true }
 }
 ```
 
-### Quick Start
-
-```bash
-# New Python project
-/setup:python my-project
-
-# New JavaScript project
-/setup:javascript my-app
-
-# Add to existing project
-cd ~/my-project && /setup:existing
-
-# Configure user settings
-/setup:user
-```
-
----
-
-## Token Efficiency
-
-**Design Pattern**: Subcommand pattern with shared skill
-
-- Each setup mode loads independently (~2,500-4,000 tokens)
-- Shared patterns loaded once via skill (~1,700 tokens)
-- Total savings: ~67-85% vs monolithic setup command
-
-**Example**:
-- Old `/setup` (monolithic): 9,700 tokens always loaded
-- New `/setup:python`: 2,900 tokens (70% reduction)
-
----
+For a truly empty folder, `/setup` needs the setup plugin available before any
+project `settings.json` exists — so enable `setup@local` in your *global*
+`~/.claude/settings.json`, and `/setup` is then reachable in any new directory.
 
 ## Related Plugins
 
-- **system** - Health monitoring (`/system:audit`, `/system:status`)
-- **workflow** - Development workflow (`/explore`, `/plan`, `/next`)
-- **memory** - Knowledge management (`/index`, `/handoff`)
-
----
-
-**Part of Claude Code Framework Core Plugins** (v1.0.0)
+- **system** — health monitoring (`/system:audit`, `/system:status`, `/system:cleanup`)
+- **workflow** — development workflow (`/align`, `/plan`, `/next`, `/ship`)
+- **memory** — knowledge management (`/index`, `/handoff`)

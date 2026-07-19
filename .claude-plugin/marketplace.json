@@ -10,7 +10,7 @@
       "name": "system",
       "source": "./system",
       "description": "System configuration and health management",
-      "version": "1.0.0",
+      "version": "1.4.0",
       "keywords": [
         "utilities",
         "system",
@@ -69,7 +69,7 @@
       "name": "setup",
       "source": "./setup",
       "description": "Project initialization and Claude Code configuration",
-      "version": "1.0.0",
+      "version": "2.0.0",
       "keywords": [
         "setup",
         "initialization",
@@ -92,7 +92,7 @@
     {
       "name": "roborev",
       "source": "./roborev",
-      "description": "SessionStart summary of open roborev reviews on the current branch \u2014 pairs with /setup:* roborev init step",
+      "description": "SessionStart summary of open roborev reviews on the current branch — pairs with /setup:* roborev init step",
       "version": "0.1.0",
       "keywords": [
         "roborev",

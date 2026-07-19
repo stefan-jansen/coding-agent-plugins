@@ -51,7 +51,7 @@ Plugins load from cache at session start; the cache does not auto-update when ma
 | `transition` | SessionStart / SessionEnd hooks | Auto-create hourly `.workspace/transitions/YYYY-MM-DD/HH.md` progress files |
 | `development` | `/analyze` `/review` `/test` `/fix` `/git` `/docs` | Code analysis, review, TDD, debugging |
 | `system` | `/audit` `/cleanup` `/status` | Framework health, cleanup, unified status view |
-| `setup` | `/setup:python` `/setup:javascript` `/setup:existing` `/setup:user` `/setup:transitions` `/setup:statusline` | Project initialization — enable once, disable after |
+| `setup` | `/setup` `/setup:user` | Project initialization (interview-driven) + global user config — enable once, disable after |
 | `codex` | `/codex:*` commands | Delegate work to OpenAI Codex from Claude Code |
 | `roborev` | SessionStart summary | Open roborev review status for the current branch |
 

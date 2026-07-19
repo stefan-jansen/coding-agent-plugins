@@ -56,9 +56,9 @@ I'll analyze our conversation and execute these steps:
 pwd
 
 # Verify .workspace/ exists
-if [ ! -d .agents ]; then
+if [ ! -d .workspace ]; then
     echo "ERROR: No .workspace/ directory found at $(pwd)."
-    echo "Run /setup:existing or /setup:transitions to scaffold .workspace/"
+    echo "Run /setup to scaffold .workspace/"
     exit 1
 fi
 
