@@ -11,3 +11,9 @@ repos:
         files: \.md$
         pass_filenames: false
         verbose: true
+      - id: sync-toolkit-check
+        name: Vendored toolkit skills in sync
+        entry: scripts/sync-from-toolkit.sh --check
+        language: system
+        files: ^workflow/skills/
+        pass_filenames: false
