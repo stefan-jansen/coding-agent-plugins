@@ -34,7 +34,7 @@ literal terms or state a specific conclusion it establishes. Read the section se
 should explain how the session reaches the outcomes without relying on unexplained shorthand.
 
 **Write headlines only.** For each slide write *only* the headline (§5), nothing else yet. Then run two tests:
-- **Read-through (global):** read every headline top to bottom, ignoring bodies. They should narrate the deck alone. A gap, a non sequitur, or a deletable headline means the *structure* is wrong — fix it now.
+- **Read-through (global):** read every headline top to bottom, ignoring bodies. They should narrate the deck alone. A gap, a non sequitur, or a deletable headline means the *structure* is wrong - fix it now.
 - **Adjacency (local):** each slide connects to the one before and after, or it is cut or merged.
 
 This is the highest-leverage moment in the process. Get it right before writing a bullet.
@@ -74,9 +74,9 @@ strip a single idea of the context that makes it intelligible.
 
 ## 3. Ground every claim
 
-Every specific on a slide — a number, a name, a mechanism, a result — must be true and traceable to a source. **Verify it before you write it.**
+Every specific on a slide - a number, a name, a mechanism, a result - must be true and traceable to a source. **Verify it before you write it.**
 
-The failure mode is reaching for a plausible-sounding word to fill a slot: labeling an FX strategy *carry* when there is no rates data; calling nine case studies *nine markets* when several share one market; writing *"the strongest result is an artifact"* — fluent, and empty. A sentence that reads coherently but drifts from the facts is worse than a plain true one.
+The failure mode is reaching for a plausible-sounding word to fill a slot: labeling an FX strategy *carry* when there is no rates data; calling nine case studies *nine markets* when several share one market; writing *"the strongest result is an artifact"* - fluent, and empty. A sentence that reads coherently but drifts from the facts is worse than a plain true one.
 
 If you cannot verify a specific, cut it or label it as unresolved. Do not move an unsupported or
 necessary claim into narration. **Report what is true; do not generate what sounds true.**
@@ -89,15 +89,15 @@ Know what the room already knows, but preserve the context needed to locate each
 A familiar concept may earn a slide when it defines the shared vocabulary, connects two stages, or
 supports a later technical decision. Do not manufacture a dramatic "non-obvious" turn to justify it.
 
-Do not explain table-stakes back to experts — that point-in-time data matters, that survivorship bias exists. It is on every blog, and in the training data of any model writing the slide. Earning the slot means saying something they do not already know: not *"point-in-time matters"* but *"a back-adjustment choice can flip a model's sign."*
+Do not explain table-stakes back to experts: that point-in-time data matters, that survivorship bias exists. It is on every blog, and in the training data of any model writing the slide. Earning the slot means saying something they do not already know: not *"point-in-time matters"* but *"a back-adjustment choice can flip a model's sign."*
 
 Never talk down, and never dramatize a basic point to make it feel like an insight.
 
 ---
 
-## 5. Headlines: a claim, or a clean label — never decoration
+## 5. Headlines: a claim, or a clean label - never decoration
 
-For an **argument slide**, the headline is an assertion: it states the point, not the topic. For a **fact slide** — a dataset, an inventory, a reference table — a clean descriptive label plus consistent data beats a manufactured claim. Do not force an assertion onto a menu.
+For an **argument slide**, the headline is an assertion: it states the point, not the topic. For a **fact slide** - a dataset, an inventory, a reference table - a clean descriptive label plus consistent data beats a manufactured claim. Do not force an assertion onto a menu.
 
 | Don't (label, on an argument slide) | Do (assertion) |
 |---|---|
@@ -105,7 +105,7 @@ For an **argument slide**, the headline is an assertion: it states the point, no
 | Cross-Validation | Cross-validation must respect the trading clock |
 | Results | Performance decays once leakage is removed |
 
-**Distill; don't lean on contrast.** The *"A, not B"* / *"measures X, not Y"* shape is a legitimate tool — *"Backtesting is falsification, not confirmation"* is sharp because the contrast *is* the point. Nothing here is forbidden. The fault is **overuse and repetition**: when several headlines in one deck run on the same negation, it stops carrying meaning and reads as a verbal tic. Budget it — once or twice per deck, where the distinction is real and the audience genuinely conflates the two. Everywhere else, state the thing directly: prefer *"Costs decide what survives"* over *"Cost modeling, not the model, decides what survives."* And watch the weak cases — *"A prediction is not a trade"* is well-intended but borderline obvious; either earn it or cut it.
+**Distill; don't lean on contrast.** The *"A, not B"* / *"measures X, not Y"* shape is a legitimate tool. *"Backtesting is falsification, not confirmation"* is sharp because the contrast *is* the point. Nothing here is forbidden. The fault is **overuse and repetition**: when several headlines in one deck run on the same negation, it stops carrying meaning and reads as a verbal tic. Budget it once or twice per deck, where the distinction is real and the audience genuinely conflates the two. Everywhere else, state the thing directly: prefer *"Costs decide what survives"* over *"Cost modeling, not the model, decides what survives."* And watch the weak cases: *"A prediction is not a trade"* is well-intended but borderline obvious; either earn it or cut it.
 
 Generative forms to pattern against (all direct, none built on negation):
 ```
@@ -119,22 +119,22 @@ Good headlines are concrete, specific to the slide, free of hype, jokes, and slo
 descriptive label when an assertion would be manufactured. A conclusion belongs in the headline only
 when the slide supplies the evidence or mechanism that supports it.
 
-**Fit the headline on one line.** Word count is not length — an 11-word headline can still wrap. A title that breaks to a second line and strands a one- or two-word orphan (*"…read the / future"*) reads as unfinished. Rank order:
+**Fit the headline on one line.** Word count is not length: an 11-word headline can still wrap. A title that breaks to a second line and strands a one- or two-word orphan (*"…read the / future"*) reads as unfinished. Rank order:
 
 1. **One line - the strong default.** If it does not fit, first remove repetition or an empty
    qualifier. Never cut the object, condition, or consequence that gives the headline meaning.
-2. **Two full, balanced lines at a smaller headline size** — only when the claim genuinely needs the words. Balance the break so neither line is a lone orphan, and step the H1 size down so it reads as a deliberate two-line title, not an overflow.
+2. **Two full, balanced lines at a smaller headline size** - only when the claim genuinely needs the words. Balance the break so neither line is a lone orphan, and step the H1 size down so it reads as a deliberate two-line title, not an overflow.
 
 Never accept a headline that wraps to a ragged second line at the default size. This is a rendered
 visual check, not a word-count exercise.
 
-**Know the budget before you write, so you don't iterate.** Estimate characters-per-line as `usable_width_px / (0.52 × headline_px)` — the 0.52 is roughly the title-case average advance of a bold sans (Inter/Helvetica), letter-spacing included. Write *to* that number: if the budget is ~40 characters, aim for ≤ 36 to absorb wide-letter variance. Record the per-theme, per-archetype budget once in the project's brand/typography docs and reuse it — e.g. an ml4t Marp course deck records content-slide H1 ≈ **40 chars** (target ≤ 36) in `production/brand/typography.md`.
+**Know the budget before you write, so you don't iterate.** Estimate characters-per-line as `usable_width_px / (0.52 × headline_px)`: the 0.52 is roughly the title-case average advance of a bold sans (Inter/Helvetica), letter-spacing included. Write *to* that number: if the budget is ~40 characters, aim for ≤ 36 to absorb wide-letter variance. Record the per-theme, per-archetype budget once in the project's brand/typography docs and reuse it. For example, an ml4t Marp course deck records content-slide H1 ≈ **40 chars** (target ≤ 36) in `production/brand/typography.md`.
 
 ---
 
 ## 6. Bullets, completeness, and density
 
-A bullet earns its place only if it does **one of four jobs**: define a distinction · identify a mechanism · name a failure mode · state an implication. A bullet that restates the headline does none of these — cut it.
+A bullet earns its place only if it does **one of four jobs**: define a distinction · identify a mechanism · name a failure mode · state an implication. A bullet that restates the headline does none of these; cut it.
 
 Use as many bullets as the message requires, usually three to six. Each bullet should express one
 complete attribute, mechanism, distinction, or implication. Aim for one clean rendered line or an
@@ -186,7 +186,7 @@ Rests on one idea        → a single number or a minimal annotated equation
 
 For a figure, say *what it shows* in the headline ("Returns decay with holding period"), never "Results." One primary figure per slide.
 
-**Tables:** every column is one consistent dimension and every cell the same kind of thing. A column that holds a data source on one row, a property on the next, and a date range on a third is padding — split it into real columns or cut it.
+**Tables:** every column is one consistent dimension and every cell the same kind of thing. A column that holds a data source on one row, a property on the next, and a date range on a third is padding; split it into real columns or cut it.
 
 ---
 
@@ -230,9 +230,9 @@ Also avoid: intensifiers (*massively*, *huge*, *game-changing*), exclamation mar
 2. One complete message per slide, not merely one sentence, with one obvious entry point?
 3. Headline a supported conclusion or a clean literal label - never decoration or a manufactured
    claim?
-4. Every specific true and traceable to a source — no filler that merely sounds right?
-5. Non-obvious to *this* audience — no table-stakes explained back, no dramatized basics?
-6. Contrast headlines used sparingly — not several in one deck running on the same negation?
+4. Every specific true and traceable to a source, with no filler that merely sounds right?
+5. Non-obvious to *this* audience, with no table-stakes explained back or dramatized basics?
+6. Contrast headlines used sparingly, not several in one deck running on the same negation?
 7. Headline renders as one clean line or intentional balanced lines, with no ragged orphan?
 8. Bullets and other support provide the definitions, mechanism, evidence, implication, and action
    needed for a cold reader?
@@ -277,15 +277,15 @@ Slide N:
 **Thesis:** A backtest's headline Sharpe mostly measures your methodology, not your strategy.
 **Section claim:** Most backtest performance is manufactured by leakage.
 
-- **Slide** — *Headline:* "A backtest measures your methodology before your edge."
+- **Slide** - *Headline:* "A backtest measures your methodology before your edge."
   - Look-ahead bias inflates returns before any trade   (failure mode)
   - Survivorship-filtered universes delete the losers in advance   (failure mode)
   - Parameter search overfits noise that will not recur   (mechanism)
-- **Slide** — *Headline:* "Standard k-fold cross-validation puts the future in the training set."
+- **Slide** - *Headline:* "Standard k-fold cross-validation puts the future in the training set."
   - Random folds train on data that postdates the test   (mechanism)
   - Autocorrelation makes adjacent observations near-duplicates   (mechanism)
   - Purging and embargo restore the temporal boundary   (implication)
-- **Slide (figure)** — *Headline:* "Performance decays once leakage is removed."
+- **Slide (figure)** - *Headline:* "Performance decays once leakage is removed."
   - Support: equity curves, naive k-fold vs. purged walk-forward; annotate the gap.
 
 Headlines alone narrate the section; each bullet stands on its own and does one of the four jobs; the register stays literal and grounded.
@@ -294,4 +294,7 @@ Headlines alone narrate the section; each bullet stands on its own and does one 
 
 ## Handoff to rendering
 
-Once structure and writing are approved, pass the per-slide spec — headline, chosen support, speaker notes — to the **pptx/render skill** for generation, layout, and visual design. Keep this skill's writing discipline through the handoff; let the renderer own styling, not wording.
+Once structure and writing are approved, pass the per-slide specification, including headline,
+chosen support, and optional speaker notes, to the **pptx/render skill** for generation, layout, and
+visual design. Keep this skill's writing discipline through the handoff; let the renderer own styling,
+not wording.
