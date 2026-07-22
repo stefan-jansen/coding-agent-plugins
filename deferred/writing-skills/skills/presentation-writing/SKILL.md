@@ -1,15 +1,22 @@
 ---
 name: presentation-writing
-description: Plan and write presentation CONTENT — narrative arc, one message per slide, headlines, supporting bullets/figures, speaker notes — in a sober, distilled, technical register (graduate textbook, not marketing deck). Use whenever the user wants to build, outline, draft, structure, tighten, or rewrite a deck, slides, talk, lecture, or teaching material — even if they don't say "skill," and even when the output is a .pptx. Establish deck thesis, audience, section arc, and per-slide contract BEFORE drafting slide text; ground every claim in a source; hand rendering and layout to a pptx/render skill.
+description: Plan and write presentation CONTENT - narrative arc, one message per slide, meaningful headlines, complete on-slide support, and optional speaker notes - in a sober technical register. Use whenever the user wants to build, outline, draft, structure, tighten, or rewrite a deck, slides, talk, lecture, or teaching material, even when the output is a .pptx. Establish audience, outcomes, section arc, and per-slide contract BEFORE drafting slide text; ground every claim in a source; hand rendering and layout to a pptx/render skill.
 ---
 
 # Presentation Writing
 
-A slide is a structured claim, supported by the minimum evidence the audience needs to understand it, believe it, and remember it. A deck is an argument delivered in installments.
+A slide communicates one complete teaching message. Its headline identifies the subject or supported
+conclusion; its body supplies the definitions, attributes, mechanism, comparison, example, evidence,
+implication, or action needed to understand that message. A deck develops an explanation or argument
+in installments.
 
-The goal is not to sound clever, and not to cover a topic. The goal is clarity through **distillation**: the fewest words that carry the message, every one of them true. Less is usually more. Explain when the idea genuinely needs it; default to less.
+The goal is clarity through **distillation**, not minimalism. Use the least text that preserves the
+complete meaning for a cold reader. Concision cannot remove the context required to identify the
+object, understand the terminology, or follow the reasoning. A sparse slide is not automatically a
+clear slide.
 
-Work in two passes — get the **structure** right (arc → headlines), then the **language** right (register → bullets). The most common failure is jumping to bullets before the spine is sound.
+Work in two passes: get the **structure** right (arc to headlines), then the **language** right
+(register to bullets). The most common failure is jumping to bullets before the spine is sound.
 
 ---
 
@@ -17,9 +24,14 @@ Work in two passes — get the **structure** right (arc → headlines), then the
 
 Each step is cheap to revise; later steps are expensive. Do them in order.
 
-**Frame it.** Before any slides, write one short paragraph: the **audience** (what they already know; what gap or misconception you are correcting) and the **core promise** in one sentence — "After this session, the audience should understand that…". If the promise needs two sentences, the talk has two talks in it.
+**Frame it.** Before any slides, write one short paragraph describing the **audience**, what they
+already know, and what the session adds. State one to three concrete outcomes: what the audience
+should understand, decide, produce, or be able to do afterward. A substantial teaching session can
+have several related outcomes; compressing them into one slogan hides the actual scope.
 
-**Build the spine.** Decompose the promise into **4–6 sections, maximum**. Write each as a *one-sentence claim*, not a topic. Read the section claims in order: they should form an argument that reaches the promise.
+**Build the spine.** Decompose the outcomes into a small number of sections. Name each section in
+literal terms or state a specific conclusion it establishes. Read the section sequence in order: it
+should explain how the session reaches the outcomes without relying on unexplained shorthand.
 
 **Write headlines only.** For each slide write *only* the headline (§5), nothing else yet. Then run two tests:
 - **Read-through (global):** read every headline top to bottom, ignoring bodies. They should narrate the deck alone. A gap, a non sequitur, or a deletable headline means the *structure* is wrong — fix it now.
@@ -29,7 +41,9 @@ This is the highest-leverage moment in the process. Get it right before writing 
 
 **Choose the support.** Only now fill each slide. Pick the *one* form that best proves the headline (§7). Bullets are the fallback for genuinely list-like content, not the default.
 
-**Prune.** Enforce the limits (§6). Move every caveat, derivation, and aside to speaker notes (§8).
+**Complete, then prune.** Remove repetition and delivery-only asides, but keep everything a reader
+needs to understand the slide. Speaker notes are optional and must never contain definitions,
+qualifications, or reasoning required to decode the rendered slide (§8).
 
 ```
 Deck thesis
@@ -44,12 +58,17 @@ Deck thesis
 
 Each slide answers four questions:
 
-1. **What is the message?** The headline states the point; it does not name the topic.
+1. **What is the message?** The headline names the subject or states a supported conclusion.
 2. **Why should the audience believe it?** A figure, table, equation, example, or bullets support it.
 3. **What is read first?** One obvious entry point; understanding does not require reading everything.
 4. **Why is this slide here?** It advances the argument and connects to its neighbors.
 
-**One message per slide.** Two ideas means two slides. Everything else follows from this.
+5. **Can a cold reader understand it?** Terms are defined on this slide or were explicitly defined
+   earlier; the body makes the relationship among the elements clear.
+
+**One message per slide does not mean one sentence per slide.** A message often needs several
+attributes, steps, comparisons, or pieces of evidence. Split genuinely independent ideas; do not
+strip a single idea of the context that makes it intelligible.
 
 ---
 
@@ -59,13 +78,16 @@ Every specific on a slide — a number, a name, a mechanism, a result — must b
 
 The failure mode is reaching for a plausible-sounding word to fill a slot: labeling an FX strategy *carry* when there is no rates data; calling nine case studies *nine markets* when several share one market; writing *"the strongest result is an artifact"* — fluent, and empty. A sentence that reads coherently but drifts from the facts is worse than a plain true one.
 
-If you cannot verify a specific, cut it or leave it for the speaker. **Report what is true; do not generate what sounds true.**
+If you cannot verify a specific, cut it or label it as unresolved. Do not move an unsupported or
+necessary claim into narration. **Report what is true; do not generate what sounds true.**
 
 ---
 
 ## 4. Calibrate to the audience
 
-Know what the room already knows. The headline must be **non-obvious to this audience**. If a practitioner would think "obviously," the slide is wasted — cut it, or find the non-obvious turn.
+Know what the room already knows, but preserve the context needed to locate each idea in the session.
+A familiar concept may earn a slide when it defines the shared vocabulary, connects two stages, or
+supports a later technical decision. Do not manufacture a dramatic "non-obvious" turn to justify it.
 
 Do not explain table-stakes back to experts — that point-in-time data matters, that survivorship bias exists. It is on every blog, and in the training data of any model writing the slide. Earning the slot means saying something they do not already know: not *"point-in-time matters"* but *"a back-adjustment choice can flip a model's sign."*
 
@@ -93,32 +115,50 @@ Generative forms to pattern against (all direct, none built on negation):
 [Artifact] estimates [a process]
 ```
 
-Good headlines are 6–12 words, concrete, specific to the slide, free of hype, jokes, and slogans.
+Good headlines are concrete, specific to the slide, free of hype, jokes, and slogans. Prefer a clean
+descriptive label when an assertion would be manufactured. A conclusion belongs in the headline only
+when the slide supplies the evidence or mechanism that supports it.
 
 **Fit the headline on one line.** Word count is not length — an 11-word headline can still wrap. A title that breaks to a second line and strands a one- or two-word orphan (*"…read the / future"*) reads as unfinished. Rank order:
 
-1. **One line — the strong default.** If it doesn't fit, *make it shorter*: cut a qualifier, not the meaning. Shortening a headline is almost always an improvement, not a sacrifice.
+1. **One line - the strong default.** If it does not fit, first remove repetition or an empty
+   qualifier. Never cut the object, condition, or consequence that gives the headline meaning.
 2. **Two full, balanced lines at a smaller headline size** — only when the claim genuinely needs the words. Balance the break so neither line is a lone orphan, and step the H1 size down so it reads as a deliberate two-line title, not an overflow.
 
-Never accept a headline that wraps to a ragged second line at the default size.
+Never accept a headline that wraps to a ragged second line at the default size. This is a rendered
+visual check, not a word-count exercise.
 
 **Know the budget before you write, so you don't iterate.** Estimate characters-per-line as `usable_width_px / (0.52 × headline_px)` — the 0.52 is roughly the title-case average advance of a bold sans (Inter/Helvetica), letter-spacing included. Write *to* that number: if the budget is ~40 characters, aim for ≤ 36 to absorb wide-letter variance. Record the per-theme, per-archetype budget once in the project's brand/typography docs and reuse it — e.g. an ml4t Marp course deck records content-slide H1 ≈ **40 chars** (target ≤ 36) in `production/brand/typography.md`.
 
 ---
 
-## 6. Bullets and density (defaults, not laws)
+## 6. Bullets, completeness, and density
 
 A bullet earns its place only if it does **one of four jobs**: define a distinction · identify a mechanism · name a failure mode · state an implication. A bullet that restates the headline does none of these — cut it.
 
-Default limits:
-- **3–5 bullets** per slide; 6 is the ceiling. Fewer than 3 — ask whether you need bullets at all.
-- **6–12 words** per bullet; **2 lines maximum**. A third line is a paragraph in disguise.
-- **~55–75 words of slide text total.** No paragraphs.
-- **One level of nesting**; two is the hard maximum.
+Use as many bullets as the message requires, usually three to six. Each bullet should express one
+complete attribute, mechanism, distinction, or implication. Aim for one clean rendered line or an
+intentional two-line block; occasional longer bullets are acceptable when the technical meaning
+requires them. Avoid a run of bullets that each leave one word on a second line.
 
-Craft: keep bullets **parallel** (same grammatical kind), make each **stand alone**, and **front-load the informative word**. Fragments, not sentences.
+Do not enforce a universal word count. Appropriate density depends on the slide type:
 
-**Reading budget:** the gist in ~3 seconds, the full slide in ~10–15 while still listening. Reading and listening compete; if the slide demands reading, the speaker has lost the room.
+- A table or annotated figure may carry most of the explanation.
+- A conceptual slide often needs several complete bullets plus a definition or example.
+- An agenda or reference slide should favor explicit labels over compressed claims.
+- A single-sentence slide is a rare deliberate pause, not a substitute for an introduction,
+  explanation, or agenda.
+
+Use one level of nesting by default. Use a second level only when the hierarchy is genuinely part of
+the idea.
+
+Craft: keep bullets **parallel** where appropriate, make each understandable on its own, and
+front-load the informative words. Fragments and sentences are both valid. Choose the form that
+states the content most clearly.
+
+**Reading budget:** establish the gist quickly, then let the audience inspect the supporting detail.
+Reading and listening compete, but a slide deck is also a durable course artifact. A student should
+be able to revisit the rendered slide later without reconstructing the missing lecture.
 
 ```
 Headline: Cross-validation must respect the trading clock
@@ -150,9 +190,12 @@ For a figure, say *what it shows* in the headline ("Returns decay with holding p
 
 ---
 
-## 8. Speaker notes carry the nuance
+## 8. Speaker notes are optional
 
-Slides carry the message; notes carry what would crowd it — caveats, examples, derivations, references, edge cases, implementation detail. A good slide is understood in 10–15 seconds; the spoken explanation can take minutes. Pruned material is relocated, not lost.
+Slides carry the complete teaching message. Notes may contain timing, delivery cues, additional
+examples, optional derivations, or answers to likely questions. They must not carry definitions,
+conditions, caveats, source qualifications, or reasoning that the audience needs to understand the
+rendered artifact. When the project does not use speaker notes, nothing is missing from the slides.
 
 ---
 
@@ -160,32 +203,43 @@ Slides carry the message; notes carry what would crowd it — caveats, examples,
 
 Target a graduate technical-textbook register. Direct, analytical, practitioner-oriented, sophisticated without jargon-stacking.
 
-**Terms of art vs. jargon.** Correct domain vocabulary — *embargo*, *information coefficient*, *walk-forward* — is expected; define on first use if needed. Jargon is obscurity for its own sake, or a fancy word where a plain one is exact. Reach for the plain word.
+**Terms of art vs. jargon.** Correct domain vocabulary such as *embargo*, *information
+coefficient*, and *walk-forward* is expected; define it on first use if needed. Jargon is obscurity
+for its own sake, or a fancy word where a plain one is exact. Reach for the plain word.
 
 **Sentence style.** Short, declarative, active.
 - Prefer: "Overlapping labels reduce the independence of validation observations."
 - Avoid the passive inversion, and avoid throat-clearing ("It is important to note that…").
 
-**The figurative rule.** The enemy is *figurative and dramatized* language, not punch. A sharp, literal claim is excellent. A metaphor about death, war, magic, secrets, or domination — or a marketing verb — breaks the register, however true the point.
+**The figurative rule.** The enemy is *figurative and dramatized* language, not punch. A sharp,
+literal claim is excellent. A metaphor about death, war, magic, secrets, or domination, or a
+marketing verb, breaks the register, however true the point.
 - Don't: "Data is where strategies die" · "this mistake kills your backtest" · "unlock alpha" · "the model crushes the benchmark."
 - Do: "A back-adjustment choice can flip a model's sign" · "a timing error can invalidate a backtest" · "feature design sets the information available to the model" · "the model improves on the benchmark under these validation conditions."
 
 Also avoid: intensifiers (*massively*, *huge*, *game-changing*), exclamation marks, emoji, rhetorical-question headlines, and vague quantifiers (*a lot of*, *tons of*).
 
+**Punctuation.** Do not use em dashes. Use a colon, comma, semicolon, parentheses, or a plain hyphen.
+
 ---
 
 ## 10. Self-check before accepting a slide
 
-1. Read the headlines alone — do they tell the whole story?
-2. One message per slide, one obvious entry point?
-3. Headline a claim (argument slide) or a clean label (fact slide) — never decoration?
+1. Read the headlines alone - do they identify the full sequence and subject matter without hidden
+   context?
+2. One complete message per slide, not merely one sentence, with one obvious entry point?
+3. Headline a supported conclusion or a clean literal label - never decoration or a manufactured
+   claim?
 4. Every specific true and traceable to a source — no filler that merely sounds right?
 5. Non-obvious to *this* audience — no table-stakes explained back, no dramatized basics?
 6. Contrast headlines used sparingly — not several in one deck running on the same negation?
-7. Headline fits one line at the default size — no wrap to a ragged orphan (else shorten it, or commit to two balanced lines at a smaller size)?
-8. Bullets do one of the four jobs, stand alone, parallel; within density and reading budget?
-8. Tables: each column one dimension; detail moved to notes?
-9. Voice sober and literal — terms correct, no hype, no figurative framing?
+7. Headline renders as one clean line or intentional balanced lines, with no ragged orphan?
+8. Bullets and other support provide the definitions, mechanism, evidence, implication, and action
+   needed for a cold reader?
+9. Secondary text uses normal hierarchy unless it is strictly citation or provenance?
+10. No isolated bottom takeaway competes with the headline?
+11. Tables: each column one dimension, with enough context on the slide to interpret it?
+12. Voice sober and literal - terms correct, no hype, no figurative framing?
 
 If any item fails, revise.
 
@@ -211,7 +265,7 @@ Slide N:
   Headline: ...
   Bullets:
   - ...
-  Speaker notes: ...
+  Optional speaker notes: ...
 ```
 
 **For the invoking human:** don't ask for "slides" from content directly. Ask first for the thesis, section arc, and slide plan; approve those; *then* let the agent draft slide text. This forces the hierarchical reasoning the rest of this skill depends on.
