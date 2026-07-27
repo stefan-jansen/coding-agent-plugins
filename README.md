@@ -63,10 +63,6 @@ Plugins load from cache at session start; the cache does not auto-update when ma
 
 Every plugin directory has its own README with skill/command details.
 
-## Deferred plugins
-
-More opinionated / narrower plugins live in [`deferred/`](./deferred/) and are **not** in the top-level manifest. They're functional but need generalizing or de-coupling from private dependencies before shipping in v1. See [`deferred/README.md`](./deferred/README.md) for the list and how to enable them individually.
-
 ## Per-project selection
 
 Enable plugins on a per-project basis in `.claude/settings.json`. A typical setup:
@@ -79,21 +75,6 @@ Enable plugins on a per-project basis in `.claude/settings.json`. A typical setu
     "transition@local": true,
     "development@local": true,
     "system@local": true
-  }
-}
-```
-
-For a project that also does content work:
-
-```json
-{
-  "enabledPlugins": {
-    "workflow@local": true,
-    "memory@local": true,
-    "transition@local": true,
-    "development@local": true,
-    "content-marketing@local": true,
-    "writing-skills@local": true
   }
 }
 ```

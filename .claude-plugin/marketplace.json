@@ -113,18 +113,6 @@
         "cross-session",
         "context"
       ]
-    },
-    {
-      "name": "writing-skills",
-      "source": "./deferred/writing-skills",
-      "description": "Core authoring skills: structured-writing, clear-writing, diataxis-framework, presentation-writing",
-      "version": "2.1.0",
-      "keywords": [
-        "writing",
-        "presentation",
-        "docs",
-        "slides"
-      ]
     }
   ]
 }
