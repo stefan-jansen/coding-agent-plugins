@@ -148,6 +148,51 @@ echo "$OUT" | grep -q "project_state.md: active -> dormant" \
     && ok "proposal line for stale file appears" || bad "proposal line for stale file appears (got: $OUT)"
 
 # --------------------------------------------------------------------------
+# Size signal: independent of GC recency, because a file can be correctly
+# `active` and still be the reason the context window starts full.
+#
+# mksize <name> <bytes> <agents-md-lines...> -> echoes the project root, with a
+# fresh last_gc_run so any output must come from the size check alone.
+mksize() {
+    local name="$1" bytes="$2"; shift 2
+    local root="$WORK/$name" mem="$WORK/$name/.workspace/memory"
+    mkdir -p "$mem"
+    head -c "$bytes" /dev/zero | tr '\0' 'x' > "$mem/project_state.md"
+    printf '# index\n' > "$mem/MEMORY_INDEX.md"
+    printf '%s\n' "$@" > "$root/AGENTS.md"
+    printf '{"last_gc_run": "%s", "auto_loaded_cap": 1000, "files": {}}\n' \
+        "$TODAY" > "$mem/.index_state.json"
+    echo "$root"
+}
+ss() { printf '{"cwd":"%s"}' "$1" | python3 "$SESSION_HOOK"; }
+
+echo "== session_start: over-cap nudge fires even when /memory-gc is fresh =="
+SZ1="$(mksize size-over 8000 '# p' '@.workspace/memory/project_state.md')"
+OUT="$(ss "$SZ1")"
+echo "$OUT" | grep -q "tokens auto-loaded every session vs a cap" \
+    && ok "over-cap nudge with fresh gc" || bad "over-cap nudge with fresh gc (got: $OUT)"
+echo "$OUT" | grep -q "/memory-gc has not run" \
+    && bad "no staleness nudge when gc is fresh" || ok "no staleness nudge when gc is fresh"
+
+echo "== session_start: direct memory-file include is named =="
+echo "$OUT" | grep -q "project_state.md @-included directly" \
+    && ok "names the directly-included file" || bad "names the directly-included file (got: $OUT)"
+
+echo "== session_start: index-only project under cap stays silent =="
+SZ2="$(mksize size-ok 100 '# p' '@.workspace/memory/MEMORY_INDEX.md')"
+check "healthy project emits nothing" "" "$(ss "$SZ2")"
+
+echo "== session_start: no cap configured => no size nudge =="
+SZ3="$(mksize size-nocap 8000 '# p' '@.workspace/memory/project_state.md')"
+printf '{"last_gc_run": "%s", "files": {}}\n' "$TODAY" \
+    > "$SZ3/.workspace/memory/.index_state.json"
+OUT3="$(ss "$SZ3")"
+echo "$OUT3" | grep -q "vs a cap" \
+    && bad "silent about size without a cap" || ok "silent about size without a cap"
+echo "$OUT3" | grep -q "@-included directly" \
+    && ok "still reports the direct include" || bad "still reports the direct include"
+
+# --------------------------------------------------------------------------
 echo "== session_start: timing under 100ms on a Factory-shaped fixture =="
 # Build a fixture with 8 memory files matching factory's current shape.
 TPROJ="$WORK/tproj"

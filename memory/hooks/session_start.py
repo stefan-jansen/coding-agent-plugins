@@ -1,11 +1,20 @@
 #!/usr/bin/env python3
-"""SessionStart hook: nudge when `last_gc_run` is stale; optional --auto-gc.
+"""SessionStart hook: nudge when memory is stale or over budget.
 
 Acceptance criterion 6 (M3 #12): a SessionStart hook reads `last_gc_run` from
 `.workspace/memory/.index_state.json`; if more than 7 days have passed, it
 appends a one-line nudge to the session-start banner. With `--auto-gc` enabled
 under `memory.auto_gc` in `.claude/settings.json`, the hook *also* runs
 `/memory-gc --dry-run` and prints the proposed diff inline. Default is off.
+
+The staleness nudge alone misses the failure mode that actually costs context:
+an auto-loaded file that is legitimately `active` and 12x its budget. Staleness
+GC never flags it, because the file is current and correctly marked. So the hook
+also measures the real auto-loaded total (the @-include closure, via the same
+bin/ helpers measure_memory.sh uses) against `auto_loaded_cap`, and reports a
+memory file that is auto-loaded directly rather than through the index. The two
+signals are independent: being over budget is worth saying even when /memory-gc
+ran yesterday.
 
 The hook is the source of M3 acceptance criterion 6. Constraints from the
 spec: stat + JSON read only when `--auto-gc` is off; <100ms total in the
@@ -30,6 +39,10 @@ import sys
 from pathlib import Path
 
 NUDGE_DAYS = 7
+
+# bin/ holds the shared helpers (include_graph, token_count) so the hook and
+# measure_memory.sh cannot disagree about what "auto-loaded" means.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bin"))
 
 
 def _today_utc() -> _dt.date:
@@ -135,6 +148,76 @@ def _summarize_dry_run(memory_dir: Path, today: _dt.date) -> list[str]:
     return lines
 
 
+def _cap(memory_dir: Path, sidecar: dict) -> int | None:
+    """`auto_loaded_cap` from the sidecar, else MEMORY_INDEX.md frontmatter."""
+    cap = sidecar.get("auto_loaded_cap")
+    if isinstance(cap, int) and cap > 0:
+        return cap
+    try:
+        lines = (memory_dir / "MEMORY_INDEX.md").read_text(
+            encoding="utf-8", errors="replace"
+        ).splitlines()
+    except OSError:
+        return None
+    if not lines or lines[0].strip() != "---":
+        return None
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        key, _, value = line.partition(":")
+        if key.strip() == "auto_loaded_cap" and value.strip().isdigit():
+            return int(value.strip())
+    return None
+
+
+def _budget_lines(project_root: Path, memory_dir: Path, sidecar: dict) -> list[str]:
+    """Size signals: over the cap, and memory files auto-loaded directly.
+
+    Independent of GC recency — intra-file growth is invisible to a status
+    vocabulary driven by `last_referenced`.
+    """
+    try:
+        from include_graph import reachable
+        from token_count import count_file
+    except ImportError:
+        return []
+
+    try:
+        loaded, _missing = reachable(str(project_root))
+    except OSError:
+        return []
+    if not loaded:
+        return []
+
+    lines: list[str] = []
+
+    direct = sorted(
+        os.path.basename(p)
+        for p in loaded
+        if Path(p).parent == memory_dir and os.path.basename(p) != "MEMORY_INDEX.md"
+    )
+    if direct:
+        lines.append(
+            "memory-budget: "
+            + ", ".join(direct)
+            + " @-included directly by AGENTS.md/CLAUDE.md; @-include only "
+            "MEMORY_INDEX.md and read the rest on demand "
+            "(bin/verify_index.sh explains)."
+        )
+
+    cap = _cap(memory_dir, sidecar)
+    if cap:
+        total = sum(count_file(p) for p in loaded)
+        if total > cap:
+            lines.append(
+                f"memory-budget: {total} tokens auto-loaded every session vs a "
+                f"cap of {cap} ({round(100.0 * total / cap)}%); "
+                "run bin/measure_memory.sh to see the breakdown."
+            )
+
+    return lines
+
+
 def main() -> int:
     project_root = _project_root_from_stdin()
     memory_dir = project_root / ".workspace" / "memory"
@@ -147,19 +230,22 @@ def main() -> int:
 
     today = _today_utc()
     last_gc = _parse_date(sidecar.get("last_gc_run"))
-    if last_gc is not None and (today - last_gc).days <= NUDGE_DAYS:
-        # Fresh enough — stay silent.
-        return 0
+    gc_stale = last_gc is None or (today - last_gc).days > NUDGE_DAYS
 
-    age = "never" if last_gc is None else f"{(today - last_gc).days}d"
-    print(
-        "memory-budget: /memory-gc has not run in "
-        f"{age}; consider /memory-gc to refresh status."
-    )
+    if gc_stale:
+        age = "never" if last_gc is None else f"{(today - last_gc).days}d"
+        print(
+            "memory-budget: /memory-gc has not run in "
+            f"{age}; consider /memory-gc to refresh status."
+        )
+        if _auto_gc_enabled(project_root):
+            for line in _summarize_dry_run(memory_dir, today):
+                print(line)
 
-    if _auto_gc_enabled(project_root):
-        for line in _summarize_dry_run(memory_dir, today):
-            print(line)
+    # Size is reported whether or not GC is fresh: a file can be correctly
+    # `active` and still be the reason a session starts at 13% context.
+    for line in _budget_lines(project_root, memory_dir, sidecar):
+        print(line)
 
     return 0
 

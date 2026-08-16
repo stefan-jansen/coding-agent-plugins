@@ -97,6 +97,84 @@ check "lists project with memory" "1" "$(grep -c "$ROOT/with\$" <<<"$ALL")"
 check "lists project lacking memory" "1" "$(grep -c "$ROOT/without\$" <<<"$ALL")"
 check "enumerated 2 projects" "1" "$(grep -c '2 project(s)' <<<"$ALL")"
 
+# --------------------------------------------------------------------------
+# Budget: auto_loaded_cap read from the sidecar / index frontmatter, reported
+# always, enforced only under --check.
+#
+# mkbudget <name> <filler-bytes> -> echoes the project root. AGENTS.md
+# @-includes one memory file of the requested size, so the total is tunable
+# against a fixed cap of 1000 tokens.
+mkbudget() {
+    local name="$1" bytes="$2"
+    local root="$WORK/$name" mem="$WORK/$name/.workspace/memory"
+    mkdir -p "$mem"
+    printf '@.workspace/memory/big.md\n' > "$root/AGENTS.md"
+    head -c "$bytes" /dev/zero | tr '\0' 'x' > "$mem/big.md"
+    echo "$root"
+}
+
+# rcm <dir> [args...] -> exit code of measure on that project.
+rcm() {
+    local dir="$1"; shift
+    set +e
+    (cd "$dir" && "$MEASURE" "$@") >/dev/null 2>&1
+    local code=$?
+    set -e
+    echo "$code"
+}
+
+echo "== budget: no cap configured =="
+B0="$(mkbudget nocap 400)"
+check "no cap exits 0" "0" "$(rcm "$B0")"
+check "no cap under --check exits 0" "0" "$(rcm "$B0" --check)"
+check "says no cap is set" "1" \
+    "$(cd "$B0" && "$MEASURE" | grep -c 'no auto_loaded_cap set')"
+
+echo "== budget: cap from .index_state.json =="
+B1="$(mkbudget sidecar-under 400)"   # 400 bytes -> 100 tokens, under 1000
+printf '{"auto_loaded_cap": 1000}\n' > "$B1/.workspace/memory/.index_state.json"
+check "under cap exits 0 with --check" "0" "$(rcm "$B1" --check)"
+check "reports within cap" "1" \
+    "$(cd "$B1" && "$MEASURE" | grep -c 'within cap')"
+
+B2="$(mkbudget sidecar-over 8000)"   # 8000 bytes -> 2000 tokens, over 1000
+printf '{"auto_loaded_cap": 1000}\n' > "$B2/.workspace/memory/.index_state.json"
+check "over cap still exits 0 without --check" "0" "$(rcm "$B2")"
+check "over cap exits 1 with --check" "1" "$(rcm "$B2" --check)"
+check "over cap exits 1 with --total-only --check" "1" "$(rcm "$B2" --total-only --check)"
+check "--total-only alone stays exit 0" "0" "$(rcm "$B2" --total-only)"
+check "reports OVER CAP" "1" "$(cd "$B2" && "$MEASURE" | grep -c 'OVER CAP')"
+
+echo "== budget: index frontmatter is the fallback when no sidecar =="
+B3="$(mkbudget frontmatter-over 8000)"
+printf '%s\n' '---' 'auto_loaded_cap: 1000' '---' > "$B3/.workspace/memory/MEMORY_INDEX.md"
+check "frontmatter cap enforced" "1" "$(rcm "$B3" --check)"
+
+echo "== budget: sidecar wins over frontmatter =="
+B4="$(mkbudget both 8000)"
+printf '%s\n' '---' 'auto_loaded_cap: 1000' '---' > "$B4/.workspace/memory/MEMORY_INDEX.md"
+printf '{"auto_loaded_cap": 999999}\n' > "$B4/.workspace/memory/.index_state.json"
+check "sidecar cap takes precedence" "0" "$(rcm "$B4" --check)"
+
+echo "== budget: --cap overrides both =="
+check "--cap raises the ceiling" "0" "$(rcm "$B2" --cap 999999 --check)"
+check "--cap lowers the ceiling" "1" "$(rcm "$B1" --cap 1 --check)"
+check "--cap rejects non-numeric" "2" "$(rcm "$B1" --cap abc)"
+
+echo "== budget: --all-projects flags over-cap rows and gates on --check =="
+AROOT="$WORK/allbudget"
+mkdir -p "$AROOT"
+cp -r "$B1" "$AROOT/under"
+cp -r "$B2" "$AROOT/over"
+ALLOUT="$("$MEASURE" --all-projects --root "$AROOT")"
+check "marks the over-cap project" "1" "$(grep -c 'OVER CAP' <<<"$ALLOUT")"
+check "counts 1 over cap" "1" "$(grep -c '2 project(s), 1 over cap' <<<"$ALLOUT")"
+set +e
+"$MEASURE" --all-projects --root "$AROOT" --check >/dev/null 2>&1
+ALLRC=$?
+set -e
+check "--all-projects --check exits 1" "1" "$ALLRC"
+
 echo
 echo "Passed: $PASS  Failed: $FAIL"
 [[ "$FAIL" -eq 0 ]]
