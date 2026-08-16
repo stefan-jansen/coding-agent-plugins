@@ -1,11 +1,16 @@
 {
   "name": "setup",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Project initialization and Claude Code configuration",
   "author": {
     "name": "Claude Code Framework"
   },
-  "keywords": ["setup", "initialization", "configuration", "project"],
+  "keywords": [
+    "setup",
+    "initialization",
+    "configuration",
+    "project"
+  ],
   "commands": [
     "./commands/setup.md",
     "./commands/setup:user.md"

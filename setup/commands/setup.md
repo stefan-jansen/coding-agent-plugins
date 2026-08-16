@@ -129,25 +129,13 @@ mkdir -p "$WS/memory/auto" "$WS/transitions" "$WS/work"
 touch "$WS/memory/auto/.gitkeep" "$WS/transitions/.gitkeep" "$WS/work/.gitkeep"
 
 # Claude-only config
-mkdir -p "$CL/hooks" "$CL/commands"
+mkdir -p "$CL/commands"
 
-# Hourly transition hook (writes to .workspace/transitions/)
-if [ ! -f "$CL/hooks/init-transition.sh" ]; then
-cat > "$CL/hooks/init-transition.sh" << 'HOOK_EOF'
-#!/bin/bash
-# Auto-create the hourly transition file: .workspace/transitions/YYYY-MM-DD/HH.md
-set -e
-ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-DIR="$ROOT/.workspace/transitions/$(date +%Y-%m-%d)"
-FILE="$DIR/$(date +%H).md"
-mkdir -p "$DIR"
-[ -f "$FILE" ] || printf '# Session Progress: %s %s:00\n\n---\n\n' "$(date +%Y-%m-%d)" "$(date +%H)" > "$FILE"
-exit 0
-HOOK_EOF
-chmod +x "$CL/hooks/init-transition.sh"
-echo "created: $CL/hooks/init-transition.sh"
-fi
-HOOK_PATH="$PWD/$CL/hooks/init-transition.sh"
+# NOTE: transition capture is handled by the `transition` plugin's own
+# PreCompact/PostCompact/SessionEnd hooks (plugin-level, timestamped HHMMSS.md).
+# Do NOT seed a per-project transition hook here — the old per-project
+# UserPromptSubmit -> init-transition.sh wiring created hour-based HH.md stubs
+# and was removed 2026-08-05. Enabling the plugin is all that's needed.
 
 # Resolve marketplace path (detected in Phase 1; placeholder if absent)
 MARKET=""
@@ -167,15 +155,9 @@ cat > "$CL/settings.json" << SETTINGS_EOF
     "system@local": true,
     "workflow@local": true,
     "memory@local": true,
-    "development@local": true,
-    "transition@local": true
+    "development@local": true
   },
-  "autoMemoryDirectory": "./.workspace/memory/auto",
-  "hooks": {
-    "UserPromptSubmit": [
-      { "matcher": "", "hooks": [ { "type": "command", "command": "$HOOK_PATH" } ] }
-    ]
-  }
+  "autoMemoryDirectory": "./.workspace/memory/auto"
 }
 SETTINGS_EOF
 echo "created: $CL/settings.json (marketplace: $MARKET)"
@@ -329,11 +311,10 @@ CLAUDE.md                  # one line: @AGENTS.md
 .workspace/                # SHARED state for both Claude and Codex
   memory/                  #   persistent context (referenced above via @-include)
     auto/                  #     Claude auto-memory (harness writes; Codex reads)
-  transitions/             #   hourly session progress
+  transitions/             #   session progress (transition plugin writes; timestamped HHMMSS.md)
   work/                    #   active work units / plans
 .claude/                   # CLAUDE-SPECIFIC ONLY (different schema from Codex)
-  settings.json            #   plugins, hooks, permissions, autoMemoryDirectory
-  hooks/                   #   init-transition.sh
+  settings.json            #   marketplaces, enabled plugins, permissions, autoMemoryDirectory
   commands/                #   project slash-commands
 ​```
 ```
