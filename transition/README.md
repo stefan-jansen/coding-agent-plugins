@@ -34,9 +34,11 @@ level.
   `/memory-gc` staleness nudge when the memory plugin's sidecar is present and
   overdue.
 - **`PostCompact`** (`auto|manual`) → `hooks/post-compact.sh` — writes the
-  compaction summary to `.workspace/transitions/YYYY-MM-DD/HH.md`.
+  compaction summary to a timestamped `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`
+  (one file per event — the same convention `/handoff` uses).
 - **`SessionEnd`** → `hooks/session-end.sh` — appends a session-exit marker to
-  the same hourly file.
+  today's most-recent transition file, or does nothing if none exists (a bare
+  marker file would be the thin-file anti-pattern below).
 
 `hooks/init-transition.sh` is retained but **unregistered**. The old
 `UserPromptSubmit` hourly-stub hook was removed on 2026-08-05: it created an
@@ -100,15 +102,15 @@ session end with no action needed.
 ```
 .workspace/transitions/          # shared with Codex
 ├── 2026-05-08/
-│   ├── 14.md          # auto-capture: compaction/session-end for the 2 PM hour
+│   ├── 143002.md      # auto-capture: a compaction summary
 │   ├── 171530.md      # manual /handoff at 5:15:30 PM
 │   └── ...
 ├── 2026-05-09/
 │   └── ...
 ```
 
-**Format**: auto-capture writes `YYYY-MM-DD/HH.md` (hourly); manual `/handoff`
-writes `YYYY-MM-DD/HHMMSS.md` (timestamped).
+**Format**: every transition file is timestamped `YYYY-MM-DD/HHMMSS.md`, whether
+written by auto-capture (compaction) or by manual `/handoff` — one file per event.
 
 ---
 

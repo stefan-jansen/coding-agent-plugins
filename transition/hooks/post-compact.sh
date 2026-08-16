@@ -4,7 +4,7 @@
 # Receives JSON on stdin with:
 #   { "trigger": "manual"|"auto", "compact_summary": "..." }
 #
-# Writes the summary to .workspace/transitions/YYYY-MM-DD/HH.md
+# Writes the summary to a timestamped .workspace/transitions/YYYY-MM-DD/HHMMSS.md
 # The hook script does the file I/O — no Claude permissions needed.
 #
 # Exit 0: stdout shown to user (we stay silent)
@@ -31,33 +31,22 @@ except: print('unknown')
 # Skip if no summary
 [ -z "$SUMMARY" ] && exit 0
 
-# Write to transition file at .workspace/transitions/
+# Write to a timestamped transition file at .workspace/transitions/.
+# Timestamped (HHMMSS.md) is the standard for all transition files, matching
+# /handoff — one file per event, no hour-based grouping.
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 TODAY=$(date +%Y-%m-%d)
-HOUR=$(date +%H)
-NOW=$(date +%H:%M)
+STAMP=$(date +%H%M%S)
+NOW=$(date +%H:%M:%S)
 DIR="$PROJECT_ROOT/.workspace/transitions/$TODAY"
-FILE="$DIR/${HOUR}.md"
+FILE="$DIR/${STAMP}.md"
 
 mkdir -p "$DIR"
 
-# Initialize file if it doesn't exist
-if [ ! -f "$FILE" ]; then
-    echo "# Session Progress: $TODAY ${HOUR}:00" > "$FILE"
-    echo "" >> "$FILE"
-    echo "---" >> "$FILE"
-    echo "" >> "$FILE"
-fi
-
-# Append compact summary
-cat >> "$FILE" << EOF
-
-## $NOW - Compact Summary ($TRIGGER)
+cat > "$FILE" << EOF
+# Compact summary ($TRIGGER) - $TODAY $NOW
 
 $SUMMARY
-
----
-
 EOF
 
 exit 0

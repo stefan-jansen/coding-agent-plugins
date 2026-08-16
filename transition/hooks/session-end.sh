@@ -4,8 +4,8 @@
 # Receives JSON on stdin with:
 #   { "reason": "clear"|"logout"|"prompt_input_exit"|"other" }
 #
-# Appends a session-end marker to the current transition file at
-# .workspace/transitions/YYYY-MM-DD/HH.md.
+# Appends a session-end marker to today's most-recent transition file under
+# .workspace/transitions/YYYY-MM-DD/ (or does nothing if none exists).
 
 INPUT=$(cat)
 
@@ -17,26 +17,18 @@ try:
 except: print('unknown')
 " 2>/dev/null)
 
+# Append a session-end marker to today's most-recent transition file. If none
+# exists (the session never compacted / wrote a handoff), do nothing — a bare
+# "session ended" file is the thin-file anti-pattern that got the hourly-stub
+# hook removed on 2026-08-05. The marker annotates a real record; it isn't one.
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 TODAY=$(date +%Y-%m-%d)
-HOUR=$(date +%H)
-NOW=$(date +%H:%M)
+NOW=$(date +%H:%M:%S)
 DIR="$PROJECT_ROOT/.workspace/transitions/$TODAY"
-FILE="$DIR/${HOUR}.md"
 
-mkdir -p "$DIR"
+LATEST=$(ls -t "$DIR"/*.md 2>/dev/null | head -1)
+[ -z "$LATEST" ] && exit 0
 
-# Initialize file if it doesn't exist
-if [ ! -f "$FILE" ]; then
-    echo "# Session Progress: $TODAY ${HOUR}:00" > "$FILE"
-    echo "" >> "$FILE"
-    echo "---" >> "$FILE"
-    echo "" >> "$FILE"
-fi
-
-# Append session-end marker
-echo "" >> "$FILE"
-echo "## $NOW - Session ended ($REASON)" >> "$FILE"
-echo "" >> "$FILE"
+printf '\n## %s - Session ended (%s)\n' "$NOW" "$REASON" >> "$LATEST"
 
 exit 0
