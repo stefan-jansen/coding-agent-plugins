@@ -19,74 +19,46 @@ Over time, transitions become more valuable than commit history—they capture t
 
 ---
 
-## Hooks (plugin-owned, v1.1.0+)
+## Hooks (plugin-owned, v1.2.0+)
 
-The plugin registers its own `UserPromptSubmit` hook via `hooks/hooks.json`, so
-projects no longer need to copy `init-transition.sh` into
-`<project>/.claude/hooks/` or wire it into their `settings.json`.
-Enabling `transition@local` (or the marketplace equivalent) is sufficient.
+The plugin registers its own compaction and session-end hooks via
+`hooks/hooks.json`, so enabling `transition@local` (or the marketplace
+equivalent) is sufficient — no per-project wiring in `settings.json`. All three
+resolve their target from `$CLAUDE_PROJECT_DIR` (the top-level project dir Claude
+Code always sets for hooks), which is why they are safe to register at the plugin
+level.
 
-- **Script**: `hooks/init-transition.sh` — creates the current hourly
-  `YYYY-MM-DD/HH.md` file under `.workspace/transitions/` if absent.
-- **Routing**:
-  - `.workspace/` exists → `.workspace/transitions/<date>/HH.md`
-  - `.workspace/` absent → `.claude/transitions/<date>/HH.md`
-    (pre-migration legacy fallback only).
-- **Silence**: writes a file at most once per hour; no stdout in the happy
-  path.
+- **`PreCompact`** (`auto|manual`) → `hooks/pre-compact.sh` — emits custom
+  instructions telling Claude what to preserve in the compaction summary
+  (current task, decisions, active files, blockers). Additively surfaces a
+  `/memory-gc` staleness nudge when the memory plugin's sidecar is present and
+  overdue.
+- **`PostCompact`** (`auto|manual`) → `hooks/post-compact.sh` — writes the
+  compaction summary to `.workspace/transitions/YYYY-MM-DD/HH.md`.
+- **`SessionEnd`** → `hooks/session-end.sh` — appends a session-exit marker to
+  the same hourly file.
 
-Pre-existing per-project copies of `init-transition.sh` can be removed
-after the project enables this plugin. See the marketplace consolidation
-notes for the migration sequence.
+`hooks/init-transition.sh` is retained but **unregistered**. The old
+`UserPromptSubmit` hourly-stub hook was removed on 2026-08-05: it created an
+empty `HH.md` per hour that nothing filled in, and it resolved its destination
+from the shell cwd, so a command run inside a nested repository scattered a
+stray `.workspace/` there. Do not recreate a per-hour auto-stub.
 
 ---
 
-## Commands (2)
+## Manual handoffs
 
-### `/transition:handoff`
+Automatic capture covers compaction and session end. For the cases with no
+compaction event — before `/clear`, a Claude↔Codex host swap, or a deliberate
+milestone checkpoint — use the **`workflow` plugin's host-neutral skills**:
 
-**Purpose**: Create session handoff document with context analysis
+- `/handoff` — write a durable transition at
+  `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`
+- `/continue` — resume from the most recent handoff (runs its verification
+  snapshot, reports drift, surfaces suggested next steps)
 
-Creates a comprehensive handoff document capturing:
-- Current work state and progress
-- Key decisions made during session
-- Token usage across all components
-- Next steps and pending tasks
-- Files modified and their changes
-
-**Usage**:
-```bash
-/transition:handoff
-```
-
-**Output**: Time-stamped handoff document in `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`
-
-**When to use**:
-- Context usage >80% (quality degrading)
-- End of work session (preserve state)
-- Before switching tasks
-- Regular checkpoints during long work
-
-### `/transition:continue`
-
-**Purpose**: Resume work from previous session handoff
-
-Loads the most recent handoff document and provides:
-- Summary of previous session
-- Current state recap
-- Pending tasks
-- Recommended next actions
-
-**Usage**:
-```bash
-/transition:continue
-```
-
-**When to use**:
-- Start of new session
-- After `/clear` to free conversation tokens
-- Switching back to previous work
-- Need recap of where you left off
+This plugin no longer ships its own `handoff`/`continue` commands; the workflow
+skills are the single, richer implementation.
 
 ---
 
@@ -112,13 +84,14 @@ Loads the most recent handoff document and provides:
 
 **Typical flow**:
 
-1. Work on task until context >80%
-2. `/transition:handoff` - Create handoff
-3. `/clear` - Free conversation tokens
-4. `/transition:continue` - Resume with recap
+1. Work on task until context >80% (or reach a milestone / a host swap)
+2. `/handoff` (workflow plugin) — create a durable handoff
+3. `/clear` — free conversation tokens
+4. `/continue` (workflow plugin) — resume with recap
 5. Continue work with fresh context
 
-**Key benefit**: Maintain work continuity across sessions without quality degradation.
+Between those manual checkpoints, auto-capture fires on every compaction and at
+session end with no action needed.
 
 ---
 
@@ -127,24 +100,25 @@ Loads the most recent handoff document and provides:
 ```
 .workspace/transitions/          # shared with Codex
 ├── 2026-05-08/
-│   ├── 171530.md      # Handoff at 5:15:30 PM
-│   ├── 194215.md      # Handoff at 7:42:15 PM
+│   ├── 14.md          # auto-capture: compaction/session-end for the 2 PM hour
+│   ├── 171530.md      # manual /handoff at 5:15:30 PM
 │   └── ...
 ├── 2026-05-09/
 │   └── ...
 ```
 
-**Format**: `YYYY-MM-DD/HHMMSS.md` (date-based directories, time-stamped files)
+**Format**: auto-capture writes `YYYY-MM-DD/HH.md` (hourly); manual `/handoff`
+writes `YYYY-MM-DD/HHMMSS.md` (timestamped).
 
 ---
 
 ## Related
 
 - **Memory plugin**: Persistent knowledge management
-- **Workflow plugin**: Task and work unit management
+- **Workflow plugin**: `/handoff`, `/continue`, task and work unit management
 - **System commands**: `/context` for token usage analysis
 
 ---
 
-**Version**: 1.1.0
+**Version**: 1.2.0
 **License**: MIT

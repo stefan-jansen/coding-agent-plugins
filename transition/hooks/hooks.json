@@ -1,13 +1,37 @@
 {
-  "description": "Transition plugin hooks — UserPromptSubmit creates the current hourly transition file under .workspace/transitions/ (fallback .claude/transitions/).",
+  "description": "Transition plugin hooks — automatic session-transition capture for any project that enables transition@local. PreCompact injects custom compaction instructions (and a stale-/memory-gc nudge); PostCompact writes the compact summary to .workspace/transitions/YYYY-MM-DD/HH.md; SessionEnd appends an exit marker to the same file. All three resolve their target from $CLAUDE_PROJECT_DIR (the top-level project dir Claude Code always sets for hooks), so they are safe at the plugin level and do NOT reintroduce the shell-cwd bug that got the old UserPromptSubmit hourly-stub hook removed on 2026-08-05. init-transition.sh is kept but unregistered. Manual handoffs use the workflow plugin's /handoff and /continue skills.",
   "hooks": {
-    "UserPromptSubmit": [
+    "PreCompact": [
+      {
+        "matcher": "auto|manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/pre-compact.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "auto|manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/post-compact.sh\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/init-transition.sh\"",
-            "timeout": 3
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-end.sh\"",
+            "timeout": 10
           }
         ]
       }
