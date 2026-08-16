@@ -13,13 +13,24 @@
 # Exit 2: block compaction (not used here)
 
 cat << 'EOF'
-When compacting this conversation, ensure the summary preserves:
-1. Current task and its status (what's done, what's in progress, what's next)
-2. Key decisions made and their rationale
-3. File paths actively being modified
-4. Any errors or blockers encountered and their resolution status
-5. Open questions or items waiting on user input
-These details are critical for session continuity after compaction.
+Write the summary as a cold-startable handoff for the next agent, following the
+same discipline as the `/handoff` skill (workflow plugin) — same target, so the
+auto summary and a manual handoff read alike. Curate, do not transcribe.
+
+Include: current task + status (done / in progress / next); key decisions and
+their rationale; exact file paths touched and what changed in each; verification
+state (tested / run / pushed vs pending, with evidence); open threads, blockers,
+and anything waiting on the user.
+
+Do NOT include (this is where auto-summaries bloat):
+- Verbatim or message-by-message replay of the conversation.
+- Routine tool mechanics — permission denials, retries, keystrokes, shell
+  quoting, dead ends that were resolved and left no lasting state.
+- Anything the next agent would re-derive from one `git log` / `gh issue list`,
+  or that is already captured in "current state".
+
+Terse but complete beats exhaustive. If a fact would not change what the next
+agent does, leave it out.
 EOF
 
 # Memory-relevance nudge (additive — only emits when the project opts in by

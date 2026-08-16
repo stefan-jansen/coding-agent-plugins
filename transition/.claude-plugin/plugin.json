@@ -1,6 +1,6 @@
 {
   "name": "transition",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Session transition and handoff management for Claude Code",
   "author": {
     "name": "Claude Code Framework"
