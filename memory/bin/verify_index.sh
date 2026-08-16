@@ -87,6 +87,7 @@ import re
 import sys
 
 from include_graph import SEED_FILES, reachable
+from token_count import count_file
 
 MEMORY_DIR = os.path.abspath(sys.argv[1])
 STRICT = sys.argv[2] == "1"
@@ -98,6 +99,12 @@ INDEX_PATH = os.path.join(MEMORY_DIR, INDEX_NAME)
 
 # Fields every index entry must carry (Relay acceptance criterion 2).
 REQUIRED_FIELDS = ("status", "last_referenced", "tokens", "anchors")
+
+# Optional per-entry fields recognized in addition to the required four.
+OPTIONAL_FIELDS = ("cap",)
+
+# Every field the index parser should retain from an entry.
+KNOWN_FIELDS = REQUIRED_FIELDS + OPTIONAL_FIELDS
 
 # Memory files that are infrastructure, not managed memory entries.
 EXCLUDED_FILES = {INDEX_NAME}
@@ -187,7 +194,7 @@ def parse_index(path):
         m = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", body)
         if m:
             key = m.group(1).strip().lower()
-            if key in REQUIRED_FIELDS and key not in entries[current]:
+            if key in KNOWN_FIELDS and key not in entries[current]:
                 entries[current][key] = m.group(2).strip()
     return front, entries, dup_names
 
@@ -202,6 +209,31 @@ def valid_status(value):
 
 def is_empty_anchor(value):
     return value.lower() in ("", "none", "n/a", "na", "-")
+
+
+# A `tokens` field only helps if it tracks the file. It is also not worth
+# reporting after an edit of a few words, so allow the larger of 50 tokens and
+# 10% drift before saying anything.
+TOKEN_DRIFT_ABS = 50
+TOKEN_DRIFT_FRAC = 0.10
+
+
+def is_stale_tokens(indexed, actual):
+    return abs(actual - indexed) > max(TOKEN_DRIFT_ABS, TOKEN_DRIFT_FRAC * actual)
+
+
+def file_cap(entry, front):
+    """This entry's token budget: its own `cap`, else the project default.
+
+    /memory-gc's unit is the whole entry, and its vocabulary is driven by
+    `last_referenced` — so a file that is `active`, correctly so, and 12x the
+    size it should be is invisible to it. A per-file cap is what makes
+    "active and over budget" expressible at all.
+    """
+    for source in (entry.get("cap"), front.get("default_file_cap")):
+        if source and str(source).strip().isdigit():
+            return int(str(source).strip())
+    return None
 
 
 def check_include_target():
@@ -319,6 +351,26 @@ def main():
         tokens = entry.get("tokens")
         if tokens is not None and not tokens.isdigit():
             warnings.append("%s: tokens value %r is not an integer." % (name, tokens))
+        elif tokens is not None:
+            actual = count_file(os.path.join(MEMORY_DIR, name))
+            if is_stale_tokens(int(tokens), actual):
+                warnings.append(
+                    "%s: index says %s tokens, file is %d — the size field has "
+                    "not been refreshed since the file changed. Re-run "
+                    "bin/memory_init_index.sh (it recomputes tokens and "
+                    "preserves status/anchors)." % (name, tokens, actual))
+
+            cap = file_cap(entry, front)
+            if cap is not None and actual > cap:
+                warnings.append(
+                    "%s: %d tokens against a cap of %d — over budget. Trim it: "
+                    "keep the conclusion and a pointer, move the cut text to "
+                    "%s. /memory-gc will not catch this (the entry is %s and "
+                    "correctly so)."
+                    % (name, actual, cap,
+                       name[:-3] + "_archive.md" if name.endswith(".md")
+                       else name + "_archive",
+                       entry.get("status", "active")))
         lref = entry.get("last_referenced")
         if lref is not None and lref.lower() != "never" and not DATE_RE.match(lref):
             warnings.append("%s: last_referenced %r is not YYYY-MM-DD or 'never'."

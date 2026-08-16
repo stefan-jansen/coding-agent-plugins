@@ -113,17 +113,28 @@ auto_loaded_cap: 5000
 
 - `auto_loaded_cap: <n>` — the token ceiling for auto-loaded memory, per-project
   overridable. Recommended (a missing cap is a warning, not an error).
+- `default_file_cap: <n>` — optional per-file token budget applied to every
+  entry that does not set its own `cap`.
 
 **Per-file entry** — heading is the memory filename relative to the memory
 directory (e.g. `## project_state.md`). Each entry carries all four required
-fields:
+fields, plus an optional `cap`:
 
 | Field | Meaning |
 |---|---|
 | `status` | One of `active`, `dormant`, `deprecated`, or `superseded-by:<slug>` (the slug is another memory's filename). |
 | `last_referenced` | `YYYY-MM-DD` of the last time a signal touched the file, or `never`. |
-| `tokens` | Estimated token count (integer), from the shared `bin/token_count.py`. |
+| `tokens` | Estimated token count (integer), from the shared `bin/token_count.py`. Refreshed by `bin/memory_init_index.sh`; `verify_index.sh` warns once it stops tracking the file. |
 | `anchors` | Comma-separated file paths / commands / symbols the memory describes. Leave empty (or `none` / `n/a`) when there are none. |
+| `cap` | *Optional.* Token budget for this file, overriding `default_file_cap`. |
+
+**Why a per-file cap.** `/memory-gc`'s unit is the whole entry and its signal is
+`last_referenced`, so it can express "this file is stale" but not "this file is
+active, correctly so, and twelve times the size it should be". Intra-file growth
+is invisible to the status vocabulary. A `cap` makes it expressible: over it,
+`verify_index.sh` warns and names the trim — keep the conclusion and a pointer in
+the memory file, move the cut text to a sibling `<name>_archive.md`, which is not
+indexed and so is never auto-loaded.
 
 The index does **not** list itself, and `.index_state.json` (the gitignored
 signal sidecar) is runtime state, not an entry.
@@ -137,10 +148,20 @@ memory/bin/verify_index.sh --strict     # treat warnings (e.g. frontmatter drift
 memory/bin/verify_index.sh --quiet      # show problems only
 ```
 
-Exit codes: `0` every memory file has a complete, valid entry (0 missing);
-`1` an integrity failure (a file with no entry, an entry missing a required
-field, or an out-of-vocabulary status); `2` an environment error (no memory
-directory, or no `MEMORY_INDEX.md` to verify against).
+Exit codes: `0` every memory file has a complete, valid entry (0 missing) and
+the `@`-include target is the index; `1` an integrity failure (a file with no
+entry, an entry missing a required field, an out-of-vocabulary status, or a
+memory file `@`-included directly by `AGENTS.md` / `CLAUDE.md`); `2` an
+environment error (no memory directory, or no `MEMORY_INDEX.md` to verify
+against).
+
+The `@`-include check is the one that catches a **half-applied migration**:
+`MEMORY_INDEX.md` seeded but `AGENTS.md` never switched to include it. That state
+is indistinguishable from a healthy project by inspection — the index exists and
+looks authoritative — while every memory file still loads in full on every
+session. Warnings cover the softer signals: a `tokens` field that no longer
+tracks its file, an entry over its `cap`, and an index that nothing
+`@`-includes.
 
 Claude's own auto-memory at `~/.claude/projects/.../memory/` is **recognized for
 display only** — `verify_index.sh` notes the shape and lists its files but never

@@ -53,12 +53,12 @@ preserves any statuses or anchors you've already set.
 
 ### 2. Choose a cap
 
-The default cap in the seeded index is `5000`. Measure your current
-auto-loaded total and set the cap to ~1.5× the *index-only* baseline:
+The default cap in the seeded index is `5000`. Measure what `AGENTS.md`
+loads today, then set the cap against the *index-only* baseline you will
+have after step 3:
 
 ```bash
-bash "$BIN/measure_memory.sh" --total-only          # what AGENTS.md loads today
-bash "$BIN/measure_memory.sh" --total-only          # re-run after step 3
+bash "$BIN/measure_memory.sh"                       # per-file breakdown + total
 ```
 
 Then update the frontmatter:
@@ -71,6 +71,10 @@ auto_loaded_cap: 3500    # for example
 
 A useful rule of thumb: `cap = max(2 * MEMORY_INDEX.md tokens, 3500)`.
 Round to the nearest 500.
+
+The cap is not decoration: `measure_memory.sh` reports every total against
+it, `--check` exits non-zero past it (step 6), and the `SessionStart` hook
+nudges when a session would start over budget.
 
 ### 3. Switch AGENTS.md to index-only @-include
 
@@ -107,13 +111,47 @@ machine-local synchronization.
 ### 5. Verify
 
 ```bash
-bash "$BIN/verify_index.sh"          # integrity (every file has an entry)
-bash "$BIN/measure_memory.sh"        # total under cap?
-python3 "$BIN/memory_review.py"      # human-readable index summary
+bash "$BIN/verify_index.sh"           # entries complete + @-include target correct
+bash "$BIN/measure_memory.sh" --check # total under cap (exit 1 if not)
+python3 "$BIN/memory_review.py"       # human-readable index summary
 ```
 
-All three should succeed and report under-cap. Start a fresh
-`claude` / `codex` session — you should see the reduced auto-load total.
+All three should exit 0. `verify_index.sh` is the one that catches a
+half-applied migration: if step 3 was skipped it fails with
+`<file> is @-included directly by AGENTS.md/CLAUDE.md`, which is otherwise
+invisible — the index exists and looks authoritative while every memory
+file still loads in full.
+
+Start a fresh `claude` / `codex` session; you should see the reduced
+auto-load total.
+
+### 6. Gate it in pre-commit
+
+Steps 1-5 are reversible by a single edit to `AGENTS.md`, and nothing
+notices. Wire the two checks into `.pre-commit-config.yaml` so a
+regression fails the commit that causes it:
+
+```yaml
+repos:
+  - repo: local
+    hooks:
+      - id: memory-index
+        name: Memory index integrity + @-include target
+        entry: bash -c 'bash "$HOME/agents/coding/plugins/memory/bin/verify_index.sh" --quiet'
+        language: system
+        files: ^(AGENTS\.md|CLAUDE\.md|\.workspace/memory/.*\.md)$
+        pass_filenames: false
+      - id: memory-budget
+        name: Auto-loaded memory within cap
+        entry: bash -c 'bash "$HOME/agents/coding/plugins/memory/bin/measure_memory.sh" --check'
+        language: system
+        files: ^(AGENTS\.md|CLAUDE\.md|\.workspace/memory/.*\.md)$
+        pass_filenames: false
+```
+
+Then `pre-commit install`. Both hooks only run when a file that can move
+the number changes. This is the same shape as an `mdtoken`-style markdown
+budget, applied to the files the memory plugin owns.
 
 ## What γ does once it's on
 
@@ -143,14 +181,48 @@ stamps `last_gc_run` so the nudge stops for 7 days.
 a default `active` entry.
 
 **The hooks aren't firing.** Ensure the `memory` plugin (and ideally
-`transition`) is in your project's `.claude/settings.json`
-`enabledPlugins`. The plugins' `hooks/hooks.json` manifests register
-themselves automatically when the plugin is enabled.
+`transition`) is enabled, at either the user or the project level —
+`scripts/enable.sh memory transition` from the marketplace root does it
+at the user level. The plugins' `hooks/hooks.json` manifests register
+themselves automatically once the plugin is enabled. Enablement is read
+at session start, so restart after changing it.
+
+**verify_index.sh warns that `tokens` is stale.** The size field stopped
+tracking the file. Re-run `bash "$BIN/memory_init_index.sh"` — it
+recomputes tokens and preserves statuses and anchors.
 
 **Cap creep.** Run `python3 "$BIN/memory_review.py"` — if `Auto-loaded`
 keeps climbing toward the cap, the index is gaining entries. Run
 `/memory-gc` to demote stale ones, or split the index across multiple
 files (γ has no requirement that it's a single document).
+
+**A memory file is active, correct, and enormous.** `/memory-gc` will
+never flag it: its unit is the whole entry and its signal is
+`last_referenced`, so intra-file growth is invisible to it. Set a budget
+and trim:
+
+```yaml
+---
+auto_loaded_cap: 3500
+default_file_cap: 2500     # applies to every entry without its own cap
+---
+
+## project_state.md
+- status: active
+- tokens: 8200
+- cap: 4000                # this one entry gets more room
+```
+
+`verify_index.sh` then warns on any entry over its cap. The trim: keep
+the conclusion and a pointer in the memory file, move the cut text
+verbatim to a sibling `<name>_archive.md`. The archive is not an index
+entry, so it is never auto-loaded and remains readable on demand.
+
+The growth usually has a cause worth fixing at the same time. Two
+recurring ones: an `AGENTS.md` convention that says to log changes in a
+new dated block (append-only files only grow), and mirroring `/handoff`
+detail into the state file (the state file should carry the conclusion
+and a pointer, not a copy of the handoff).
 
 ## Reverting
 

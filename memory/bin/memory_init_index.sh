@@ -114,6 +114,12 @@ GITIGNORE_PATH = os.path.join(MEMORY_DIR, GITIGNORE_NAME)
 
 SIDECAR_VERSION = 1
 REQUIRED_FIELDS = ("status", "last_referenced", "tokens", "anchors")
+
+# Optional per-entry fields. Not seeded, but preserved verbatim across
+# re-runs: a schema field this script silently dropped would be worse
+# than no field at all.
+OPTIONAL_FIELDS = ("cap",)
+KNOWN_FIELDS = REQUIRED_FIELDS + OPTIONAL_FIELDS
 # Files that are index infrastructure, not managed memory entries.
 EXCLUDED_FILES = {INDEX_NAME}
 EMPTY_ANCHOR = "-"
@@ -187,7 +193,7 @@ def parse_existing_index(path):
         m = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", body)
         if m:
             key = m.group(1).strip().lower()
-            if key in REQUIRED_FIELDS and key not in entries[current]:
+            if key in KNOWN_FIELDS and key not in entries[current]:
                 entries[current][key] = m.group(2).strip()
     return front, entries
 
@@ -202,7 +208,7 @@ def load_sidecar(path):
         return {}
 
 
-def render_index(cap, entries_in_order):
+def render_index(cap, default_file_cap, entries_in_order):
     """Build the MEMORY_INDEX.md text. Deterministic: no volatile fields."""
     out = []
     out.append("---")
@@ -212,6 +218,8 @@ def render_index(cap, entries_in_order):
     out.append("# truth: it wins over individual memory-file frontmatter on any conflict.")
     if cap != "":
         out.append("auto_loaded_cap: %s" % cap)
+    if default_file_cap != "":
+        out.append("default_file_cap: %s" % default_file_cap)
     out.append("---")
     out.append("")
     out.append("# Memory Index")
@@ -225,6 +233,8 @@ def render_index(cap, entries_in_order):
         out.append("- status: %s" % e["status"])
         out.append("- last_referenced: %s" % e["last_referenced"])
         out.append("- tokens: %d" % e["tokens"])
+        if e.get("cap"):
+            out.append("- cap: %s" % e["cap"])
         out.append("- anchors: %s" % e["anchors"])
         out.append("")
     return "\n".join(out) + "\n"
@@ -257,6 +267,8 @@ def main():
     old_front, old_entries = parse_existing_index(INDEX_PATH)
     if cap == "" and "auto_loaded_cap" in old_front:
         cap = old_front["auto_loaded_cap"]   # preserve a previously-set cap
+    # Project-wide per-file budget. Never seeded, only preserved.
+    default_file_cap = old_front.get("default_file_cap", "")
 
     sidecar = load_sidecar(SIDECAR_PATH)
     old_files = sidecar.get("files")
@@ -302,6 +314,7 @@ def main():
             "status": status,
             "last_referenced": lref,
             "tokens": tokens,
+            "cap": prior_index.get("cap", "").strip(),
             "anchors": anchors,
         }))
 
@@ -317,7 +330,7 @@ def main():
 
     # Write the index.
     with open(INDEX_PATH, "w", encoding="utf-8") as fh:
-        fh.write(render_index(cap, index_entries))
+        fh.write(render_index(cap, default_file_cap, index_entries))
 
     # Write the sidecar, preserving unknown top-level keys and last_gc_run.
     last_gc_run = sidecar.get("last_gc_run", None)

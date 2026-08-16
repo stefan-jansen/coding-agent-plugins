@@ -248,6 +248,120 @@ mkdir -p "$WORK/inc-lookalike/docs"
 printf 'unrelated doc that happens to share a name\n' > "$WORK/inc-lookalike/docs/project_state.md"
 check "lookalike outside memory dir exits 0" "0" "$(rc "$MI6")"
 
+# --------------------------------------------------------------------------
+# Stale `tokens`: a size field that no longer tracks its file is worse than no
+# field, because it looks maintained.
+#
+# mktokens <name> <indexed-tokens> <file-bytes> -> echoes the memory dir.
+mktokens() {
+    local name="$1" indexed="$2" bytes="$3"
+    local mem="$WORK/$name/.workspace/memory"
+    mkdir -p "$mem"
+    head -c "$bytes" /dev/zero | tr '\0' 'x' > "$mem/project_state.md"
+    cat > "$mem/MEMORY_INDEX.md" <<EOF
+---
+auto_loaded_cap: 5000
+---
+
+## project_state.md
+- status: active
+- last_referenced: 2026-06-01
+- tokens: $indexed
+- anchors: (none)
+EOF
+    echo "$mem"
+}
+
+echo "== stale tokens: large drift warns and names both numbers =="
+T1="$(mktokens tok-stale 33363 400)"   # 400 bytes -> 100 tokens
+check "stale tokens still exits 0" "0" "$(rc "$T1")"
+check "reports indexed and actual" "1" \
+    "$(grep -c 'index says 33363 tokens, file is 100' <<<"$(out "$T1")")"
+check "points at the refresh command" "1" \
+    "$(grep -c 'memory_init_index.sh' <<<"$(out "$T1")")"
+check "--strict promotes it to a failure" "1" "$(rc "$T1" --strict)"
+
+echo "== stale tokens: an accurate entry is silent =="
+T2="$(mktokens tok-fresh 100 400)"
+check "accurate tokens exits 0" "0" "$(rc "$T2")"
+check "no drift warning" "0" "$(grep -c 'index says' <<<"$(out "$T2")")"
+
+echo "== stale tokens: small edits stay under the tolerance =="
+T3="$(mktokens tok-small 100 560)"   # 560 bytes -> 140 tokens, +40 < 50 floor
+check "40-token drift is not reported" "0" "$(grep -c 'index says' <<<"$(out "$T3")")"
+
+echo "== stale tokens: a big file needs proportional drift, not 50 tokens =="
+T4="$(mktokens tok-prop 10000 40800)"  # 10200 actual vs 10000 indexed = 2%
+check "2% drift on a large file is not reported" "0" \
+    "$(grep -c 'index says' <<<"$(out "$T4")")"
+T5="$(mktokens tok-prop-big 10000 60000)"  # 15000 actual vs 10000 = 50%
+check "50% drift on a large file is reported" "1" \
+    "$(grep -c 'index says' <<<"$(out "$T5")")"
+
+# --------------------------------------------------------------------------
+# Per-file caps: "this entry is active and over budget" is the state /memory-gc
+# cannot express, because its unit is the whole entry and its signal is
+# last_referenced.
+#
+# mkcap <name> <bytes> <frontmatter-extra> <entry-extra> -> echoes the memory dir.
+mkcap() {
+    local name="$1" bytes="$2" fm="$3" extra="$4"
+    local mem="$WORK/$name/.workspace/memory"
+    mkdir -p "$mem"
+    head -c "$bytes" /dev/zero | tr '\0' 'x' > "$mem/project_state.md"
+    {
+        echo '---'
+        echo 'auto_loaded_cap: 5000'
+        [[ -n "$fm" ]] && echo "$fm"
+        echo '---'
+        echo
+        echo '## project_state.md'
+        echo '- status: active'
+        echo '- last_referenced: 2026-06-01'
+        echo "- tokens: $((bytes / 4))"
+        [[ -n "$extra" ]] && echo "$extra"
+        echo '- anchors: (none)'
+    } > "$mem/MEMORY_INDEX.md"
+    echo "$mem"
+}
+
+echo "== per-file cap: no cap configured => silent =="
+C1="$(mkcap cap-none 4000 '' '')"
+check "no cap is silent" "0" "$(grep -c 'over budget' <<<"$(out "$C1")")"
+
+echo "== per-file cap: default_file_cap flags an oversized active entry =="
+C2="$(mkcap cap-default 4000 'default_file_cap: 500' '')"
+check "over default cap warns" "1" "$(grep -c 'over budget' <<<"$(out "$C2")")"
+check "names the archive target" "1" \
+    "$(grep -c 'project_state_archive.md' <<<"$(out "$C2")")"
+check "says memory-gc will not catch it" "1" \
+    "$(grep -c 'memory-gc will not catch this' <<<"$(out "$C2")")"
+check "over budget is a warning, not a failure" "0" "$(rc "$C2")"
+check "--strict promotes it" "1" "$(rc "$C2" --strict)"
+
+echo "== per-file cap: a file within the default is silent =="
+C3="$(mkcap cap-under 400 'default_file_cap: 500' '')"
+check "under default cap is silent" "0" "$(grep -c 'over budget' <<<"$(out "$C3")")"
+
+echo "== per-file cap: per-entry cap overrides the project default =="
+C4="$(mkcap cap-entry 4000 'default_file_cap: 500' '- cap: 2000')"
+check "entry cap raises the ceiling" "0" "$(grep -c 'over budget' <<<"$(out "$C4")")"
+C5="$(mkcap cap-entry-low 4000 '' '- cap: 100')"
+check "entry cap works without a default" "1" "$(grep -c 'over budget' <<<"$(out "$C5")")"
+
+echo "== per-file cap: cap is not a required field =="
+check "absent cap is not reported missing" "0" \
+    "$(grep -c 'missing field' <<<"$(out "$C1")")"
+
+echo "== per-file cap: memory_init_index.sh preserves cap fields =="
+INIT="$BIN_DIR/memory_init_index.sh"
+C6="$(mkcap cap-roundtrip 4000 'default_file_cap: 500' '- cap: 2000')"
+printf '@.workspace/memory/MEMORY_INDEX.md\n' > "$WORK/cap-roundtrip/AGENTS.md"
+(cd "$WORK/cap-roundtrip" && "$INIT" >/dev/null 2>&1)
+check "per-entry cap survives a re-run" "1" "$(grep -c '^- cap: 2000$' "$C6/MEMORY_INDEX.md")"
+check "default_file_cap survives a re-run" "1" \
+    "$(grep -c '^default_file_cap: 500$' "$C6/MEMORY_INDEX.md")"
+
 echo
 echo "Passed: $PASS  Failed: $FAIL"
 [[ "$FAIL" -eq 0 ]]
