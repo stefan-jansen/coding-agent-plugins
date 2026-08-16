@@ -177,6 +177,77 @@ mkdir -p "$M9"
 printf '%s\n' '---' 'auto_loaded_cap: 5000' '---' > "$M9/MEMORY_INDEX.md"
 check "empty (index only) exits 0" "0" "$(rc "$M9")"
 
+# --------------------------------------------------------------------------
+# @-include target: the memory-budget invariant. A project may @-include
+# MEMORY_INDEX.md and nothing else from the memory dir.
+#
+# mkproj <name> <agents-md-body...> -> echoes the memory dir, index + one
+# well-formed memory file already in place.
+mkproj() {
+    local name="$1"; shift
+    local root="$WORK/$name" mem="$WORK/$name/.workspace/memory"
+    mkdir -p "$mem"
+    cat > "$mem/MEMORY_INDEX.md" <<'EOF'
+---
+auto_loaded_cap: 5000
+---
+
+# Memory Index
+
+## project_state.md
+- status: active
+- last_referenced: 2026-06-01
+- tokens: 12
+- anchors: (none)
+EOF
+    printf 'state\n' > "$mem/project_state.md"
+    printf '%s\n' "$@" > "$root/AGENTS.md"
+    printf '@AGENTS.md\n' > "$root/CLAUDE.md"
+    echo "$mem"
+}
+
+echo "== @-include target: index only is the passing shape =="
+MI1="$(mkproj inc-ok '# ok' '@.workspace/memory/MEMORY_INDEX.md')"
+check "index-only include exits 0" "0" "$(rc "$MI1")"
+
+echo "== @-include target: a memory file included directly is a failure =="
+MI2="$(mkproj inc-bad '# half-migrated' \
+    '@.workspace/memory/MEMORY_INDEX.md' '@.workspace/memory/project_state.md')"
+check "direct memory-file include exits 1" "1" "$(rc "$MI2")"
+check "names the offending file" "1" \
+    "$(grep -c 'project_state.md is @-included directly' <<<"$(out "$MI2")")"
+check "points at the migration step" "1" \
+    "$(grep -c 'memory-budget-migration.md step 3' <<<"$(out "$MI2")")"
+check "counted as an @-include violation, not a field error" "1" \
+    "$(grep -c '0 field/status error(s), 1 @-include violation' <<<"$(out "$MI2")")"
+
+echo "== @-include target: transitive include is caught too =="
+MI3="$(mkproj inc-transitive '# root' '@docs/extra.md')"
+mkdir -p "$WORK/inc-transitive/docs"
+printf '@../.workspace/memory/project_state.md\n' > "$WORK/inc-transitive/docs/extra.md"
+check "include reached via another file exits 1" "1" "$(rc "$MI3")"
+
+echo "== @-include target: index loaded by nobody is a warning, not a failure =="
+MI4="$(mkproj inc-orphan '# includes nothing')"
+check "unreferenced index exits 0" "0" "$(rc "$MI4")"
+check "warns the index is not @-included" "1" \
+    "$(grep -c 'MEMORY_INDEX.md is not @-included' <<<"$(out "$MI4")")"
+check "--strict turns it into a failure" "1" "$(rc "$MI4" --strict)"
+
+echo "== @-include target: no seed file at all is not judged =="
+MI5="$(mkproj inc-noseed '# placeholder')"
+rm -f "$WORK/inc-noseed/AGENTS.md" "$WORK/inc-noseed/CLAUDE.md"
+check "no AGENTS.md/CLAUDE.md exits 0" "0" "$(rc "$MI5")"
+check "stays silent about includes" "0" \
+    "$(grep -c '@-include' <<<"$(out "$MI5")")"
+
+echo "== @-include target: a same-named file outside the memory dir is fine =="
+MI6="$(mkproj inc-lookalike '# ok' \
+    '@.workspace/memory/MEMORY_INDEX.md' '@docs/project_state.md')"
+mkdir -p "$WORK/inc-lookalike/docs"
+printf 'unrelated doc that happens to share a name\n' > "$WORK/inc-lookalike/docs/project_state.md"
+check "lookalike outside memory dir exits 0" "0" "$(rc "$MI6")"
+
 echo
 echo "Passed: $PASS  Failed: $FAIL"
 [[ "$FAIL" -eq 0 ]]

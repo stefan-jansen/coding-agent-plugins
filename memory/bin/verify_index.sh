@@ -2,18 +2,26 @@
 # verify_index.sh — confirm every memory file has a complete MEMORY_INDEX.md entry.
 #
 # Index integrity check (Relay acceptance criterion 2). For a project's memory
-# directory (default `.workspace/memory/`) it verifies that every `*.md` memory
-# file has a corresponding entry in `MEMORY_INDEX.md` carrying all four required
-# fields — `status`, `last_referenced`, `tokens`, `anchors`. The index is the
-# single source of truth: where a memory file's own frontmatter disagrees with
-# the index, the mismatch is reported as a warning that proposes syncing the file
-# to the index value (the index wins).
+# directory (default `.workspace/memory/`) it verifies two things:
+#
+#   1. Every `*.md` memory file has a corresponding entry in `MEMORY_INDEX.md`
+#      carrying all four required fields — `status`, `last_referenced`,
+#      `tokens`, `anchors`. The index is the single source of truth: where a
+#      memory file's own frontmatter disagrees with the index, the mismatch is
+#      reported as a warning that proposes syncing the file to the index value.
+#   2. `AGENTS.md` / `CLAUDE.md` `@`-include `MEMORY_INDEX.md` and nothing else
+#      from the memory directory. Including a memory file directly loads its
+#      full text into every context window and bypasses the budget — the
+#      half-migration failure mode (index seeded, include never switched), which
+#      is otherwise indistinguishable from a healthy project.
 #
 # Exit status:
-#   0  every memory file has a complete, valid entry (0 missing). Warnings, if
-#      any, are printed but do not fail unless --strict is given.
+#   0  every memory file has a complete, valid entry (0 missing) and the
+#      @-include target is the index. Warnings, if any, are printed but do not
+#      fail unless --strict is given.
 #   1  integrity failure: a memory file has no entry, an entry is missing a
-#      required field, or a status value is outside the vocabulary.
+#      required field, a status value is outside the vocabulary, or a memory
+#      file is @-included directly.
 #   2  usage / environment error (no memory dir, no MEMORY_INDEX.md to verify).
 #
 # Usage:
@@ -30,7 +38,10 @@ set -euo pipefail
 BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
-    sed -n '2,27p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    # Print the header comment block: every leading `#` line after the shebang,
+    # stopping at the first non-comment line. Derived rather than hardcoded, so
+    # editing the header cannot silently truncate --help.
+    sed -n '2,${/^#/!q;p;}' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 MEMORY_DIR=""
@@ -52,6 +63,16 @@ done
 if [[ -z "$MEMORY_DIR" ]]; then
     PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
     MEMORY_DIR="$PROJECT_ROOT/.workspace/memory"
+else
+    # With --dir, recover the project root from the conventional layout so the
+    # @-include check can find CLAUDE.md / AGENTS.md. `<root>/.workspace/memory`
+    # -> `<root>`; anything else -> the directory's parent.
+    _abs="$(cd "$MEMORY_DIR" 2>/dev/null && pwd || echo "$MEMORY_DIR")"
+    if [[ "$(basename "$(dirname "$_abs")")" == ".workspace" ]]; then
+        PROJECT_ROOT="$(dirname "$(dirname "$_abs")")"
+    else
+        PROJECT_ROOT="$(dirname "$_abs")"
+    fi
 fi
 
 if [[ ! -d "$MEMORY_DIR" ]]; then
@@ -59,15 +80,18 @@ if [[ ! -d "$MEMORY_DIR" ]]; then
     exit 2
 fi
 
-PYTHONPATH="$BIN_DIR${PYTHONPATH:+:$PYTHONPATH}" python3 - "$MEMORY_DIR" "$STRICT" "$QUIET" <<'PY'
+PYTHONPATH="$BIN_DIR${PYTHONPATH:+:$PYTHONPATH}" python3 - "$MEMORY_DIR" "$STRICT" "$QUIET" "$PROJECT_ROOT" <<'PY'
 import glob
 import os
 import re
 import sys
 
+from include_graph import SEED_FILES, reachable
+
 MEMORY_DIR = os.path.abspath(sys.argv[1])
 STRICT = sys.argv[2] == "1"
 QUIET = sys.argv[3] == "1"
+PROJECT_ROOT = os.path.abspath(sys.argv[4])
 
 INDEX_NAME = "MEMORY_INDEX.md"
 INDEX_PATH = os.path.join(MEMORY_DIR, INDEX_NAME)
@@ -180,6 +204,54 @@ def is_empty_anchor(value):
     return value.lower() in ("", "none", "n/a", "na", "-")
 
 
+def check_include_target():
+    """The invariant the memory-budget architecture rests on.
+
+    `AGENTS.md` / `CLAUDE.md` must `@`-include MEMORY_INDEX.md and nothing else
+    from the memory directory. Including a memory file directly loads its full
+    text into every context window and bypasses the budget entirely — the
+    half-migration failure mode, where step 1 (seed the index) happened and step
+    3 (switch the include) did not. The index then exists and looks
+    authoritative while the architecture is off.
+
+    Returns (failures, warnings). Silent (empty, empty) when the project has no
+    seed file at all, since there is nothing to judge.
+    """
+    failures, warnings = [], []
+
+    if not any(os.path.isfile(os.path.join(PROJECT_ROOT, n)) for n in SEED_FILES):
+        return failures, warnings
+
+    loaded, _missing = reachable(PROJECT_ROOT)
+
+    index_loaded = False
+    for path in loaded:
+        try:
+            in_memory_dir = os.path.dirname(os.path.abspath(path)) == MEMORY_DIR
+        except (OSError, ValueError):
+            continue
+        if not in_memory_dir:
+            continue
+        if os.path.basename(path) == INDEX_NAME:
+            index_loaded = True
+            continue
+        failures.append(
+            "%s is @-included directly by AGENTS.md/CLAUDE.md; the memory-budget "
+            "architecture is bypassed (its full text loads into every context "
+            "window). @-include only %s. See docs/memory-budget-migration.md step 3."
+            % (os.path.relpath(path, PROJECT_ROOT), INDEX_NAME)
+        )
+
+    if not index_loaded:
+        warnings.append(
+            "%s is not @-included by AGENTS.md/CLAUDE.md — the index exists but "
+            "no session loads it. See docs/memory-budget-migration.md step 3."
+            % INDEX_NAME
+        )
+
+    return failures, warnings
+
+
 def main():
     failures = []   # hard integrity problems -> exit 1
     warnings = []   # advisory -> exit 0 unless --strict
@@ -264,7 +336,15 @@ def main():
         if not missing_fields and (status is None or valid_status(status)):
             ok_files.append(name)
 
-    # 2. Orphan entries (index entry with no corresponding file) — advisory.
+    # 2. The @-include target must be the index, not an individual memory file.
+    include_errors = 0
+    if not display_only:
+        inc_failures, inc_warnings = check_include_target()
+        include_errors = len(inc_failures)
+        failures.extend(inc_failures)
+        warnings.extend(inc_warnings)
+
+    # 3. Orphan entries (index entry with no corresponding file) — advisory.
     for name in entries:
         if name not in memory_files:
             status = entries[name].get("status", "")
@@ -290,10 +370,13 @@ def main():
         for f in failures:
             print("  - %s" % f)
 
-    field_errors = len(failures) - missing_count
+    field_errors = len(failures) - missing_count - include_errors
     if failures:
-        print("Result: FAIL — %d missing entr%s, %d field/status error(s)."
-              % (missing_count, "y" if missing_count == 1 else "ies", field_errors))
+        extra = ("" if include_errors == 0
+                 else ", %d @-include violation(s)" % include_errors)
+        print("Result: FAIL — %d missing entr%s, %d field/status error(s)%s."
+              % (missing_count, "y" if missing_count == 1 else "ies",
+                 field_errors, extra))
         return 1
     if STRICT and warnings:
         print("Result: FAIL (--strict) — 0 missing entries, %d warning(s)."
