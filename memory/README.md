@@ -133,8 +133,9 @@ fields, plus an optional `cap`:
 active, correctly so, and twelve times the size it should be". Intra-file growth
 is invisible to the status vocabulary. A `cap` makes it expressible: over it,
 `verify_index.sh` warns and names the trim — keep the conclusion and a pointer in
-the memory file, move the cut text to a sibling `<name>_archive.md`, which is not
-indexed and so is never auto-loaded.
+the memory file, move the cut text to a sibling `<name>_archive.md`. The archive
+costs nothing per session: only the index is `@`-included, so every memory file
+is read on demand regardless of size.
 
 The index does **not** list itself, and `.index_state.json` (the gitignored
 signal sidecar) is runtime state, not an entry.

@@ -69,8 +69,15 @@ auto_loaded_cap: 3500    # for example
 ---
 ```
 
-A useful rule of thumb: `cap = max(2 * MEMORY_INDEX.md tokens, 3500)`.
-Round to the nearest 500.
+The cap covers the whole auto-loaded set, not just the index — and
+`AGENTS.md` is usually the larger term, often by an order of magnitude.
+So derive it from the measured post-step-3 total, not from the index
+size: `cap = 1.3 * (AGENTS.md + CLAUDE.md + MEMORY_INDEX.md)`, rounded up
+to the nearest 500.
+
+If that lands somewhere uncomfortable, the number is telling you
+`AGENTS.md` is the thing to trim; index-only memory cannot fix an
+instructions file that is itself the budget.
 
 The cap is not decoration: `measure_memory.sh` reports every total against
 it, `--check` exits non-zero past it (step 6), and the `SessionStart` hook
@@ -215,8 +222,9 @@ default_file_cap: 2500     # applies to every entry without its own cap
 
 `verify_index.sh` then warns on any entry over its cap. The trim: keep
 the conclusion and a pointer in the memory file, move the cut text
-verbatim to a sibling `<name>_archive.md`. The archive is not an index
-entry, so it is never auto-loaded and remains readable on demand.
+verbatim to a sibling `<name>_archive.md`. Index the archive like any
+other memory file — it costs nothing per session, since only the index is
+`@`-included and every memory file is read on demand regardless of size.
 
 The growth usually has a cause worth fixing at the same time. Two
 recurring ones: an `AGENTS.md` convention that says to log changes in a
