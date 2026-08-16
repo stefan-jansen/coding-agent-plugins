@@ -1,7 +1,7 @@
 # Vendored workflow steps
 
-These six step directories (`align`, `continue`, `handoff`, `next-issue`,
-`plan-issues`, `ship`) are **vendored copies**. The source of truth is
+These seven step directories (`align`, `continue`, `delegate`, `handoff`,
+`next-issue`, `plan-issues`, `ship`) are **vendored copies**. The source of truth is
 [coding-agent-toolkit](https://github.com/stefan-jansen/coding-agent-toolkit)
 (`skills/<step>/`).
 

@@ -18,7 +18,7 @@ set -euo pipefail
 # ../coding-agent-toolkit. In --check mode a missing toolkit is a skip (pass),
 # so contributors who cloned only this repo are not blocked.
 
-STEPS=(align continue handoff next-issue plan-issues ship)
+STEPS=(align continue delegate handoff next-issue plan-issues ship)
 
 PLUGINS_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEST="$PLUGINS_ROOT/workflow/skills"
