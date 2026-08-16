@@ -188,8 +188,12 @@ TPROJ2="$WORK/tproj2"
 mkdir -p "$TPROJ2"
 (cd "$TPROJ2" && OUT="$("$PRECOMPACT")") || true
 OUT="$(cd "$TPROJ2" && "$PRECOMPACT")"
-echo "$OUT" | grep -q "Current task and its status" \
-    && ok "canonical instructions preserved" || bad "canonical instructions preserved"
+# Assert the contract, not the wording: the block must ask for current task +
+# status and must state what to leave out. Exact phrasing is free to change
+# (it did in transition 1.4.0, which broke the old literal-string assertion).
+echo "$OUT" | grep -qi "current task" \
+    && echo "$OUT" | grep -qi "do not include" \
+    && ok "canonical instructions preserved" || bad "canonical instructions preserved (got: $OUT)"
 echo "$OUT" | grep -q "/memory-gc has not run" \
     && bad "no nudge without sidecar" || ok "no nudge without sidecar"
 

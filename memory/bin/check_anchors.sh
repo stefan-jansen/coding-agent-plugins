@@ -161,7 +161,7 @@ def parse_index(path):
     current = None          # (name, [anchors])
     in_anchors = False      # are we collecting anchor sub-bullets?
     for line in lines[i:]:
-        head = re.match(r"^##\s+(.+?)\s*$", line)
+        head = re.match(r"^#{2,3}\s+(.+?)\s*$", line)
         if head:
             name = head.group(1).strip().strip("`").strip('"').strip("'").strip()
             current = (os.path.normpath(name), [])

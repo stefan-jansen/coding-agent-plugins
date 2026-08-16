@@ -172,7 +172,7 @@ def parse_existing_index(path):
 
     current = None
     for line in lines[i:]:
-        head = re.match(r"^##\s+(.+?)\s*$", line)
+        head = re.match(r"^#{2,3}\s+(.+?)\s*$", line)
         if head:
             name = head.group(1).strip().strip("`").strip('"').strip("'").strip()
             name = os.path.normpath(name)
