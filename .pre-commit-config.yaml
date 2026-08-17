@@ -23,3 +23,9 @@ repos:
         language: system
         files: ^[^/]+/commands/.*\.md$
         pass_filenames: false
+      - id: codex-skills-sync
+        name: Plugin skills projected into Codex's namespace
+        entry: scripts/sync-codex-skills.sh --check
+        language: system
+        files: ^([^/]+/skills/|[^/]+/\.claude-plugin/plugin\.json$)
+        pass_filenames: false

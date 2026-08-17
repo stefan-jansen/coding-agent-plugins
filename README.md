@@ -77,9 +77,22 @@ Claude Code merges `enabledPlugins` from `~/.claude/settings.json` and from a pr
 
 Hooks are plugin-level: enabling a plugin anywhere activates its hooks in every session that resolves it. `@local` names only resolve where the marketplace is registered, so a project entry is inert on a machine without this clone.
 
+## Using the skills from Codex
+
+A `SKILL.md` is plain markdown, so the same file works for Claude Code and for OpenAI Codex. The two discover skills differently: Claude Code reads a plugin's `plugin.json`, while Codex scans `~/.codex/skills/<name>/SKILL.md`. Nothing bridges the namespaces on its own, so a skill added to a plugin stays invisible to Codex until it is linked.
+
+```bash
+scripts/sync-codex-skills.sh            # link every declared skill into ~/.codex/skills/
+scripts/sync-codex-skills.sh --check    # report drift, nonzero exit if any
+```
+
+It links rather than copies, so one edit changes the skill for both agents with no re-sync. Only symlinks pointing back into a marketplace are created, repointed, or removed; a real directory or a link aimed anywhere else is reported and left alone, so Codex's own skills and any hand-written ones survive. Skill names have to be unique across the marketplaces, because Codex's namespace is flat; a collision is an error rather than a silent overwrite. With Codex not installed the script is a no-op, so the `--check` hook does not block contributors who only use Claude Code.
+
 ## Troubleshooting
 
 **Commands not appearing after enabling a plugin.** Restart Claude Code; plugins are resolved at session start.
+
+**A skill works in Claude Code but Codex does not know it.** Run `scripts/sync-codex-skills.sh`. See [Using the skills from Codex](#using-the-skills-from-codex).
 
 **An edit to a plugin file has no effect.** A `directory` marketplace is read in place, with no copy and no cache, so the edit is already live for every project that enables the plugin — but only from the next session. Restart or resume.
 
