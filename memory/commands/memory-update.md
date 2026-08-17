@@ -1,6 +1,7 @@
 ---
 title: memory-update
 aliases: [remember, learn]
+description: Incrementally add, update, or relocate entries in `.workspace/memory/` — capture a decision, convention, or state change and refresh MEMORY_INDEX.md.
 ---
 
 # Memory Update

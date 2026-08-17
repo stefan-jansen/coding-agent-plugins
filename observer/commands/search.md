@@ -1,3 +1,9 @@
+---
+title: search
+argument-hint: "<query> [--project <name>] [--type <type>] [--limit <n>]"
+description: Search past session observations across all projects — matches titles, narratives, and facts recorded by the observer.
+---
+
 # /observer:search
 
 Search past session observations across all projects.

@@ -17,3 +17,9 @@ repos:
         language: system
         files: ^workflow/skills/
         pass_filenames: false
+      - id: command-frontmatter
+        name: Commands declare a description (else Claude Code hides them)
+        entry: scripts/check-command-frontmatter.sh
+        language: system
+        files: ^[^/]+/commands/.*\.md$
+        pass_filenames: false

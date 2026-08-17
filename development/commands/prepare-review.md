@@ -1,6 +1,8 @@
 ---
 title: prepare-review
 aliases: [review-prep, external-review]
+argument-hint: "[focus area]"
+description: Package the codebase for external review with RepoMix, optionally narrowed to a focus area.
 ---
 
 # Prepare External Code Review Package

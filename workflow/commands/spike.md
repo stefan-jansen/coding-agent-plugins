@@ -1,6 +1,8 @@
 ---
 title: "spike"
 aliases: ["explore-spike", "prototype"]
+argument-hint: "start \"topic\" [--duration N] | complete | abandon | status"
+description: Time-boxed technical exploration on a throwaway branch — start a spike, report findings, then keep or discard the code.
 ---
 
 # Spike - Time-boxed Technical Exploration
