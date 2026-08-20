@@ -13,14 +13,24 @@ This is the heart of M4 acceptance criterion 5. It reads three sources:
 …and emits a structured diff of proposed status transitions. It never writes
 to MEMORY_INDEX.md. `gc_apply.py` consumes the same diff format.
 
-Rules (v0.1, deliberately heuristic — LLM-grounded relevance is out of scope):
+Rules (v0.2, deliberately heuristic — LLM-grounded relevance is out of scope):
 
-  active  -> dormant       last_referenced > STALE_DAYS days ago and
-                           references == 0, OR every anchor is `missing`
-  dormant -> deprecated    last_referenced > DEPRECATED_DAYS days ago and
-                           references == 0
+  active  -> dormant       last_referenced > STALE_DAYS days ago,
+                           OR every anchor is `missing`
+  dormant -> deprecated    last_referenced > DEPRECATED_DAYS days ago
   superseded-by:<slug>     never touched by GC (user-owned signal)
   deprecated -> deprecated never demoted further (stable terminal status)
+
+Recency alone decides. Until v0.2 every rule also required `references == 0`,
+which made GC inert: the PreToolUse hook increments `references` on each read
+and nothing ever decrements it, so one read at any point in a file's history
+vetoed every future demotion. The counter was redundant besides — the same hook
+call writes `last_referenced`, so `references > 0` says only "read at some
+point", which the date already says, with recency attached. `references` is
+still reported in the diff as context for the reader; it no longer gates.
+
+What this cannot see: a file that is read constantly and is wrong. Content
+staleness is not a function of dates, and no threshold here will find it.
 
 Defaults: STALE_DAYS=90, DEPRECATED_DAYS=180. Override with --stale / --deprecated.
 
@@ -234,25 +244,23 @@ def propose(
         reason: str = ""
 
         if status == "active":
-            if age_days is not None and age_days > deprecated_days and refs == 0:
+            if age_days is not None and age_days > deprecated_days:
                 new_status = "deprecated"
                 reason = (
-                    f"unused for {age_days}d (>{deprecated_days}d) and no references — "
+                    f"unused for {age_days}d (>{deprecated_days}d) — "
                     "demoting active -> deprecated"
                 )
-            elif age_days is not None and age_days > stale_days and refs == 0:
+            elif age_days is not None and age_days > stale_days:
                 new_status = "dormant"
-                reason = (
-                    f"unused for {age_days}d (>{stale_days}d) and no references"
-                )
+                reason = f"unused for {age_days}d (>{stale_days}d)"
             elif all_anchors_missing:
                 new_status = "dormant"
                 reason = (
                     f"all {a.get('missing', 0)} anchor(s) missing in the working tree"
                 )
-            elif age_days is None and refs == 0:
+            elif age_days is None:
                 new_status = "dormant"
-                reason = "no last_referenced date and no captured references"
+                reason = "no last_referenced date recorded"
             else:
                 kept.append({
                     "name": name,
@@ -264,11 +272,9 @@ def propose(
                 })
                 continue
         elif status == "dormant":
-            if age_days is not None and age_days > deprecated_days and refs == 0:
+            if age_days is not None and age_days > deprecated_days:
                 new_status = "deprecated"
-                reason = (
-                    f"dormant >{deprecated_days}d ({age_days}d) with no references"
-                )
+                reason = f"dormant >{deprecated_days}d ({age_days}d)"
             else:
                 kept.append({
                     "name": name,
@@ -361,7 +367,9 @@ def main(argv: list[str] | None = None) -> int:
             ).stdout.strip()
         except (OSError, subprocess.CalledProcessError):
             root = os.getcwd()
-        memory_dir = Path(root) / ".workspace" / "memory"
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from memory_dir import resolve as _resolve_memory_dir
+        memory_dir = _resolve_memory_dir(root)
     memory_dir = memory_dir.resolve()
 
     if not memory_dir.is_dir():

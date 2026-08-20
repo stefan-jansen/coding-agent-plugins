@@ -203,6 +203,112 @@ python3 "$PROPOSE" --dir "$WORK/noindex/.workspace/memory" 2>/dev/null; RC=$?
 set -e
 [[ "$RC" -eq 2 ]] && ok "missing MEMORY_INDEX.md exits 2" || bad "missing MEMORY_INDEX.md exits 2 (got $RC)"
 
+# --------------------------------------------------------------------------
+# Regression: `references` must not veto a demotion.
+#
+# Until v0.2 every rule also required `references == 0`. The PreToolUse hook
+# increments that counter on every read and nothing decrements it, so a single
+# read at any point in a file's history froze it as `active` forever — which is
+# why GC was never observed proposing anything on a real project. The two files
+# below are identical except for the counter; both must be demoted.
+echo "== references does not veto demotion =="
+RMEM="$WORK/refs/.workspace/memory"
+mkdir -p "$RMEM"
+cat > "$RMEM/MEMORY_INDEX.md" <<'EOF'
+---
+auto_loaded_cap: 5000
+---
+
+# Memory Index
+
+## read_often.md
+- status: active
+- last_referenced: 2025-12-01
+- tokens: 100
+- anchors: -
+
+## never_read.md
+- status: active
+- last_referenced: 2025-12-01
+- tokens: 100
+- anchors: -
+
+## dormant_read_often.md
+- status: dormant
+- last_referenced: 2025-01-01
+- tokens: 100
+- anchors: -
+EOF
+touch "$RMEM/read_often.md" "$RMEM/never_read.md" "$RMEM/dormant_read_often.md"
+cat > "$RMEM/.index_state.json" <<'EOF'
+{"version":1,"files":{
+  "read_often.md":{"last_referenced":"2025-12-01","references":42},
+  "never_read.md":{"last_referenced":"2025-12-01","references":0},
+  "dormant_read_often.md":{"last_referenced":"2025-01-01","references":17}
+}}
+EOF
+RDRY="$(python3 "$PROPOSE" --dir "$RMEM" --today 2026-06-03)"
+echo "$RDRY" | grep -q "read_often.md: active -> deprecated" \
+    && ok "stale active with references=42 is demoted" \
+    || bad "stale active with references=42 is demoted (got: $RDRY)"
+echo "$RDRY" | grep -q "never_read.md: active -> deprecated" \
+    && ok "stale active with references=0 is demoted" \
+    || bad "stale active with references=0 is demoted"
+echo "$RDRY" | grep -q "dormant_read_often.md: dormant -> deprecated" \
+    && ok "stale dormant with references=17 is demoted" \
+    || bad "stale dormant with references=17 is demoted"
+echo "$RDRY" | grep -q "Summary: 3 transition" \
+    && ok "all three demoted regardless of counter" \
+    || bad "all three demoted regardless of counter (got: $RDRY)"
+
+# The counter is still reported — it is context for the reader, not a gate.
+python3 "$PROPOSE" --dir "$RMEM" --today 2026-06-03 --json | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+t = {x['name']: x for x in d['transitions']}
+assert t['read_often.md']['references'] == 42, t
+print('ok')
+" >/dev/null 2>&1 && ok "references still reported in the diff" \
+    || bad "references still reported in the diff"
+
+# A file inside the threshold stays put, counter or no counter.
+FRESHMEM="$WORK/fresh/.workspace/memory"
+mkdir -p "$FRESHMEM"
+sed 's/2025-12-01/2026-06-01/g; s/2025-01-01/2026-06-01/g' \
+    "$RMEM/MEMORY_INDEX.md" > "$FRESHMEM/MEMORY_INDEX.md"
+touch "$FRESHMEM/read_often.md" "$FRESHMEM/never_read.md" "$FRESHMEM/dormant_read_often.md"
+sed 's/2025-12-01/2026-06-01/g; s/2025-01-01/2026-06-01/g' \
+    "$RMEM/.index_state.json" > "$FRESHMEM/.index_state.json"
+FDRY="$(python3 "$PROPOSE" --dir "$FRESHMEM" --today 2026-06-03)"
+echo "$FDRY" | grep -q "No status transitions proposed" \
+    && ok "recent files are kept whatever the counter says" \
+    || bad "recent files are kept whatever the counter says (got: $FDRY)"
+
+# --------------------------------------------------------------------------
+# $CLAUDE_MEMORY_DIR relocates the memory directory for projects that do not
+# use `.workspace/memory/`.
+echo "== CLAUDE_MEMORY_DIR override =="
+ALTROOT="$WORK/altproj"
+mkdir -p "$ALTROOT/memory"
+cp "$RMEM/MEMORY_INDEX.md" "$ALTROOT/memory/MEMORY_INDEX.md"
+cp "$RMEM/.index_state.json" "$ALTROOT/memory/.index_state.json"
+touch "$ALTROOT/memory/read_often.md" "$ALTROOT/memory/never_read.md" \
+      "$ALTROOT/memory/dormant_read_often.md"
+ADRY="$(cd "$ALTROOT" && CLAUDE_MEMORY_DIR=memory python3 "$PROPOSE" --today 2026-06-03)"
+echo "$ADRY" | grep -q "Summary: 3 transition" \
+    && ok "relative CLAUDE_MEMORY_DIR is found" \
+    || bad "relative CLAUDE_MEMORY_DIR is found (got: $ADRY)"
+ADRY2="$(cd "$WORK" && CLAUDE_MEMORY_DIR="$ALTROOT/memory" python3 "$PROPOSE" --today 2026-06-03)"
+echo "$ADRY2" | grep -q "Summary: 3 transition" \
+    && ok "absolute CLAUDE_MEMORY_DIR is found" \
+    || bad "absolute CLAUDE_MEMORY_DIR is found (got: $ADRY2)"
+set +e
+UDRY="$(cd "$ALTROOT" && python3 "$PROPOSE" --today 2026-06-03 2>&1)"; URC=$?
+set -e
+[[ "$URC" -eq 2 ]] \
+    && ok "unset CLAUDE_MEMORY_DIR still defaults to .workspace/memory" \
+    || bad "unset CLAUDE_MEMORY_DIR still defaults to .workspace/memory (rc=$URC)"
+
 echo
 echo "test_gc.sh: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

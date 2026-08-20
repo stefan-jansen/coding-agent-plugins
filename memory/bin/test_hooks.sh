@@ -255,6 +255,46 @@ OUT="$(cd "$TPROJ2" && "$PRECOMPACT")"
 echo "$OUT" | grep -q "memory relevance review is overdue" \
     && bad "fresh sidecar suppresses nudge" || ok "fresh sidecar suppresses nudge"
 
+# --------------------------------------------------------------------------
+# $CLAUDE_MEMORY_DIR: a project whose memory is not under `.workspace/`.
+# Without this the hook matched on the literal `.workspace/memory` path
+# components, so such a project recorded no reads at all and GC saw an empty
+# index no matter how much memory it had.
+echo "== pre_tooluse: CLAUDE_MEMORY_DIR relocates the memory directory =="
+ALTPROJ="$WORK/altproj"
+ALTMEM="$ALTPROJ/memory"
+mkdir -p "$ALTMEM"
+printf '# Notes\n' > "$ALTMEM/notes.md"
+
+ALT_PAYLOAD=$(printf '{"tool_name":"Read","tool_input":{"file_path":"%s/notes.md"},"cwd":"%s"}' "$ALTMEM" "$ALTPROJ")
+
+# Unset: the relocated directory is not memory, so nothing is recorded.
+echo "$ALT_PAYLOAD" | python3 "$PRE_HOOK"
+[[ -f "$ALTMEM/.index_state.json" ]] \
+    && bad "no sidecar without CLAUDE_MEMORY_DIR" \
+    || ok "no sidecar without CLAUDE_MEMORY_DIR"
+
+# Relative to the project root.
+echo "$ALT_PAYLOAD" | CLAUDE_MEMORY_DIR=memory python3 "$PRE_HOOK"
+[[ -f "$ALTMEM/.index_state.json" ]] \
+    && ok "relative CLAUDE_MEMORY_DIR records the read" \
+    || bad "relative CLAUDE_MEMORY_DIR records the read"
+ALT_REF="$(python3 -c "import json; d=json.load(open('$ALTMEM/.index_state.json')); print(d['files']['notes.md']['last_referenced'])")"
+check "relocated last_referenced is today" "$TODAY" "$ALT_REF"
+
+# Absolute path.
+echo "$ALT_PAYLOAD" | CLAUDE_MEMORY_DIR="$ALTMEM" python3 "$PRE_HOOK"
+ALT_REFS="$(python3 -c "import json; d=json.load(open('$ALTMEM/.index_state.json')); print(d['files']['notes.md']['references'])")"
+check "absolute CLAUDE_MEMORY_DIR increments too" "2" "$ALT_REFS"
+
+# The default still works when the variable is set to something else: a read
+# under `.workspace/memory` must NOT be recorded once memory moved.
+OFF_PAYLOAD=$(printf '{"tool_name":"Read","tool_input":{"file_path":"%s/conventions.md"},"cwd":"%s"}' "$MEM" "$PROJECT")
+BEFORE_N="$(python3 -c "import json; d=json.load(open('$MEM/.index_state.json')); print(len(d['files']))")"
+echo "$OFF_PAYLOAD" | CLAUDE_MEMORY_DIR=somewhere-else python3 "$PRE_HOOK"
+AFTER_N="$(python3 -c "import json; d=json.load(open('$MEM/.index_state.json')); print(len(d['files']))")"
+check "override redirects away from .workspace/memory" "$BEFORE_N" "$AFTER_N"
+
 echo
 echo "test_hooks.sh: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

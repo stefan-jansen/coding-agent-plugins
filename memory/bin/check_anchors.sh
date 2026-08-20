@@ -75,7 +75,16 @@ fi
 # memory directory (explicit --dir, else the conventional .workspace/memory/).
 if [[ -z "$INDEX_PATH" ]]; then
     if [[ -z "$MEMORY_DIR" ]]; then
-        MEMORY_DIR="$ROOT_DIR/.workspace/memory"
+        # $CLAUDE_MEMORY_DIR (absolute, or relative to the project root) then
+        # the conventional default. Mirrors bin/memory_dir.py.
+        if [[ -n "${CLAUDE_MEMORY_DIR:-}" ]]; then
+            case "$CLAUDE_MEMORY_DIR" in
+                /*) MEMORY_DIR="$CLAUDE_MEMORY_DIR" ;;
+                *)  MEMORY_DIR="$ROOT_DIR/$CLAUDE_MEMORY_DIR" ;;
+            esac
+        else
+            MEMORY_DIR="$ROOT_DIR/.workspace/memory"
+        fi
     fi
     INDEX_PATH="$MEMORY_DIR/MEMORY_INDEX.md"
 fi

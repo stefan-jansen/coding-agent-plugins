@@ -187,7 +187,8 @@ def review(memory_dir: Path, out=sys.stdout) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--dir", help="memory directory (default: <git root or cwd>/.workspace/memory)")
+    ap.add_argument("--dir", help="memory directory (default: $CLAUDE_MEMORY_DIR, "
+                                  "else <git root or cwd>/.workspace/memory)")
     args = ap.parse_args(argv)
 
     memory_dir = Path(args.dir) if args.dir else None
@@ -199,7 +200,9 @@ def main(argv: list[str] | None = None) -> int:
             ).stdout.strip()
         except (OSError, subprocess.CalledProcessError):
             root = os.getcwd()
-        memory_dir = Path(root) / ".workspace" / "memory"
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from memory_dir import resolve as _resolve_memory_dir
+        memory_dir = _resolve_memory_dir(root)
     memory_dir = memory_dir.resolve()
 
     return review(memory_dir)

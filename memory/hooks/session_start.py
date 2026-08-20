@@ -220,7 +220,11 @@ def _budget_lines(project_root: Path, memory_dir: Path, sidecar: dict) -> list[s
 
 def main() -> int:
     project_root = _project_root_from_stdin()
-    memory_dir = project_root / ".workspace" / "memory"
+    try:
+        from memory_dir import resolve as resolve_memory_dir
+    except ImportError:
+        return 0
+    memory_dir = resolve_memory_dir(project_root)
     if not memory_dir.is_dir():
         return 0
 

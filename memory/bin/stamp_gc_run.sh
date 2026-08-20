@@ -32,9 +32,18 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Explicit --dir wins, then $CLAUDE_MEMORY_DIR (absolute, or relative to the
+# project root), then `.workspace/memory/`. Mirrors bin/memory_dir.py.
 if [[ -z "$MEMORY_DIR" ]]; then
     PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-    MEMORY_DIR="$PROJECT_ROOT/.workspace/memory"
+    if [[ -n "${CLAUDE_MEMORY_DIR:-}" ]]; then
+        case "$CLAUDE_MEMORY_DIR" in
+            /*) MEMORY_DIR="$CLAUDE_MEMORY_DIR" ;;
+            *)  MEMORY_DIR="$PROJECT_ROOT/$CLAUDE_MEMORY_DIR" ;;
+        esac
+    else
+        MEMORY_DIR="$PROJECT_ROOT/.workspace/memory"
+    fi
 fi
 
 if [[ ! -d "$MEMORY_DIR" ]]; then

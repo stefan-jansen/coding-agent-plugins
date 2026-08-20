@@ -46,13 +46,18 @@ List all `.workspace/memory/` files with size, line count, and modification age.
 Interactive add/update/remove/relocate workflow. Suggests entries based on recent commits and decisions. Apply after shipping a feature, making an architectural choice, or changing conventions.
 
 ### `/memory-gc`
-Identify and remove stale entries. Detects superseded decisions, completed temp tasks, and content that hasn't been touched in >30 days. Backs up to `.workspace/work/archives/memory/` before destructive ops.
+Propose `status` transitions in `MEMORY_INDEX.md` from how recently each entry was last read, then apply them in one transaction. It changes statuses only; it never deletes or moves a memory file.
 
 ```bash
-/memory-gc            # analyze + suggest
-/memory-gc --auto     # auto-clean with confirmation
-/memory-gc --dry-run  # preview only
+/memory-gc                 # dry-run (default), writes nothing
+/memory-gc --execute       # apply after confirmation
+/memory-gc --json          # dry-run, machine-readable
+/memory-gc --stale 60      # tune thresholds (defaults: 90d / 180d)
 ```
+
+Recency is the whole heuristic: `active → dormant` past 90 days, `→ deprecated` past 180, plus a demotion when every one of an entry's anchors has disappeared from the working tree. `superseded-by:<slug>` is yours and never touched.
+
+It cannot tell you a file is *wrong*. A memory file read every day and contradicted by the code six weeks ago stays `active`, correctly by this rule and uselessly for you. An empty GC diff means "nothing has gone unread", not "memory is accurate".
 
 ### `/index`
 Build or refresh project understanding into `.claude/PROJECT_MAP.md` — architectural overview, component relationships, key patterns. (Lives at `.claude/` because it's Claude-specific code mapping, not shared memory.)
@@ -236,7 +241,7 @@ plugin is installed). Both are stdlib Python 3 with no third-party deps.
 
 | Hook | Where | What it does |
 |---|---|---|
-| `PreToolUse` (matcher `Read\|Grep`) | `hooks/pre_tooluse_memory_ref.py` | Bumps `last_referenced` to today + increments `references` in `.workspace/memory/.index_state.json` whenever the agent reads or greps a `.workspace/memory/<file>.md` (excluding `MEMORY_INDEX.md`). Idempotent; never blocks a tool call. |
+| `PreToolUse` (matcher `Read\|Grep`) | `hooks/pre_tooluse_memory_ref.py` | Bumps `last_referenced` to today + increments `references` in the memory directory's `.index_state.json` whenever the agent reads or greps a `<file>.md` inside it (excluding `MEMORY_INDEX.md`). Honors `$CLAUDE_MEMORY_DIR`. Idempotent; never blocks a tool call. |
 | `SessionStart` | `hooks/session_start.py` | Reads `last_gc_run` from the sidecar. If older than 7 days (or null), prints a one-line nudge to the session-start banner. With `memory.auto_gc: true` in `.claude/settings.json`, also prints a dry-run of proposed status changes (files unread for >90 days proposed `active → dormant`). Bounded: stat + JSON read only, <100ms on a Factory-shaped fixture (verified by `bin/test_hooks.sh`). |
 
 `bin/stamp_gc_run.sh` writes `last_gc_run` after `/memory-gc` runs so the
@@ -268,13 +273,27 @@ relevance review on top of session start.
 
 Memory commands read defaults from the plugin and respect any project-level overrides in `.claude/settings.json` (Claude-specific). There is no separate `memory.config.json` — defaults are sensible and rarely need changing.
 
+### Pointing the plugin at a different directory
+
+`.workspace/memory/` is the default and the convention for new projects. A project that already keeps memory elsewhere, and has enough prose referring to those paths that relocating the files would break more than it fixes, can set `CLAUDE_MEMORY_DIR` in the `env` block of its `.claude/settings.json`:
+
+```json
+{
+  "env": { "CLAUDE_MEMORY_DIR": "memory" }
+}
+```
+
+Relative paths resolve against the project root; absolute paths are used as given. The setting reaches the hooks and every `bin/` script, so reads are recorded, the index is built, and GC runs against the directory you named. Every script also still takes an explicit `--dir`, which wins over the variable.
+
+Without this, a project whose memory is not at `.workspace/memory/` records no reads at all and presents GC with an empty index — the commands appear to run fine and do nothing.
+
 ## Dependencies
 
 None required. Optional: `sequential-thinking` MCP enhances analysis quality in `/memory-update` and `/memory-gc`. All commands degrade gracefully when MCP unavailable.
 
 ---
 
-**Version**: 2.0.0
+**Version**: 2.1.0
 **Category**: Core
 **Commands**: 5 (memory-review, memory-update, memory-gc, index, performance)
-**Layout**: `.workspace/memory/` (shared with Codex via `AGENTS.md`)
+**Layout**: `.workspace/memory/` by default, or `$CLAUDE_MEMORY_DIR` (shared with Codex via `AGENTS.md`)

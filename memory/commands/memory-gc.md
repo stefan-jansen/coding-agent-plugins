@@ -11,18 +11,30 @@ description: Signal-driven garbage collection for `.workspace/memory/`. Produces
 
 | Source | Provides |
 |---|---|
-| `.workspace/memory/MEMORY_INDEX.md` | Current `status`, `anchors`, `tokens` per entry |
-| `.workspace/memory/.index_state.json` | `last_referenced` (per file) + `references` count (per file) + project-level `last_gc_run` |
+| `MEMORY_INDEX.md` | Current `status`, `anchors`, `tokens` per entry |
+| `.index_state.json` | `last_referenced` (per file) + `references` count (per file) + project-level `last_gc_run` |
 | `bin/check_anchors.sh` against the working tree | `present` / `missing` / `n/a` per entry's anchors |
 
-Transitions (v0.1 heuristic; LLM-grounded relevance is out of scope):
+Both live in the project's memory directory: `.workspace/memory/` unless
+`$CLAUDE_MEMORY_DIR` names another one (see the memory plugin README).
 
-- `active → dormant` — `last_referenced` older than `--stale` (default 90d)
-  and `references == 0`, OR every anchor is `missing`.
-- `active → deprecated` — same as above but past `--deprecated` (default 180d).
-- `dormant → deprecated` — past 180d with no references.
+Transitions (v0.2 heuristic; LLM-grounded relevance is out of scope):
+
+- `active → dormant` — `last_referenced` older than `--stale` (default 90d),
+  OR every anchor is `missing`.
+- `active → deprecated` — same but past `--deprecated` (default 180d).
+- `dormant → deprecated` — past 180d.
 - `superseded-by:<slug>` — user-owned; never touched by GC.
 - `deprecated` — terminal; never demoted further.
+
+Recency decides. Until v0.2 every rule also required `references == 0`, which
+made GC inert on any real project: the PreToolUse hook increments that counter
+on each read and nothing decrements it, so one read ever froze a file as
+`active` permanently. The counter is reported in the diff but no longer gates.
+
+**What this cannot catch:** a file read constantly that is simply wrong.
+Content staleness is not a function of dates. Use `/memory-review` and your own
+judgment for that; do not read an empty GC diff as "memory is accurate."
 
 The dry-run **writes nothing**. `--execute` applies the diff in one
 transaction (atomic `os.replace` of `MEMORY_INDEX.md`) and stamps

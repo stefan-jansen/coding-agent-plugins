@@ -58,11 +58,20 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Resolve the memory directory: explicit --dir wins; otherwise the conventional
+# Resolve the memory directory: explicit --dir wins, then $CLAUDE_MEMORY_DIR
+# (absolute, or relative to the project root), then the conventional
 # `.workspace/memory/` under the git root (or CWD when not in a repo).
+# Mirrors bin/memory_dir.py; kept inline so this script stands alone.
 if [[ -z "$MEMORY_DIR" ]]; then
     PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-    MEMORY_DIR="$PROJECT_ROOT/.workspace/memory"
+    if [[ -n "${CLAUDE_MEMORY_DIR:-}" ]]; then
+        case "$CLAUDE_MEMORY_DIR" in
+            /*) MEMORY_DIR="$CLAUDE_MEMORY_DIR" ;;
+            *)  MEMORY_DIR="$PROJECT_ROOT/$CLAUDE_MEMORY_DIR" ;;
+        esac
+    else
+        MEMORY_DIR="$PROJECT_ROOT/.workspace/memory"
+    fi
 else
     # With --dir, recover the project root from the conventional layout so the
     # @-include check can find CLAUDE.md / AGENTS.md. `<root>/.workspace/memory`

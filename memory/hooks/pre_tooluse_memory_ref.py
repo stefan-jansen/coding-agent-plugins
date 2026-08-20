@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""PreToolUse hook: capture references to `.workspace/memory/*.md` files.
+"""PreToolUse hook: capture references to a project's memory files.
 
 Fired by Claude Code's PreToolUse hook layer (matcher: Read|Grep). Reads the
 tool-invocation JSON from stdin, extracts any path it can see, and — if the
-path identifies a memory file under `<project>/.workspace/memory/*.md` —
+path identifies a `*.md` directly inside the project's memory directory —
 bumps that file's `last_referenced` (to today, UTC) and increments `references`
-inside `<project>/.workspace/memory/.index_state.json`.
+inside that directory's `.index_state.json`.
+
+The memory directory is `.workspace/memory/` unless `$CLAUDE_MEMORY_DIR` says
+otherwise; see bin/memory_dir.py.
 
 The hook is the source of M3 acceptance criterion 3 (signal capture): after a
 session that reads a target memory file, that file's `last_referenced` should
@@ -81,28 +84,22 @@ def _resolve(project_root: Path, raw: str) -> Path:
         return p
 
 
-def _project_memory_match(resolved: Path) -> tuple[Path, str] | None:
-    """If `resolved` is `<project>/.workspace/memory/<name>.md`, return
-    `(<project>/.workspace/memory, <name>.md)`. Otherwise None.
+def _project_memory_match(resolved: Path, memory_dir: Path) -> tuple[Path, str] | None:
+    """If `resolved` is a memory file directly inside `memory_dir`, return
+    `(memory_dir, <name>.md)`. Otherwise None.
 
-    We accept symlinks and non-existing files (the read may be about to create
-    one) — the check is purely structural on the path components.
+    `memory_dir` comes from bin/memory_dir.py, so a project that keeps its
+    memory somewhere other than `.workspace/memory/` still registers reads.
+    We accept non-existing files (the read may be about to create one) — the
+    check is on the parent directory, not on the file existing.
     """
-    parts = resolved.parts
-    try:
-        idx = len(parts) - 1 - parts[::-1].index(".workspace")
-    except ValueError:
+    if resolved.parent != memory_dir:
         return None
-    if idx + 2 >= len(parts):
-        return None
-    if parts[idx + 1] != "memory":
-        return None
-    name = parts[idx + 2]
+    name = resolved.name
     if not name.endswith(".md") or name == "MEMORY_INDEX.md":
         # MEMORY_INDEX is auto-loaded on every session; reading it isn't a
         # signal about any specific memory file.
         return None
-    memory_dir = Path(*parts[: idx + 2])
     return memory_dir, name
 
 
@@ -196,15 +193,25 @@ def main() -> int:
     cwd_raw = payload.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
     project_root = Path(cwd_raw).resolve()
 
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bin"))
+    try:
+        from memory_dir import resolve as resolve_memory_dir
+    except ImportError:
+        return 0
+    try:
+        memory_dir = resolve_memory_dir(project_root).resolve(strict=False)
+    except OSError:
+        return 0
+
     # Group bumps by memory_dir so we issue one sidecar write per project.
     by_dir: dict[Path, set[str]] = {}
     for raw in _candidate_paths(tool_name, tool_input):
         resolved = _resolve(project_root, raw)
-        match = _project_memory_match(resolved)
+        match = _project_memory_match(resolved, memory_dir)
         if not match:
             continue
-        memory_dir, name = match
-        by_dir.setdefault(memory_dir, set()).add(name)
+        target_dir, name = match
+        by_dir.setdefault(target_dir, set()).add(name)
 
     for memory_dir, names in by_dir.items():
         _bump(memory_dir, names)

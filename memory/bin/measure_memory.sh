@@ -108,7 +108,13 @@ def read_cap(project_root):
     if CAP_OVERRIDE is not None:
         return CAP_OVERRIDE
 
-    memory_dir = os.path.join(project_root, ".workspace", "memory")
+    raw = (os.environ.get("CLAUDE_MEMORY_DIR") or "").strip()
+    if raw:
+        memory_dir = os.path.expanduser(raw)
+        if not os.path.isabs(memory_dir):
+            memory_dir = os.path.join(project_root, memory_dir)
+    else:
+        memory_dir = os.path.join(project_root, ".workspace", "memory")
 
     try:
         with open(os.path.join(memory_dir, ".index_state.json"),
