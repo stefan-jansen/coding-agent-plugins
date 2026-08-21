@@ -59,10 +59,30 @@ if [[ ! -d "$(dirname "$DEST")" ]]; then
 fi
 
 # ---- collect declared skills ------------------------------------------------
-# name -> absolute source dir, and name -> declaring plugin, for collisions.
-declare -A src_of=()
-declare -A owner_of=()
+# One record per skill: name<TAB>source dir<TAB>declaring plugin, newline
+# separated. This was an associative array, which is bash 4+; macOS still ships
+# bash 3.2 as /bin/bash, so the script died there before linking anything.
+RECORDS=""
 fatal=0
+
+rec_field() { # rec_field <name> <field-number>
+  printf '%s\n' "$RECORDS" | awk -F'\t' -v n="$1" -v f="$2" '$1 == n { print $f; exit }'
+}
+rec_src()   { rec_field "$1" 2; }
+rec_owner() { rec_field "$1" 3; }
+rec_names() { printf '%s\n' "$RECORDS" | awk -F'\t' 'NF { print $1 }' | sort; }
+rec_count() { rec_names | grep -c . || true; }
+
+# `readlink -f` is GNU; BSD readlink on older macOS has no -f. Skills are
+# directories, so `cd -P` resolves them portably. Empty when the path is gone.
+resolve_path() {
+  [ -e "$1" ] || return 0
+  if [ -d "$1" ]; then
+    (cd -P "$1" 2>/dev/null && pwd -P)
+  else
+    (cd -P "$(dirname "$1")" 2>/dev/null && printf '%s/%s\n' "$(pwd -P)" "$(basename "$1")")
+  fi
+}
 
 for root in "${roots[@]}"; do
   if [[ ! -d "$root" ]]; then
@@ -81,21 +101,21 @@ for root in "${roots[@]}"; do
         fatal=1
         continue
       fi
-      if [[ -n "${src_of[$name]:-}" && "${src_of[$name]}" != "$src" ]]; then
-        echo "sync-codex-skills: ERROR skill name '$name' claimed by both ${owner_of[$name]} and $plugin" >&2
+      existing="$(rec_src "$name")"
+      if [[ -n "$existing" && "$existing" != "$src" ]]; then
+        echo "sync-codex-skills: ERROR skill name '$name' claimed by both $(rec_owner "$name") and $plugin" >&2
         echo "  Codex's namespace is flat, so the names must be unique across marketplaces." >&2
         fatal=1
         continue
       fi
-      src_of["$name"]="$src"
-      owner_of["$name"]="$plugin"
+      [[ -n "$existing" ]] || RECORDS="${RECORDS}${name}"$'\t'"${src}"$'\t'"${plugin}"$'\n'
     done < <(jq -r '.skills[]? // empty' "$manifest")
   done < <(find "$root" -mindepth 3 -maxdepth 3 -path '*/.claude-plugin/plugin.json' -print)
 done
 
 [[ $fatal -ne 0 ]] && exit 1
 
-if [[ ${#src_of[@]} -eq 0 ]]; then
+if [[ "$(rec_count)" -eq 0 ]]; then
   echo "sync-codex-skills: no skills declared in ${roots[*]}" >&2
   exit 1
 fi
@@ -112,17 +132,17 @@ in_roots() {
 mkdir -p "$DEST"
 
 drift=0
-declare -i linked=0 repointed=0 removed=0 ok=0 skipped=0
+linked=0; repointed=0; removed=0; ok=0; skipped=0
 
 # ---- reconcile declared skills ---------------------------------------------
-for name in $(printf '%s\n' "${!src_of[@]}" | sort); do
-  src="${src_of[$name]}"
+for name in $(rec_names); do
+  src="$(rec_src "$name")"
   link="$DEST/$name"
 
   if [[ -L "$link" ]]; then
-    current="$(readlink -f "$link" || true)"
+    current="$(resolve_path "$link")"
     if [[ "$current" == "$src" ]]; then
-      ok+=1
+      ok=$((ok + 1))
       continue
     fi
     if ! in_roots "$current" || [[ -z "$current" && ! -e "$link" ]]; then
@@ -132,7 +152,7 @@ for name in $(printf '%s\n' "${!src_of[@]}" | sort); do
       else
         echo "sync-codex-skills: WARN $name already links outside the marketplaces -> $current; leaving alone" >&2
       fi
-      skipped+=1
+      skipped=$((skipped + 1))
       continue
     fi
     if [[ $CHECK -eq 1 ]]; then
@@ -141,24 +161,24 @@ for name in $(printf '%s\n' "${!src_of[@]}" | sort); do
     else
       ln -sfn "$src" "$link"
       echo "repointed: $name -> $src"
-      repointed+=1
+      repointed=$((repointed + 1))
     fi
     continue
   fi
 
   if [[ -e "$link" ]]; then
     echo "sync-codex-skills: WARN $name exists as a real directory in $DEST; leaving alone" >&2
-    skipped+=1
+    skipped=$((skipped + 1))
     continue
   fi
 
   if [[ $CHECK -eq 1 ]]; then
-    echo "DRIFT: $name is declared by ${owner_of[$name]} but missing from $DEST" >&2
+    echo "DRIFT: $name is declared by $(rec_owner "$name") but missing from $DEST" >&2
     drift=1
   else
     ln -s "$src" "$link"
     echo "linked: $name -> $src"
-    linked+=1
+    linked=$((linked + 1))
   fi
 done
 
@@ -167,9 +187,9 @@ done
 # someone else's, and a dangling link is only ours if it pointed into a root.
 while IFS= read -r link; do
   name="$(basename "$link")"
-  [[ -n "${src_of[$name]:-}" ]] && continue
+  [[ -n "$(rec_src "$name")" ]] && continue
   target="$(readlink "$link")"
-  resolved="$(readlink -f "$link" || true)"
+  resolved="$(resolve_path "$link")"
   in_roots "$target" || in_roots "$resolved" || continue
   if [[ $CHECK -eq 1 ]]; then
     echo "DRIFT: $name links into the marketplaces but no plugin declares it: $target" >&2
@@ -177,7 +197,7 @@ while IFS= read -r link; do
   else
     rm "$link"
     echo "removed stale: $name -> $target"
-    removed+=1
+    removed=$((removed + 1))
   fi
 done < <(find "$DEST" -mindepth 1 -maxdepth 1 -type l -print)
 
@@ -191,4 +211,4 @@ if [[ $CHECK -eq 1 ]]; then
   exit 0
 fi
 
-echo "sync-codex-skills: ${#src_of[@]} declared; $linked linked, $repointed repointed, $removed stale removed, $ok already correct, $skipped left alone."
+echo "sync-codex-skills: $(rec_count) declared; $linked linked, $repointed repointed, $removed stale removed, $ok already correct, $skipped left alone."
