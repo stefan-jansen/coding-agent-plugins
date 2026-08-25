@@ -1,7 +1,7 @@
 ---
 allowed-tools: [Task, Bash, Read, Write, Grep, EnterPlanMode, mcp__sequential-thinking__sequentialthinking]
 argument-hint: "[description] (or use /work new for integrated workflow)"
-description: "Enter plan mode (consider /work new for tracked planning)"
+description: "PLAN step: turn an align spec.md into issue-sized chunks using plan mode. Next step is /plan-issues."
 ---
 
 # Planning

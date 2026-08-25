@@ -1,7 +1,7 @@
 ---
 allowed-tools: [Task, Bash, Read, Write, Grep, mcp__sequential-thinking__sequentialthinking]
 argument-hint: "[@file | #issue | description]"
-description: "Quick exploration without plan mode (use /work new for full planning)"
+description: "Quick read-only pass to locate where something lives. Non-trivial work starts with /align instead."
 ---
 
 # Quick Exploration

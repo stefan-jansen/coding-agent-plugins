@@ -1,7 +1,7 @@
 ---
 allowed-tools: [Task, Bash, Read, Write, MultiEdit, Grep, Glob, TodoWrite]
 argument-hint: "[--task ID | --parallel [N|auto] | --preview | --status]"
-description: "Execute next task(s) from implementation plan"
+description: "Execute tasks from a local work unit plan. For work tracked as GitHub issues use /next-issue."
 ---
 
 # Execute Next Task
