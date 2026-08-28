@@ -346,7 +346,7 @@ Code review, documentation quality, and security audit specialist.
 - Uses `/performance` for execution metrics
 
 ### Workflow Plugin
-- `/analyze` used during `/explore` phase
+- `/analyze` used during the read-only survey `/align` runs first
 - `/test` and `/review` used during `/ship` validation
 - `/fix` helps resolve issues blocking `/next`
 

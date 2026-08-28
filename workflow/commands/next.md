@@ -57,7 +57,7 @@ For `--parallel`, find independent tasks (no unmet dependencies), launch as conc
 
 ## Error Handling
 
-- No active work unit → "Run /explore first"
+- No active work unit → "Run /align first, or /work to pick an existing unit"
 - No state.json → "Run /plan first"
 - All tasks blocked → Show blocked reasons
 - Partial parallel failure → Complete successful tasks, report failures

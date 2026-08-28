@@ -1,7 +1,7 @@
 {
   "name": "workflow",
-  "version": "1.4.0",
-  "description": "Structured development workflow with plan mode integration",
+  "version": "1.5.0",
+  "description": "The align -> ship workflow: spec, issues, implementation, delivery, and session handoffs",
   "author": {
     "name": "Claude Code Framework"
   },
@@ -14,7 +14,6 @@
     "skills"
   ],
   "commands": [
-    "./commands/explore.md",
     "./commands/next.md",
     "./commands/plan.md",
     "./commands/spike.md",

@@ -59,5 +59,5 @@ Create persistent project understanding that survives sessions.
 ## Benefits
 
 - `/analyze` has persistent context
-- `/explore` starts with project knowledge
+- `/align` starts its read-only survey from project knowledge
 - New sessions understand codebase immediately

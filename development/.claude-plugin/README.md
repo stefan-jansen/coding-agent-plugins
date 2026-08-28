@@ -448,8 +448,8 @@ The Development Plugin includes **optional skills** that provide deep expertise 
 
 ## Integration with Workflow
 
-### With `/explore`
-- Run `/analyze` during exploration phase
+### With `/align`
+- Run `/analyze` during the read-only survey `/align` runs first
 - Identify architecture patterns early
 - Understand technical constraints
 
@@ -607,4 +607,4 @@ MIT License - See project LICENSE file
 
 ---
 
-**Note**: This plugin provides comprehensive development capabilities. For workflow-driven development, use in conjunction with the workflow plugin (/explore, /plan, /next, /ship).
+**Note**: This plugin provides comprehensive development capabilities. For workflow-driven development, use in conjunction with the workflow plugin (/align, /plan, /next-issue, /ship).
