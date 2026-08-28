@@ -36,7 +36,7 @@ Plugins, their hooks, and settings are read at session start and are not hot-rel
 | `workflow` | `/align` `/plan` `/plan-issues` `/next-issue` `/ship` `/handoff` `/continue` `/delegate` `/next` `/work` `/spike` | Structured task execution — spec → issues → implement → deliver, plus session handoffs |
 | `memory` | `/memory-gc` `/memory-review` `/memory-update` `/index` `/performance` | Persistent project memory under a token budget |
 | `transition` | PreCompact / PostCompact / SessionEnd hooks | Write a session summary to `.workspace/transitions/YYYY-MM-DD/HHMMSS.md` on every compaction |
-| `development` | `/analyze` `/review` `/test` `/fix` `/git` `/docs` | Code analysis, review, TDD, debugging |
+| `development` | `/analyze` `/review` `/docs` `/test` `/fix` `/git` `/prepare-review` | Code analysis, review, TDD, debugging, docs, git |
 | `system` | `/audit` `/cleanup` `/status` | Framework health, cleanup, unified status view |
 | `setup` | `/setup` `/setup:user` | Project initialization (interview-driven) + global user config — enable once, disable after |
 | `codex` | `/codex:*` commands | Delegate work to OpenAI Codex from Claude Code |
