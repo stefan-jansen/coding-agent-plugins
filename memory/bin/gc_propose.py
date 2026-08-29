@@ -32,6 +32,13 @@ still reported in the diff as context for the reader; it no longer gates.
 What this cannot see: a file that is read constantly and is wrong. Content
 staleness is not a function of dates, and no threshold here will find it.
 
+Because GC only ever demotes, a file it was not handed is a file that stays
+`active` forever without being counted, and a reference signal that never
+arrives is indistinguishable from a directory nobody reads. Neither shows up in
+a transition list, so both are measured separately (`coverage`, printed as the
+`inputs:` and `signal:` lines) and "Index is current" is withheld while either
+is short.
+
 Defaults: STALE_DAYS=90, DEPRECATED_DAYS=180. Override with --stale / --deprecated.
 
 Output (when --json): a transactional diff document:
@@ -41,6 +48,10 @@ Output (when --json): a transactional diff document:
     "memory_dir": "/abs/path/.workspace/memory",
     "today": "YYYY-MM-DD",
     "stale_days": 90, "deprecated_days": 180,
+    "coverage": {"files_on_disk": N, "index_entries": M,
+                 "unindexed": [...], "orphaned": [...],
+                 "skipped": [{"name": "...", "reason": "..."}],
+                 "unsignalled": [...], "sidecar_age_days": D},
     "transitions": [
       {"name": "<file>.md", "from": "active", "to": "dormant", "reason": "..."},
       ...
@@ -68,6 +79,9 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from memory_files import discover  # noqa: E402  (bin/ is not a package)
+
 
 REQUIRED_FIELDS = ("status", "last_referenced", "tokens", "anchors")
 HEADING_RE = re.compile(r"^#{2,3}\s+(.+?)\s*$")
@@ -75,6 +89,9 @@ FIELD_RE = re.compile(r"^([A-Za-z0-9_-]+):\s*(.*)$")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 DEFAULT_STALE_DAYS = 90
 DEFAULT_DEPRECATED_DAYS = 180
+# A just-seeded sidecar has had no chance to record a read, so "no signal
+# anywhere" only means something once the index has been in place a while.
+SIGNAL_GRACE_DAYS = 7
 
 
 def _today_utc() -> _dt.date:
@@ -196,6 +213,49 @@ def effective_last_ref(entry: dict, sidecar_files: dict, name: str) -> _dt.date 
     return max(candidates) if candidates else None
 
 
+def _coverage(
+    memory_dir: Path,
+    entries: dict,
+    sidecar: dict,
+    sidecar_files: dict,
+    today: _dt.date,
+) -> dict:
+    """Compare what GC was handed against what is on disk.
+
+    GC only ever demotes, so a file it cannot see is a file that stays `active`
+    forever without being counted, and a reference signal that never arrives
+    looks exactly like a file nobody read. Neither is visible in a transition
+    list, which is why both are measured here and reported next to it.
+
+    `unsignalled` counts entries whose `references` is still 0. That counter is
+    written only by the PreToolUse hook, so it is the one field that distinguishes
+    a read from a seeded date: `last_referenced` starts at the file's mtime and
+    is therefore recent for every file that was merely edited.
+    """
+    on_disk, skipped = discover(memory_dir)
+    unindexed = sorted(set(on_disk) - set(entries))
+    orphaned = sorted(set(entries) - set(on_disk))
+
+    seeded = _parse_date(sidecar.get("generated_at")) if isinstance(sidecar, dict) else None
+    unsignalled = []
+    for name in entries:
+        state = sidecar_files.get(name)
+        refs = int(state.get("references") or 0) if isinstance(state, dict) else 0
+        if refs == 0:
+            unsignalled.append(name)
+
+    return {
+        "files_on_disk": len(on_disk),
+        "index_entries": len(entries),
+        "unindexed": unindexed,
+        "orphaned": orphaned,
+        "skipped": [{"name": n, "reason": r} for n, r in skipped],
+        "sidecar_generated_at": sidecar.get("generated_at") if isinstance(sidecar, dict) else None,
+        "sidecar_age_days": (today - seeded).days if seeded else None,
+        "unsignalled": sorted(unsignalled),
+    }
+
+
 def propose(
     memory_dir: Path,
     stale_days: int,
@@ -210,6 +270,7 @@ def propose(
     if not isinstance(sidecar_files, dict):
         sidecar_files = {}
     anchors = anchor_signal(memory_dir)
+    coverage = _coverage(memory_dir, entries, sidecar, sidecar_files, today)
 
     transitions: list[dict] = []
     kept: list[dict] = []
@@ -247,7 +308,7 @@ def propose(
             if age_days is not None and age_days > deprecated_days:
                 new_status = "deprecated"
                 reason = (
-                    f"unused for {age_days}d (>{deprecated_days}d) — "
+                    f"unused for {age_days}d (>{deprecated_days}d) - "
                     "demoting active -> deprecated"
                 )
             elif age_days is not None and age_days > stale_days:
@@ -308,6 +369,7 @@ def propose(
         "stale_days": stale_days,
         "deprecated_days": deprecated_days,
         "auto_loaded_cap": front.get("auto_loaded_cap"),
+        "coverage": coverage,
         "transitions": transitions,
         "kept": kept,
         "summary": {
@@ -316,6 +378,79 @@ def propose(
             "skipped_superseded": len(skipped_superseded),
         },
     }
+
+
+def _signal_is_dead(cov: dict) -> bool:
+    """True when no read has been captured for any entry, long enough after
+    seeding that the absence is a fact about capture rather than about age."""
+    entries = cov.get("index_entries") or 0
+    if not entries or len(cov.get("unsignalled") or []) != entries:
+        return False
+    age = cov.get("sidecar_age_days")
+    return isinstance(age, int) and age >= SIGNAL_GRACE_DAYS
+
+
+def _blind(cov: dict) -> str | None:
+    """Why GC's inputs are incomplete, or None when they are not."""
+    if not cov:
+        return None
+    if cov.get("unindexed"):
+        return ("No status transitions proposed, but GC did not see the whole "
+                "memory directory.")
+    if _signal_is_dead(cov):
+        return ("No status transitions proposed, but no read has been captured "
+                "for any entry, so recency here is file mtime rather than use.")
+    return None
+
+
+def _print_coverage_warnings(cov: dict, out=sys.stdout) -> bool:
+    """Print every way GC's inputs fell short. Returns True if anything was."""
+    if not cov:
+        return False
+    unindexed = cov.get("unindexed") or []
+    orphaned = cov.get("orphaned") or []
+    skipped = cov.get("skipped") or []
+    unsignalled = cov.get("unsignalled") or []
+    entries = cov.get("index_entries") or 0
+    shown = 5
+
+    if unindexed:
+        print(f"{len(unindexed)} file(s) on disk have no entry in MEMORY_INDEX.md; "
+              "GC cannot see them. Re-run bin/memory_init_index.sh.", file=out)
+        for name in unindexed[:shown]:
+            print(f"  - {name}", file=out)
+        if len(unindexed) > shown:
+            print(f"  ... and {len(unindexed) - shown} more", file=out)
+    if orphaned:
+        print(f"{len(orphaned)} index entr"
+              f"{'y has' if len(orphaned) == 1 else 'ies have'} no file on disk.", file=out)
+        for name in orphaned[:shown]:
+            print(f"  - {name}", file=out)
+        if len(orphaned) > shown:
+            print(f"  ... and {len(orphaned) - shown} more", file=out)
+    if skipped:
+        # Grouped by reason, and named only when there are few enough for the
+        # list to be worth reading. `_archive/` runs to hundreds of files in a
+        # long-lived project; the point is that the number is stated, not that
+        # every archived note is recited.
+        by_reason: dict[str, list[str]] = {}
+        for item in skipped:
+            by_reason.setdefault(item["reason"], []).append(item["name"])
+        for reason in sorted(by_reason):
+            names = by_reason[reason]
+            print(f"{len(names)} file(s) not indexed: {reason}.", file=out)
+            if len(names) <= shown:
+                for name in names:
+                    print(f"  - {name}", file=out)
+    dead = _signal_is_dead(cov)
+    if dead:
+        print(f"No read has been captured for any of the {entries} "
+              f"entr{'y' if entries == 1 else 'ies'} in the "
+              f"{cov['sidecar_age_days']}d since the sidecar was seeded "
+              f"({cov.get('sidecar_generated_at')}). Recency here is file mtime, "
+              "not use - see \"Reference capture\" in the memory plugin README.",
+              file=out)
+    return bool(unindexed or orphaned or skipped or dead)
 
 
 def print_human(diff: dict, out=sys.stdout) -> None:
@@ -330,19 +465,40 @@ def print_human(diff: dict, out=sys.stdout) -> None:
     cap = diff.get("auto_loaded_cap")
     if cap:
         print(f"  auto_loaded_cap: {cap}", file=out)
+    cov = diff.get("coverage") or {}
+    if cov:
+        print(
+            f"  inputs: {cov['files_on_disk']} file(s) on disk, "
+            f"{cov['index_entries']} index entr"
+            f"{'y' if cov['index_entries'] == 1 else 'ies'}, "
+            f"{len(cov['unindexed'])} unindexed",
+            file=out,
+        )
+        print(
+            f"  signal: {cov['index_entries'] - len(cov['unsignalled'])}"
+            f"/{cov['index_entries']} entr"
+            f"{'y' if cov['index_entries'] == 1 else 'ies'} with a captured read",
+            file=out,
+        )
     print("", file=out)
-    if not diff["transitions"]:
-        print("No status transitions proposed. Index is current.", file=out)
-    else:
+    if diff["transitions"]:
         print(f"Proposed transitions ({summary['transitions']}):", file=out)
         for t in diff["transitions"]:
             print(f"  - {t['name']}: {t['from']} -> {t['to']}", file=out)
             print(f"      reason: {t['reason']}", file=out)
+    elif _blind(cov):
+        # "Index is current" is a claim about the memory directory, so it is
+        # not printable while GC is demonstrably not seeing all of it.
+        print(_blind(cov), file=out)
+    else:
+        print("No status transitions proposed. Index is current.", file=out)
     print("", file=out)
+    if _print_coverage_warnings(cov, out):
+        print("", file=out)
     print(
         f"Summary: {summary['transitions']} transition(s), "
         f"{summary['kept']} kept "
-        f"({summary['skipped_superseded']} superseded — user-owned).",
+        f"({summary['skipped_superseded']} superseded - user-owned).",
         file=out,
     )
 

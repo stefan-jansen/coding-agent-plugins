@@ -1,11 +1,24 @@
 #!/usr/bin/env python3
 """PreToolUse hook: capture references to a project's memory files.
 
-Fired by Claude Code's PreToolUse hook layer (matcher: Read|Grep). Reads the
-tool-invocation JSON from stdin, extracts any path it can see, and — if the
-path identifies a `*.md` directly inside the project's memory directory —
-bumps that file's `last_referenced` (to today, UTC) and increments `references`
+Fired by Claude Code's PreToolUse hook layer (matcher: Read|Grep|Bash). Reads
+the tool-invocation JSON from stdin, extracts any path it can see, and - if the
+path identifies a managed `*.md` under the project's memory directory - bumps
+that file's `last_referenced` (to today, UTC) and increments `references`
 inside that directory's `.index_state.json`.
+
+`Bash` is matched because a session running with bypassed permissions is
+instructed to read files with `cat` / `sed -n` / `head` and search with `grep`,
+so restricting capture to the Read and Grep tools measured which tool the
+harness happened to prefer rather than which memory files were used. Paths are
+recovered from the command string with a regex; every candidate is validated
+against the memory directory before anything is written, so the imprecision
+costs a missed bump, never a wrong one.
+
+Managed means what bin/memory_files.py says it means: any `*.md` under the
+memory directory except `MEMORY_INDEX.md`, `_archive/` and dot-directories,
+keyed by its path relative to that directory (`_inbox/note.md`). Keying by
+relative path is what lets a note in a subdirectory accumulate signal at all.
 
 The memory directory is `.workspace/memory/` unless `$CLAUDE_MEMORY_DIR` says
 otherwise; see bin/memory_dir.py.
@@ -20,16 +33,17 @@ Design constraints:
     write failure) is swallowed; we exit 0 and let the read proceed.
   - Idempotent — re-running for the same path on the same day is a no-op
     apart from incrementing the `references` counter.
-  - Fast — single JSON parse + single sidecar rewrite. No project crawl,
-    no token counts, no MEMORY_INDEX.md reads.
+  - Fast - single JSON parse + single sidecar rewrite. No project crawl,
+    no token counts, no MEMORY_INDEX.md reads. Bash payloads that cannot
+    contain a memory path are rejected on a substring test before any work.
   - Best-effort race handling — read/modify/write under a sibling lockfile so
     concurrent Read/Grep tool calls don't drop updates. Lock failures fall
     through to a plain write rather than skipping the update.
 
 The sidecar contract is documented in bin/memory_init_index.sh. We only touch:
-  - `files.<name>.last_referenced` (set to today UTC)
-  - `files.<name>.references`     (int, defaulted to 0 + 1)
-  - `files.<name>.tokens`         (preserved if present; defaulted to 0 if a
+  - `files.<path>.last_referenced` (set to today UTC)
+  - `files.<path>.references`     (int, defaulted to 0 + 1)
+  - `files.<path>.tokens`         (preserved if present; defaulted to 0 if a
                                    memory file appears here for the first time
                                    between init runs)
 
@@ -43,30 +57,55 @@ import errno
 import fcntl
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Iterable
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bin"))
+try:
+    from memory_dir import resolve as resolve_memory_dir
+    from memory_files import relative_key
+except ImportError:  # pragma: no cover - plugin tree is incomplete
+    resolve_memory_dir = None
+    relative_key = None
 
 
 def _today_utc() -> str:
     return _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%d")
 
 
+# A shell word that ends in `.md`, with surrounding quotes and shell
+# metacharacters excluded. Deliberately loose: anything it over-matches is
+# thrown away by the memory-directory check in `_project_memory_match`.
+_MD_IN_COMMAND = re.compile(r"""[^\s'"`;|&<>()$]*\.md""")
+
+
 def _candidate_paths(tool_name: str, tool_input: dict) -> Iterable[str]:
     """Yield raw path strings present in the tool input.
 
-    We deliberately stay tolerant — different Claude Code versions name fields
+    We deliberately stay tolerant - different Claude Code versions name fields
     slightly differently (e.g. `file_path` vs `path`). Each yielded string is
-    later validated as a real `.workspace/memory/*.md` file before we touch
-    the sidecar.
+    later validated as a memory file before we touch the sidecar.
     """
     if not isinstance(tool_input, dict):
+        return
+    if tool_name == "Bash":
+        # `cat memory/foo.md`, `sed -n '1,40p' memory/foo.md`, `grep -n x
+        # memory/*.md`. A path assembled from a variable is invisible to us;
+        # that is a missed bump, not a wrong one.
+        command = tool_input.get("command")
+        if not isinstance(command, str) or ".md" not in command:
+            return
+        for match in _MD_IN_COMMAND.findall(command):
+            if match and match != ".md":
+                yield match
         return
     keys = ("file_path", "path", "filename")
     if tool_name == "Grep":
         # Grep `path` is a directory or file root; `glob` narrows further but
         # we only care about the path itself (Grep over `.workspace/memory/`
-        # touches every memory file conceptually — we don't pick winners).
+        # touches every memory file conceptually - we don't pick winners).
         keys = ("path", "file_path")
     for key in keys:
         value = tool_input.get(key)
@@ -85,22 +124,22 @@ def _resolve(project_root: Path, raw: str) -> Path:
 
 
 def _project_memory_match(resolved: Path, memory_dir: Path) -> tuple[Path, str] | None:
-    """If `resolved` is a memory file directly inside `memory_dir`, return
-    `(memory_dir, <name>.md)`. Otherwise None.
+    """If `resolved` is a managed memory file, return `(memory_dir, <key>)`.
+
+    The key is the path relative to `memory_dir` (`_inbox/note.md` for a note
+    in a subdirectory), matching how bin/memory_init_index.sh keys the index
+    and the sidecar. `MEMORY_INDEX.md` is excluded: it is auto-loaded on every
+    session, so reading it is not a signal about any specific memory file.
 
     `memory_dir` comes from bin/memory_dir.py, so a project that keeps its
     memory somewhere other than `.workspace/memory/` still registers reads.
-    We accept non-existing files (the read may be about to create one) — the
-    check is on the parent directory, not on the file existing.
+    We accept non-existing files (the read may be about to create one) - the
+    check is on the path, not on the file existing.
     """
-    if resolved.parent != memory_dir:
+    key = relative_key(resolved, memory_dir)
+    if key is None:
         return None
-    name = resolved.name
-    if not name.endswith(".md") or name == "MEMORY_INDEX.md":
-        # MEMORY_INDEX is auto-loaded on every session; reading it isn't a
-        # signal about any specific memory file.
-        return None
-    return memory_dir, name
+    return memory_dir, key
 
 
 def _load_sidecar(path: Path) -> dict:
@@ -186,17 +225,14 @@ def main() -> int:
         return 0
 
     tool_name = payload.get("tool_name")
-    if tool_name not in ("Read", "Grep"):
+    if tool_name not in ("Read", "Grep", "Bash"):
         return 0
     tool_input = payload.get("tool_input") or {}
 
     cwd_raw = payload.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
     project_root = Path(cwd_raw).resolve()
 
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "bin"))
-    try:
-        from memory_dir import resolve as resolve_memory_dir
-    except ImportError:
+    if resolve_memory_dir is None or relative_key is None:
         return 0
     try:
         memory_dir = resolve_memory_dir(project_root).resolve(strict=False)

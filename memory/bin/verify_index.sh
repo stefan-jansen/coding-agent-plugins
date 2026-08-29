@@ -90,12 +90,12 @@ if [[ ! -d "$MEMORY_DIR" ]]; then
 fi
 
 PYTHONPATH="$BIN_DIR${PYTHONPATH:+:$PYTHONPATH}" python3 - "$MEMORY_DIR" "$STRICT" "$QUIET" "$PROJECT_ROOT" <<'PY'
-import glob
 import os
 import re
 import sys
 
 from include_graph import SEED_FILES, reachable
+from memory_files import discover
 from token_count import count_file
 
 MEMORY_DIR = os.path.abspath(sys.argv[1])
@@ -114,9 +114,6 @@ OPTIONAL_FIELDS = ("cap",)
 
 # Every field the index parser should retain from an entry.
 KNOWN_FIELDS = REQUIRED_FIELDS + OPTIONAL_FIELDS
-
-# Memory files that are infrastructure, not managed memory entries.
-EXCLUDED_FILES = {INDEX_NAME}
 
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -300,11 +297,7 @@ def main():
 
     display_only = is_display_only(MEMORY_DIR)
 
-    memory_files = sorted(
-        os.path.basename(p)
-        for p in glob.glob(os.path.join(MEMORY_DIR, "*.md"))
-        if os.path.basename(p) not in EXCLUDED_FILES
-    )
+    memory_files, skipped_files = discover(MEMORY_DIR)
 
     print("Memory directory: %s" % MEMORY_DIR)
 
@@ -418,6 +411,8 @@ def main():
     if not QUIET:
         for name in ok_files:
             print("  ok: %s" % name)
+        for name, reason in skipped_files:
+            print("  skip: %s (%s)" % (name, reason))
 
     missing_count = sum(1 for f in failures if "no entry in" in f)
 

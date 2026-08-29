@@ -362,6 +362,51 @@ check "per-entry cap survives a re-run" "1" "$(grep -c '^- cap: 2000$' "$C6/MEMO
 check "default_file_cap survives a re-run" "1" \
     "$(grep -c '^default_file_cap: 500$' "$C6/MEMORY_INDEX.md")"
 
+# --------------------------------------------------------------------------
+# Subdirectories. verify_index.sh globbed `*.md`, so a note under `_inbox/`
+# was neither required to have an entry nor reported as missing one.
+echo "== subdirectories: an unindexed subdirectory note is a failure =="
+SUB="$WORK/subdirs/.workspace/memory"
+mkdir -p "$SUB/_inbox" "$SUB/_archive"
+printf '# Flat\n' > "$SUB/flat.md"
+printf '# Inbox\n' > "$SUB/_inbox/note.md"
+printf '# Archived\n' > "$SUB/_archive/old.md"
+cat > "$SUB/MEMORY_INDEX.md" <<'EOF'
+---
+auto_loaded_cap: 5000
+---
+
+# Memory Index
+
+## flat.md
+- status: active
+- last_referenced: 2026-06-01
+- tokens: 3
+- anchors: -
+EOF
+set +e
+SOUT="$("$VERIFY" --dir "$SUB" 2>&1)"; SRC=$?
+set -e
+check "missing subdirectory entry fails" "1" "$SRC"
+check "the subdirectory note is named by relative path" "1" \
+    "$(echo "$SOUT" | grep -c '_inbox/note.md: no entry')"
+check "the declined _archive file is reported, not required" "1" \
+    "$(echo "$SOUT" | grep -c 'skip: _archive/old.md')"
+
+echo "== subdirectories: adding the entry clears it =="
+cat >> "$SUB/MEMORY_INDEX.md" <<'EOF'
+
+## _inbox/note.md
+- status: active
+- last_referenced: 2026-06-01
+- tokens: 3
+- anchors: -
+EOF
+set +e
+SOUT2="$("$VERIFY" --dir "$SUB" 2>&1)"; SRC2=$?
+set -e
+check "indexed subdirectory note passes" "0" "$SRC2"
+
 echo
 echo "Passed: $PASS  Failed: $FAIL"
 [[ "$FAIL" -eq 0 ]]

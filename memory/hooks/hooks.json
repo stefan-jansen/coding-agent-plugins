@@ -1,9 +1,9 @@
 {
-  "description": "Memory plugin hooks — PreToolUse reference capture + SessionStart nudge.",
+  "description": "Memory plugin hooks — PreToolUse reference capture (Read|Grep|Bash) + SessionStart nudge.",
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Read|Grep",
+        "matcher": "Read|Grep|Bash",
         "hooks": [
           {
             "type": "command",

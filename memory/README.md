@@ -241,8 +241,41 @@ plugin is installed). Both are stdlib Python 3 with no third-party deps.
 
 | Hook | Where | What it does |
 |---|---|---|
-| `PreToolUse` (matcher `Read\|Grep`) | `hooks/pre_tooluse_memory_ref.py` | Bumps `last_referenced` to today + increments `references` in the memory directory's `.index_state.json` whenever the agent reads or greps a `<file>.md` inside it (excluding `MEMORY_INDEX.md`). Honors `$CLAUDE_MEMORY_DIR`. Idempotent; never blocks a tool call. |
+| `PreToolUse` (matcher `Read\|Grep\|Bash`) | `hooks/pre_tooluse_memory_ref.py` | Bumps `last_referenced` to today + increments `references` in the memory directory's `.index_state.json` whenever the agent reads a managed `.md` under it. Honors `$CLAUDE_MEMORY_DIR`. Idempotent; never blocks a tool call. See **Reference capture** below for what it can and cannot see. |
 | `SessionStart` | `hooks/session_start.py` | Reads `last_gc_run` from the sidecar. If older than 7 days (or null), prints a one-line nudge to the session-start banner. With `memory.auto_gc: true` in `.claude/settings.json`, also prints a dry-run of proposed status changes (files unread for >90 days proposed `active → dormant`). Bounded: stat + JSON read only, <100ms on a Factory-shaped fixture (verified by `bin/test_hooks.sh`). |
+
+### Reference capture
+
+`last_referenced` and `references` are only as good as what the hook sees.
+
+**Seen:** the `Read` and `Grep` tools, and a `Bash` command that names a memory
+file with a literal path ending in `.md` - `cat memory/x.md`,
+`sed -n '1,40p' memory/x.md`, `grep -n auth memory/*.md`. Bash is matched
+because a session running with bypassed permissions is instructed to read with
+`cat` / `sed` / `head`, and a hook restricted to the Read and Grep tools
+recorded nothing at all in exactly the sessions that read the most.
+
+**Not seen:** a path assembled from a shell variable or a glob the shell expands
+before the hook runs; a file read by a subagent in a separate process tree; a
+memory file opened by an editor outside the session. Each of those is a missed
+bump, never a wrong one - every candidate path is checked against the memory
+directory before anything is written.
+
+**Cost:** the hook now runs on every `Bash` call as well, which is one Python
+interpreter start - measured at ~21ms, against a 3s timeout. A command with no
+`.md` in it is rejected on a substring test before any path work.
+
+**Which files count:** every `*.md` under the memory directory, keyed by its
+path relative to that directory, so `_inbox/note.md` accumulates its own signal.
+`MEMORY_INDEX.md` is excluded (it is auto-loaded every session, so reading it
+says nothing about any one file), as are `_archive/` and dot-directories. The
+rules live in one place, `bin/memory_files.py`, and the seeder, the verifier,
+the GC proposer and the hook all use it.
+
+**When capture is not working,** `/memory-gc` says so rather than reporting an
+all-clear: its `inputs:` line states files-on-disk against index entries, its
+`signal:` line states how many entries have ever had a read captured, and it
+refuses to print "Index is current" while either is short.
 
 `bin/stamp_gc_run.sh` writes `last_gc_run` after `/memory-gc` runs so the
 nudge resets for the next week. The transition plugin's `pre-compact.sh` is

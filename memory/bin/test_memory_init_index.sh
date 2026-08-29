@@ -148,6 +148,42 @@ else
     echo "  skip: verify_index.sh not present on this branch (sibling M1 deliverable)"
 fi
 
+# --------------------------------------------------------------------------
+# Recursion. The seeder globbed `<memory_dir>/*.md`, so a project that files
+# notes under `_inbox/` had them indexed nowhere and demoted never.
+echo "== recursive walk: subdirectory notes are indexed by relative path =="
+RMEM="$WORK/rec/.workspace/memory"
+mkdir -p "$RMEM/_inbox/deep" "$RMEM/_archive" "$RMEM/.hidden"
+printf '# Flat\n'    > "$RMEM/flat.md"
+printf '# Inbox\n'   > "$RMEM/_inbox/note.md"
+printf '# Same name\n' > "$RMEM/_inbox/flat.md"
+printf '# Deep\n'    > "$RMEM/_inbox/deep/deeper.md"
+printf '# Archived\n'> "$RMEM/_archive/ancient.md"
+printf '# Hidden\n'  > "$RMEM/.hidden/h.md"
+OUT="$(bash "$INIT" --dir "$RMEM")"
+ENTRIES="$(grep '^## ' "$RMEM/MEMORY_INDEX.md" | sed 's/^## //' | LC_ALL=C sort | tr '\n' ',')"
+check "every non-excluded note is indexed by relative path" \
+    "_inbox/deep/deeper.md,_inbox/flat.md,_inbox/note.md,flat.md," "$ENTRIES"
+echo "$OUT" | grep -q '_archive/ancient.md' \
+    && ok "declined _archive file is reported" \
+    || bad "declined _archive file is reported (got: $OUT)"
+echo "$OUT" | grep -q '.hidden/h.md' \
+    && ok "declined dot-directory file is reported" \
+    || bad "declined dot-directory file is reported"
+echo "$OUT" | grep -q '2 skipped' \
+    && ok "the summary line counts what was skipped" \
+    || bad "the summary line counts what was skipped (got: $OUT)"
+SIDEKEYS="$(python3 -c "import json; d=json.load(open('$RMEM/.index_state.json')); print(','.join(sorted(d['files'])))")"
+check "sidecar keys match the index keys" \
+    "_inbox/deep/deeper.md,_inbox/flat.md,_inbox/note.md,flat.md" "$SIDEKEYS"
+
+echo "== recursive walk: a re-run is still idempotent =="
+bash "$INIT" --dir "$RMEM" --quiet >/dev/null
+OUT2="$(bash "$INIT" --dir "$RMEM" --quiet)"
+echo "$OUT2" | grep -q '4 entries (0 new, 4 kept, 0 dropped, 2 skipped)' \
+    && ok "second run adds nothing and drops nothing" \
+    || bad "second run adds nothing and drops nothing (got: $OUT2)"
+
 echo
 echo "Passed: $PASS  Failed: $FAIL"
 [[ "$FAIL" -eq 0 ]]

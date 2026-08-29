@@ -295,6 +295,56 @@ echo "$OFF_PAYLOAD" | CLAUDE_MEMORY_DIR=somewhere-else python3 "$PRE_HOOK"
 AFTER_N="$(python3 -c "import json; d=json.load(open('$MEM/.index_state.json')); print(len(d['files']))")"
 check "override redirects away from .workspace/memory" "$BEFORE_N" "$AFTER_N"
 
+# --------------------------------------------------------------------------
+# Reference capture through Bash. A bypass-permissions session is instructed to
+# read with cat/sed/head and search with grep, so a hook that only matched the
+# Read and Grep tools recorded nothing at all in the sessions that do the most
+# reading. See issues/2026-08-29-memory-gc-reports-current-on-inputs-it-never-
+# collected.md.
+echo "== pre_tooluse: Bash cat on a memory file bumps last_referenced =="
+BPROJ="$WORK/bash"; BMEM="$BPROJ/.workspace/memory"
+mkdir -p "$BMEM/_inbox" "$BMEM/_archive"
+printf '# State\n' > "$BMEM/project_state.md"
+printf '# Finding\n' > "$BMEM/_inbox/holdout.md"
+printf '# Old\n' > "$BMEM/_archive/ancient.md"
+refs() { # refs <key>
+    python3 -c "import json,sys; d=json.load(open('$BMEM/.index_state.json')); print(d['files'].get(sys.argv[1],{}).get('references',0))" "$1" 2>/dev/null || echo 0
+}
+bash_payload() { printf '{"tool_name":"Bash","tool_input":{"command":"%s"},"cwd":"%s"}' "$1" "$BPROJ"; }
+
+bash_payload "cat $BMEM/project_state.md" | python3 "$PRE_HOOK"
+check "cat bumps references" "1" "$(refs project_state.md)"
+LR="$(python3 -c "import json; d=json.load(open('$BMEM/.index_state.json')); print(d['files']['project_state.md']['last_referenced'])")"
+check "cat advances last_referenced to today" "$TODAY" "$LR"
+
+bash_payload "sed -n '1,40p' .workspace/memory/project_state.md" | python3 "$PRE_HOOK"
+check "relative path in a Bash command resolves against cwd" "2" "$(refs project_state.md)"
+
+bash_payload "grep -rn 'auth' $BMEM/project_state.md $BMEM/_inbox/holdout.md" | python3 "$PRE_HOOK"
+check "one command naming two files bumps both (first)" "3" "$(refs project_state.md)"
+check "one command naming two files bumps both (second)" "1" "$(refs _inbox/holdout.md)"
+
+echo "== pre_tooluse: Bash commands with no memory path are a no-op =="
+BEFORE="$(python3 -c "import json; d=json.load(open('$BMEM/.index_state.json')); print(sorted(d['files']))")"
+bash_payload "ls -la $BMEM" | python3 "$PRE_HOOK"
+bash_payload "cat $BPROJ/README.md" | python3 "$PRE_HOOK"
+bash_payload "git log --oneline" | python3 "$PRE_HOOK"
+AFTER="$(python3 -c "import json; d=json.load(open('$BMEM/.index_state.json')); print(sorted(d['files']))")"
+check "non-memory Bash commands record nothing" "$BEFORE" "$AFTER"
+
+echo "== pre_tooluse: subdirectories are keyed by relative path =="
+printf '{"tool_name":"Read","tool_input":{"file_path":"%s/_inbox/holdout.md"},"cwd":"%s"}' "$BMEM" "$BPROJ" \
+    | python3 "$PRE_HOOK"
+check "Read of a subdirectory note bumps its relative key" "2" "$(refs _inbox/holdout.md)"
+HAS_BASENAME="$(python3 -c "import json; d=json.load(open('$BMEM/.index_state.json')); print('holdout.md' in d['files'])")"
+check "the basename is not used as a key" "False" "$HAS_BASENAME"
+
+echo "== pre_tooluse: _archive/ and MEMORY_INDEX.md stay unrecorded =="
+bash_payload "cat $BMEM/_archive/ancient.md" | python3 "$PRE_HOOK"
+bash_payload "cat $BMEM/MEMORY_INDEX.md" | python3 "$PRE_HOOK"
+KEYS="$(python3 -c "import json; d=json.load(open('$BMEM/.index_state.json')); print(','.join(sorted(d['files'])))")"
+check "archive and index reads are ignored" "_inbox/holdout.md,project_state.md" "$KEYS"
+
 echo
 echo "test_hooks.sh: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

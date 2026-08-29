@@ -15,11 +15,18 @@
 #                       last_referenced + reference counts and the project-level
 #                       last_gc_run. Missing sidecar == empty/initial state.
 #
+# The walk is recursive (bin/memory_files.py owns the rules): a note in a
+# subdirectory such as `_inbox/` is a memory file, and every entry is keyed by
+# its path relative to the memory directory, so two notes with the same basename
+# in different subdirectories do not collide. `_archive/` and dot-directories
+# are declined, and each declined file is printed with its reason rather than
+# passed over in silence.
+#
 # Idempotent. Re-running preserves work already done: existing index statuses
 # and anchors are kept (GC owns those), accumulated signal state in the sidecar
 # is retained, and tokens are recomputed from the current file contents. New
 # files are added as status `active`; entries whose file disappeared are dropped
-# from the sidecar (and reported). Per-project rollout is out of scope — projects
+# from the sidecar (and reported). Per-project rollout is out of scope - projects
 # run this when they choose to opt in.
 #
 # Sidecar contract (.workspace/memory/.index_state.json):
@@ -29,7 +36,7 @@
 #     "generated_at": "YYYY-MM-DD",      last time this script wrote the sidecar
 #     "last_gc_run": null | "YYYY-MM-DD",  null until /memory-gc first runs
 #     "files": {
-#       "<name>.md": {
+#       "<path>.md": {                   key is relative to the memory dir
 #         "last_referenced": "YYYY-MM-DD" | "never",
 #         "references": <int>            count of captured read/grep signals
 #       }, ...
@@ -37,7 +44,7 @@
 #   }
 #   - Runtime state, NOT a source of truth: gitignored; MEMORY_INDEX.md wins on
 #     any conflict. A missing sidecar is treated as initial/empty state.
-#   - The PreToolUse reference hook bumps files.<name>.last_referenced to today
+#   - The PreToolUse reference hook bumps files.<path>.last_referenced to today
 #     and increments references; /memory-gc stamps last_gc_run. Unknown keys
 #     (top-level or per-file) added by other tooling are preserved across re-runs.
 #
@@ -56,7 +63,7 @@ set -euo pipefail
 BIN_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 usage() {
-    sed -n '2,55p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '2,60p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 MEMORY_DIR=""
@@ -102,12 +109,12 @@ fi
 
 PYTHONPATH="$BIN_DIR${PYTHONPATH:+:$PYTHONPATH}" python3 - "$MEMORY_DIR" "$CAP" "$QUIET" <<'PY'
 import datetime
-import glob
 import json
 import os
 import re
 import sys
 
+from memory_files import discover
 from token_count import count_file
 
 MEMORY_DIR = os.path.abspath(sys.argv[1])
@@ -129,8 +136,6 @@ REQUIRED_FIELDS = ("status", "last_referenced", "tokens", "anchors")
 # than no field at all.
 OPTIONAL_FIELDS = ("cap",)
 KNOWN_FIELDS = REQUIRED_FIELDS + OPTIONAL_FIELDS
-# Files that are index infrastructure, not managed memory entries.
-EXCLUDED_FILES = {INDEX_NAME}
 EMPTY_ANCHOR = "-"
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
@@ -284,11 +289,7 @@ def main():
     if not isinstance(old_files, dict):
         old_files = {}
 
-    memory_files = sorted(
-        os.path.basename(p)
-        for p in glob.glob(os.path.join(MEMORY_DIR, "*.md"))
-        if os.path.basename(p) not in EXCLUDED_FILES
-    )
+    memory_files, skipped_files = discover(MEMORY_DIR)
 
     index_entries = []
     new_files_state = {}
@@ -369,12 +370,15 @@ def main():
             tag = "new" if name not in old_entries else "kept"
             print("  %-4s %-32s %6d tokens  [%s]" % (tag, name, e["tokens"], e["status"]))
         for name in dropped:
-            print("  drop %-32s (file gone — removed from sidecar)" % name)
+            print("  drop %-32s (file gone - removed from sidecar)" % name)
+        for name, reason in skipped_files:
+            print("  skip %-32s (%s)" % (name, reason))
         if gitignore_added:
             print("Added %s to %s" % (SIDECAR_NAME, GITIGNORE_PATH))
-    print("Initialized index: %d entr%s (%d new, %d kept, %d dropped)."
+    print("Initialized index: %d entr%s (%d new, %d kept, %d dropped%s)."
           % (len(index_entries), "y" if len(index_entries) == 1 else "ies",
-             len(added), len(kept), len(dropped)))
+             len(added), len(kept), len(dropped),
+             ", %d skipped" % len(skipped_files) if skipped_files else ""))
     return 0
 
 

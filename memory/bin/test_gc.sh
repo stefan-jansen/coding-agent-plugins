@@ -309,6 +309,99 @@ set -e
     && ok "unset CLAUDE_MEMORY_DIR still defaults to .workspace/memory" \
     || bad "unset CLAUDE_MEMORY_DIR still defaults to .workspace/memory (rc=$URC)"
 
+# --------------------------------------------------------------------------
+# Coverage reporting. GC only ever demotes, so a file it cannot see stays
+# `active` forever without being counted, and a reference signal that never
+# arrives is indistinguishable from a directory nobody reads. Neither shows up
+# in a transition list, so "Index is current" was printable over both.
+echo "== coverage: unindexed files block the all-clear =="
+CMEM="$WORK/cov/.workspace/memory"
+mkdir -p "$CMEM/_inbox" "$CMEM/_archive"
+printf '# A\n' > "$CMEM/a.md"
+MEMORY_TODAY=2026-06-01 bash "$BIN_DIR/memory_init_index.sh" --dir "$CMEM" --quiet >/dev/null
+printf '# Later\n' > "$CMEM/_inbox/later.md"     # written after seeding
+printf '# Archived\n' > "$CMEM/_archive/old.md"
+CDRY="$(python3 "$PROPOSE" --dir "$CMEM" --today 2026-06-03)"
+echo "$CDRY" | grep -q 'Index is current' \
+    && bad "unindexed files must not read as current" \
+    || ok "unindexed files must not read as current"
+echo "$CDRY" | grep -q '1 file(s) on disk have no entry' \
+    && ok "the unindexed count is reported" \
+    || bad "the unindexed count is reported (got: $CDRY)"
+echo "$CDRY" | grep -q '_inbox/later.md' \
+    && ok "the unindexed file is named" \
+    || bad "the unindexed file is named"
+echo "$CDRY" | grep -q 'inputs: 2 file(s) on disk, 1 index entry, 1 unindexed' \
+    && ok "the inputs line states both counts" \
+    || bad "the inputs line states both counts (got: $CDRY)"
+echo "$CDRY" | grep -q '_archive/old.md' \
+    && ok "a file declined by convention is reported separately" \
+    || bad "a file declined by convention is reported separately"
+
+echo "== coverage: an index entry with no file is reported =="
+rm "$CMEM/a.md"
+ODRY="$(python3 "$PROPOSE" --dir "$CMEM" --today 2026-06-03)"
+echo "$ODRY" | grep -q 'index entry has no file on disk' \
+    && ok "orphaned entries are named" \
+    || bad "orphaned entries are named (got: $ODRY)"
+
+echo "== coverage: a dead reference signal blocks the all-clear =="
+SMEM="$WORK/sig/.workspace/memory"
+mkdir -p "$SMEM"
+printf '# A\n' > "$SMEM/a.md"
+MEMORY_TODAY=2026-06-01 bash "$BIN_DIR/memory_init_index.sh" --dir "$SMEM" --quiet >/dev/null
+FRESH="$(python3 "$PROPOSE" --dir "$SMEM" --today 2026-06-03)"
+echo "$FRESH" | grep -q 'Index is current' \
+    && ok "a just-seeded index is not accused of losing signal" \
+    || bad "a just-seeded index is not accused of losing signal (got: $FRESH)"
+AGED="$(python3 "$PROPOSE" --dir "$SMEM" --today 2026-07-01)"
+echo "$AGED" | grep -q 'Index is current' \
+    && bad "30d with no captured read must not read as current" \
+    || ok "30d with no captured read must not read as current"
+echo "$AGED" | grep -q 'signal: 0/1 entry with a captured read' \
+    && ok "the signal line states the ratio" \
+    || bad "the signal line states the ratio (got: $AGED)"
+python3 - "$SMEM" <<'PYEOF'
+import json, sys
+p = sys.argv[1] + "/.index_state.json"
+d = json.load(open(p))
+d["files"]["a.md"]["references"] = 3
+json.dump(d, open(p, "w"), indent=2)
+PYEOF
+SIGNALLED="$(python3 "$PROPOSE" --dir "$SMEM" --today 2026-07-01)"
+echo "$SIGNALLED" | grep -q 'Index is current' \
+    && ok "one captured read restores the all-clear" \
+    || bad "one captured read restores the all-clear (got: $SIGNALLED)"
+
+echo "== coverage: the JSON diff carries the same numbers =="
+CJSON="$(python3 "$PROPOSE" --dir "$CMEM" --today 2026-06-03 --json)"
+UNIDX="$(echo "$CJSON" | python3 -c "import json,sys; print(len(json.load(sys.stdin)['coverage']['unindexed']))")"
+check "coverage.unindexed is in the JSON diff" "1" "$UNIDX"
+
+echo "== subdirectory entries survive propose -> apply =="
+AMEM="$WORK/applysub/.workspace/memory"
+mkdir -p "$AMEM/_inbox"
+printf '# Old\n' > "$AMEM/_inbox/stale.md"
+cat > "$AMEM/MEMORY_INDEX.md" <<'IDX'
+---
+auto_loaded_cap: 5000
+---
+
+# Memory Index
+
+## _inbox/stale.md
+- status: active
+- last_referenced: 2025-01-01
+- tokens: 2
+- anchors: -
+IDX
+python3 "$PROPOSE" --dir "$AMEM" --today 2026-08-29 --json > "$WORK/sub-diff.json"
+python3 "$APPLY" --diff "$WORK/sub-diff.json" --memory-dir "$AMEM" >/dev/null
+check "a subdirectory entry is demoted by name, not by basename" "1" \
+    "$(grep -A1 '^## _inbox/stale.md' "$AMEM/MEMORY_INDEX.md" | grep -c '^- status: deprecated$')"
+check "no basename-keyed entry was invented" "0" \
+    "$(grep -c '^## stale.md$' "$AMEM/MEMORY_INDEX.md")"
+
 echo
 echo "test_gc.sh: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

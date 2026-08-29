@@ -36,6 +36,22 @@ on each read and nothing decrements it, so one read ever froze a file as
 Content staleness is not a function of dates. Use `/memory-review` and your own
 judgment for that; do not read an empty GC diff as "memory is accurate."
 
+**Check the inputs before trusting the verdict.** GC only ever demotes, so a
+file it was not handed stays `active` forever without being counted, and a
+reference signal that never arrives looks exactly like a directory nobody
+reads. The dry-run reports both above the diff:
+
+```
+  inputs: 76 file(s) on disk, 48 index entries, 28 unindexed
+  signal: 0/48 entries with a captured read
+```
+
+When either is short, "Index is current" is not printed and the shortfall is
+named instead. Unindexed files are fixed by re-running
+`bash $BIN/memory_init_index.sh`; no captured reads at all points at the
+reference hook, whose limits are in the plugin README under "Reference
+capture".
+
 The dry-run **writes nothing**. `--execute` applies the diff in one
 transaction (atomic `os.replace` of `MEMORY_INDEX.md`) and stamps
 `last_gc_run` in `.index_state.json` so the SessionStart nudge stops for
