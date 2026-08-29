@@ -9,7 +9,8 @@
 #      `tokens`, `anchors`. The index is the single source of truth: where a
 #      memory file's own frontmatter disagrees with the index, the mismatch is
 #      reported as a warning that proposes syncing the file to the index value.
-#   2. `AGENTS.md` / `CLAUDE.md` `@`-include `MEMORY_INDEX.md` and nothing else
+#   2. `AGENTS.md` / `CLAUDE.md` `@`-include the project's index (MEMORY_INDEX.md,
+#      or whatever `auto_loaded:` names) and nothing else
 #      from the memory directory. Including a memory file directly loads its
 #      full text into every context window and bypasses the budget — the
 #      half-migration failure mode (index seeded, include never switched), which
@@ -242,12 +243,26 @@ def file_cap(entry, front):
     return None
 
 
-def check_include_target():
+def autoloaded_name(front):
+    """Which memory file this project auto-loads as its index.
+
+    `MEMORY_INDEX.md` by default. A project that maintains a richer index by
+    hand can name it with `auto_loaded: <path>` in the index frontmatter; the
+    invariant is that exactly one memory file is auto-loaded and that it is an
+    index of pointers, not that it carries a particular filename.
+    """
+    declared = (front.get("auto_loaded") or "").strip()
+    if not declared:
+        return INDEX_NAME
+    return os.path.normpath(declared).replace(os.sep, "/")
+
+
+def check_include_target(front):
     """The invariant the memory-budget architecture rests on.
 
-    `AGENTS.md` / `CLAUDE.md` must `@`-include MEMORY_INDEX.md and nothing else
-    from the memory directory. Including a memory file directly loads its full
-    text into every context window and bypasses the budget entirely — the
+    `AGENTS.md` / `CLAUDE.md` must `@`-include the project's index and nothing
+    else from the memory directory. Including a memory file directly loads its
+    full text into every context window and bypasses the budget entirely - the
     half-migration failure mode, where step 1 (seed the index) happened and step
     3 (switch the include) did not. The index then exists and looks
     authoritative while the architecture is off.
@@ -260,31 +275,30 @@ def check_include_target():
     if not any(os.path.isfile(os.path.join(PROJECT_ROOT, n)) for n in SEED_FILES):
         return failures, warnings
 
+    wanted = autoloaded_name(front)
     loaded, _missing = reachable(PROJECT_ROOT)
 
     index_loaded = False
     for path in loaded:
-        try:
-            in_memory_dir = os.path.dirname(os.path.abspath(path)) == MEMORY_DIR
-        except (OSError, ValueError):
+        abspath = os.path.abspath(path)
+        rel = os.path.relpath(abspath, MEMORY_DIR).replace(os.sep, "/")
+        if rel.startswith("../") or rel == "..":
             continue
-        if not in_memory_dir:
-            continue
-        if os.path.basename(path) == INDEX_NAME:
+        if rel == wanted:
             index_loaded = True
             continue
         failures.append(
             "%s is @-included directly by AGENTS.md/CLAUDE.md; the memory-budget "
             "architecture is bypassed (its full text loads into every context "
             "window). @-include only %s. See docs/memory-budget-migration.md step 3."
-            % (os.path.relpath(path, PROJECT_ROOT), INDEX_NAME)
+            % (os.path.relpath(abspath, PROJECT_ROOT), wanted)
         )
 
     if not index_loaded:
         warnings.append(
-            "%s is not @-included by AGENTS.md/CLAUDE.md — the index exists but "
+            "%s is not @-included by AGENTS.md/CLAUDE.md - the index exists but "
             "no session loads it. See docs/memory-budget-migration.md step 3."
-            % INDEX_NAME
+            % wanted
         )
 
     return failures, warnings
@@ -393,7 +407,7 @@ def main():
     # 2. The @-include target must be the index, not an individual memory file.
     include_errors = 0
     if not display_only:
-        inc_failures, inc_warnings = check_include_target()
+        inc_failures, inc_warnings = check_include_target(front)
         include_errors = len(inc_failures)
         failures.extend(inc_failures)
         warnings.extend(inc_warnings)

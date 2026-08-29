@@ -407,6 +407,85 @@ SOUT2="$("$VERIFY" --dir "$SUB" 2>&1)"; SRC2=$?
 set -e
 check "indexed subdirectory note passes" "0" "$SRC2"
 
+# --------------------------------------------------------------------------
+# A project may maintain its index by hand under another name. The invariant is
+# that exactly one memory file is auto-loaded and that it is an index of
+# pointers, not that the file is called MEMORY_INDEX.md.
+echo "== auto_loaded: a declared index satisfies the include check =="
+AL="$WORK/autoloaded"
+mkdir -p "$AL/.workspace/memory"
+ALM="$AL/.workspace/memory"
+printf '# Notes\n' > "$ALM/notes.md"
+printf '# Curated index\n\n- [notes](notes.md) - what they say\n' > "$ALM/MEMORY.md"
+cat > "$ALM/MEMORY_INDEX.md" <<'EOF'
+---
+auto_loaded_cap: 5000
+auto_loaded: MEMORY.md
+---
+
+# Memory Index
+
+## MEMORY.md
+- status: active
+- last_referenced: 2026-06-01
+- tokens: 10
+- anchors: -
+
+## notes.md
+- status: active
+- last_referenced: 2026-06-01
+- tokens: 3
+- anchors: -
+EOF
+printf '# Project\n\n@.workspace/memory/MEMORY.md\n' > "$AL/AGENTS.md"
+set +e
+ALOUT="$(cd "$AL" && "$VERIFY" 2>&1)"; ALRC=$?
+set -e
+check "declared index is accepted, not a violation" "0" "$ALRC"
+check "no @-include violation is reported" "0" \
+    "$(echo "$ALOUT" | grep -c '@-include violation')"
+check "MEMORY_INDEX.md is not demanded once another index is declared" "0" \
+    "$(echo "$ALOUT" | grep -c 'MEMORY_INDEX.md is not @-included')"
+
+echo "== auto_loaded: a memory file that is not the declared index still fails =="
+printf '# Project\n\n@.workspace/memory/MEMORY.md\n@.workspace/memory/notes.md\n' > "$AL/AGENTS.md"
+set +e
+ALOUT2="$(cd "$AL" && "$VERIFY" 2>&1)"; ALRC2=$?
+set -e
+check "including a memory body alongside the index fails" "1" "$ALRC2"
+check "the body is the one named" "1" \
+    "$(echo "$ALOUT2" | grep -c 'notes.md is @-included directly')"
+
+echo "== auto_loaded: the declaration survives a re-seed =="
+(cd "$AL" && "$INIT" >/dev/null 2>&1)
+check "auto_loaded frontmatter is preserved" "1" \
+    "$(grep -c '^auto_loaded: MEMORY.md$' "$ALM/MEMORY_INDEX.md")"
+
+echo "== auto_loaded: absent, MEMORY_INDEX.md is still what must be included =="
+DEF="$WORK/defaultidx"
+mkdir -p "$DEF/.workspace/memory"
+printf '# Notes\n' > "$DEF/.workspace/memory/notes.md"
+cat > "$DEF/.workspace/memory/MEMORY_INDEX.md" <<'EOF'
+---
+auto_loaded_cap: 5000
+---
+
+# Memory Index
+
+## notes.md
+- status: active
+- last_referenced: 2026-06-01
+- tokens: 3
+- anchors: -
+EOF
+printf '# Project\n\n@.workspace/memory/notes.md\n' > "$DEF/AGENTS.md"
+set +e
+DOUT="$(cd "$DEF" && "$VERIFY" 2>&1)"; DRC=$?
+set -e
+check "undeclared project still fails on a direct memory include" "1" "$DRC"
+check "the default index is the one named in the advice" "1" \
+    "$(echo "$DOUT" | grep -c '@-include only MEMORY_INDEX.md')"
+
 echo
 echo "Passed: $PASS  Failed: $FAIL"
 [[ "$FAIL" -eq 0 ]]

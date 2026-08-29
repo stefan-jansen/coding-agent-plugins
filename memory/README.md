@@ -120,6 +120,14 @@ auto_loaded_cap: 5000
   overridable. Recommended (a missing cap is a warning, not an error).
 - `default_file_cap: <n>` — optional per-file token budget applied to every
   entry that does not set its own `cap`.
+- `auto_loaded: <path>` — optional. The memory file this project `@`-includes
+  as its index, relative to the memory directory. Defaults to
+  `MEMORY_INDEX.md`. Set it when the project maintains a richer index by hand:
+  the invariant `verify_index.sh` enforces is that **exactly one** memory file
+  is auto-loaded and that it is an index of pointers, not that it carries a
+  particular filename. Everything else in the memory directory must still be
+  read on demand, and a direct `@`-include of any other memory file is still a
+  failure.
 
 **Per-file entry** — heading is the memory filename relative to the memory
 directory (e.g. `## project_state.md`). Each entry carries all four required
