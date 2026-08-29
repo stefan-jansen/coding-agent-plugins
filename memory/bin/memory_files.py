@@ -88,6 +88,10 @@ def relative_key(resolved, memory_dir) -> str | None:
         return None
     if rel == INDEX_NAME:
         return None
+    # A glob is not a file. Paths pulled out of a shell command reach here
+    # unexpanded, and an entry keyed `_inbox/*.md` is a phantom.
+    if any(ch in rel for ch in "*?["):
+        return None
     parts = rel.split("/")[:-1]
     if any(p == ARCHIVE_DIR or p.startswith(".") for p in parts):
         return None

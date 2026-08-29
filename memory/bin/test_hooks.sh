@@ -345,6 +345,34 @@ bash_payload "cat $BMEM/MEMORY_INDEX.md" | python3 "$PRE_HOOK"
 KEYS="$(python3 -c "import json; d=json.load(open('$BMEM/.index_state.json')); print(','.join(sorted(d['files'])))")"
 check "archive and index reads are ignored" "_inbox/holdout.md,project_state.md" "$KEYS"
 
+# --------------------------------------------------------------------------
+# Paths recovered from a Bash command are guesses. Recording one that is not a
+# file put an entry keyed `_inbox/*.md` into a real project's sidecar, and
+# creating the memory directory on the way materialized `memory/_inbox/memory/`
+# out of nothing. Both observed in ~/ml4t/agents on 2026-08-29.
+echo "== pre_tooluse: an unexpanded glob is not a file =="
+BEFORE_KEYS="$(python3 -c "import json; d=json.load(open('$BMEM/.index_state.json')); print(','.join(sorted(d['files'])))")"
+bash_payload "grep -l holdout $BMEM/_inbox/*.md" | python3 "$PRE_HOOK"
+AFTER_KEYS="$(python3 -c "import json; d=json.load(open('$BMEM/.index_state.json')); print(','.join(sorted(d['files'])))")"
+check "a glob records no entry" "$BEFORE_KEYS" "$AFTER_KEYS"
+
+echo "== pre_tooluse: a path that is not a file records nothing =="
+bash_payload "cat $BMEM/never-written.md" | python3 "$PRE_HOOK"
+printf '{"tool_name":"Read","tool_input":{"file_path":"%s/also-absent.md"},"cwd":"%s"}' "$BMEM" "$BPROJ" \
+    | python3 "$PRE_HOOK"
+AFTER_KEYS2="$(python3 -c "import json; d=json.load(open('$BMEM/.index_state.json')); print(','.join(sorted(d['files'])))")"
+check "absent files record nothing" "$BEFORE_KEYS" "$AFTER_KEYS2"
+
+echo "== pre_tooluse: the hook never creates a memory directory =="
+NOPROJ="$WORK/nodir"
+mkdir -p "$NOPROJ"
+printf '# Note\n' > "$NOPROJ/stray.md"
+printf '{"tool_name":"Bash","tool_input":{"command":"cat .workspace/memory/x.md"},"cwd":"%s"}' "$NOPROJ" \
+    | python3 "$PRE_HOOK"
+[[ -d "$NOPROJ/.workspace" ]] \
+    && bad "a read in a project with no memory dir must not create one" \
+    || ok "a read in a project with no memory dir must not create one"
+
 echo
 echo "test_hooks.sh: $PASS passed, $FAIL failed"
 [[ "$FAIL" -eq 0 ]]

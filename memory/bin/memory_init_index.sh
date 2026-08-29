@@ -123,6 +123,7 @@ QUIET = sys.argv[3] == "1"
 
 INDEX_NAME = "MEMORY_INDEX.md"
 SIDECAR_NAME = ".index_state.json"
+LOCK_NAME = ".index_state.lock"
 GITIGNORE_NAME = ".gitignore"
 INDEX_PATH = os.path.join(MEMORY_DIR, INDEX_NAME)
 SIDECAR_PATH = os.path.join(MEMORY_DIR, SIDECAR_NAME)
@@ -261,8 +262,12 @@ def render_index(cap, default_file_cap, auto_loaded, entries_in_order):
 
 
 def ensure_gitignored():
-    """Make sure .index_state.json is ignored from within the memory dir."""
-    line = SIDECAR_NAME
+    """Ignore the runtime sidecar and its lockfile from within the memory dir.
+
+    The lockfile is created by the PreToolUse hook next to the sidecar; it was
+    left out of the original rule and showed up as untracked in every project.
+    """
+    wanted = [SIDECAR_NAME, LOCK_NAME]
     existing = []
     if os.path.isfile(GITIGNORE_PATH):
         try:
@@ -270,13 +275,17 @@ def ensure_gitignored():
                 existing = fh.read().splitlines()
         except (OSError, IOError):
             existing = []
-    if any(l.strip() == line for l in existing):
+    have = {l.strip() for l in existing}
+    missing = [l for l in wanted if l not in have]
+    if not missing:
         return False
     with open(GITIGNORE_PATH, "a", encoding="utf-8") as fh:
         if existing and existing[-1].strip() != "":
             fh.write("\n")
-        fh.write("# Runtime signal sidecar — not a source of truth (Relay memory index).\n")
-        fh.write(line + "\n")
+        if SIDECAR_NAME in missing:
+            fh.write("# Runtime signal sidecar - not a source of truth (Relay memory index).\n")
+        for line in missing:
+            fh.write(line + "\n")
     return True
 
 
@@ -384,7 +393,7 @@ def main():
         for name, reason in skipped_files:
             print("  skip %-32s (%s)" % (name, reason))
         if gitignore_added:
-            print("Added %s to %s" % (SIDECAR_NAME, GITIGNORE_PATH))
+            print("Updated %s (sidecar + lockfile ignored)" % GITIGNORE_PATH)
     print("Initialized index: %d entr%s (%d new, %d kept, %d dropped%s)."
           % (len(index_entries), "y" if len(index_entries) == 1 else "ies",
              len(added), len(kept), len(dropped),

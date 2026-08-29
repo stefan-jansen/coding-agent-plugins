@@ -133,11 +133,17 @@ def _project_memory_match(resolved: Path, memory_dir: Path) -> tuple[Path, str] 
 
     `memory_dir` comes from bin/memory_dir.py, so a project that keeps its
     memory somewhere other than `.workspace/memory/` still registers reads.
-    We accept non-existing files (the read may be about to create one) - the
-    check is on the path, not on the file existing.
+
+    The file must exist. Paths recovered from a Bash command string are
+    guesses - a glob the shell had not expanded yet, a word that merely looks
+    like a path - and without this check the hook records an entry for
+    something that is not a file (`_inbox/*.md` was one, observed in the wild).
+    A read of a file that is not there is not a reference either way.
     """
     key = relative_key(resolved, memory_dir)
     if key is None:
+        return None
+    if not resolved.is_file():
         return None
     return memory_dir, key
 
@@ -175,9 +181,14 @@ def _write_sidecar(path: Path, data: dict) -> None:
 def _bump(memory_dir: Path, names: set[str]) -> None:
     if not names:
         return
+    # Never create the memory directory. This hook fires on every Read, Grep
+    # and Bash call, so a path that resolves somewhere unexpected would
+    # otherwise materialize a directory tree there - which is how a stray
+    # `memory/_inbox/memory/` appeared in ~/ml4t/agents.
+    if not memory_dir.is_dir():
+        return
     sidecar = memory_dir / ".index_state.json"
     lock_path = memory_dir / ".index_state.lock"
-    memory_dir.mkdir(parents=True, exist_ok=True)
 
     # Best-effort lock; on EACCES / EPERM (read-only FS, etc.) fall through.
     lock_fh = None
