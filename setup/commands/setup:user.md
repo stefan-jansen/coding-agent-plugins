@@ -93,7 +93,7 @@ a shared path convention so state stays in one place:
 | `AGENTS.md` (project root) | All agents | Canonical project instructions. Codex reads natively; Claude includes via `CLAUDE.md` one-liner (`@AGENTS.md`). |
 | `CLAUDE.md` (project root) | Claude only | One line: `@AGENTS.md`. |
 | `.workspace/memory/*.md` | All | Persistent project state. `project_state.md`, `conventions.md`, `decisions.md`. |
-| `.workspace/transitions/YYYY-MM-DD/HH.md` | All | Hourly session progress. Hook auto-creates the file. Shared across agents. |
+| `.workspace/transitions/YYYY-MM-DD/HHMMSS.md` | All | Session progress, one file per event. The `transition` plugin's own hooks write these. Shared across agents. |
 | `.workspace/work/` | All | Active work units. Multi-session tracking. |
 | `.claude/settings.json`, `.claude/hooks/`, `.claude/commands/` | Claude only | Claude Code config. |
 | `~/.codex/` | Codex only | Codex global config. |

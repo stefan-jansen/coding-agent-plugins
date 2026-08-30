@@ -35,9 +35,10 @@ Bootstrap the current directory. Works on an empty folder or an existing repo.
    - `AGENTS.md` — canonical project doc, filled from the interview (not a
      placeholder skeleton)
    - `CLAUDE.md` — one line, `@AGENTS.md`
-   - `.workspace/{memory,transitions,work}` — shared Claude + Codex state,
-     including `memory/auto/` for Claude auto-memory
-   - `.claude/{settings.json,hooks/init-transition.sh,commands/}` — Claude-only config
+   - `.workspace/{memory,memory-auto,transitions,work}` — shared Claude + Codex
+     state; `memory-auto/` holds Claude auto-memory and sits outside `memory/`
+     so model-written notes stay out of the curated index and `/memory-gc`
+   - `.claude/{settings.json,commands/}` — Claude-only config
    - Optional Python tooling (pyproject/ruff/pre-commit) when the project is Python
    - Optional roborev continuous review
 

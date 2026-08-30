@@ -125,8 +125,8 @@ WS=".workspace"; CL=".claude"
 PROJECT_NAME="${1:-$(basename "$PWD")}"
 
 # Shared state (Claude + Codex)
-mkdir -p "$WS/memory/auto" "$WS/transitions" "$WS/work"
-touch "$WS/memory/auto/.gitkeep" "$WS/transitions/.gitkeep" "$WS/work/.gitkeep"
+mkdir -p "$WS/memory" "$WS/memory-auto" "$WS/transitions" "$WS/work"
+touch "$WS/memory-auto/.gitkeep" "$WS/transitions/.gitkeep" "$WS/work/.gitkeep"
 
 # Claude-only config
 mkdir -p "$CL/commands"
@@ -157,7 +157,7 @@ cat > "$CL/settings.json" << SETTINGS_EOF
     "memory@local": true,
     "development@local": true
   },
-  "autoMemoryDirectory": "./.workspace/memory/auto"
+  "autoMemoryDirectory": "./.workspace/memory-auto"
 }
 SETTINGS_EOF
 echo "created: $CL/settings.json (marketplace: $MARKET)"
@@ -202,7 +202,8 @@ cat > "$WS/memory/conventions.md" << 'EOF'
 
 - Memory + transitions live at `.workspace/` (shared by Claude and Codex). NOT `.claude/memory/`.
 - `.claude/` holds only Claude-specific config: `settings.json`, `hooks/`, `commands/`.
-- Session progress goes to `.workspace/transitions/YYYY-MM-DD/HH.md`.
+- Session progress goes to `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`,
+  written by the `transition` plugin's own hooks. One file per event.
 EOF
 fi
 
@@ -282,22 +283,24 @@ Persistent project state — survives `/clear` for Claude, read on demand by Cod
 
 ### Claude auto-memory (writer-asymmetric)
 
-Claude Code writes autonomous learnings to `.workspace/memory/auto/` —
+Claude Code writes autonomous learnings to `.workspace/memory-auto/` —
 redirected here from the default `~/.claude/projects/<slug>/memory/` via
 `autoMemoryDirectory` in `.claude/settings.json`. First 200 lines of
 `MEMORY.md` load into every Claude session. Codex has no native equivalent
 but reads the same file via `@-include`:
 
-@.workspace/memory/auto/MEMORY.md
+@.workspace/memory-auto/MEMORY.md
 
 Model-authored memory accumulates through Claude sessions only.
 Codex-only sessions rely on the human-curated files above.
 
 ### Session progress
 
-Session progress goes to `.workspace/transitions/YYYY-MM-DD/HH.md` — the hook
-auto-creates the hourly file on each prompt. Append progress every
-15-20 min or at milestones; both Claude and Codex sessions share it.
+Session progress goes to timestamped `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`
+files, one per event, written by the `transition` plugin's own
+PreCompact/PostCompact/SessionEnd hooks. No per-project wiring is needed.
+`/handoff` covers events with no compaction (before `/clear`, a Claude/Codex
+host swap, a milestone); `/continue` resumes. Both agents share the files.
 
 ​```bash
 ls -r .workspace/transitions/$(date +%Y-%m-%d)/*.md   # newest first
@@ -310,7 +313,10 @@ AGENTS.md                  # this file — Codex reads natively
 CLAUDE.md                  # one line: @AGENTS.md
 .workspace/                # SHARED state for both Claude and Codex
   memory/                  #   persistent context (referenced above via @-include)
-    auto/                  #     Claude auto-memory (harness writes; Codex reads)
+  memory-auto/             #   Claude auto-memory (harness writes; Codex reads). Kept
+                           #   OUT of memory/ because the memory plugin recurses
+                           #   into it: model-written notes would land in the
+                           #   curated index and in /memory-gc.
   transitions/             #   session progress (transition plugin writes; timestamped HHMMSS.md)
   work/                    #   active work units / plans
 .claude/                   # CLAUDE-SPECIFIC ONLY (different schema from Codex)
