@@ -152,8 +152,14 @@ def review(memory_dir: Path, out=sys.stdout) -> int:
     auto_loaded: int | None = None
     if measure.is_file():
         # measure_memory.sh reads from $PWD (or git root); invoke with cwd
-        # set to the project root.
-        project_root = memory_dir.parent.parent
+        # set to the project root. The root is NOT at a fixed depth above the
+        # memory directory: `.workspace/memory/` sits two levels down, a bare
+        # `memory/` one. Assuming two silently pointed at the parent of the
+        # real project, where no seed file exists, and measure_memory.sh then
+        # reported 0 auto-loaded tokens - which reads as "no budget used"
+        # rather than "measured the wrong directory". So find the root by the
+        # seed files themselves.
+        project_root = _project_root(memory_dir)
         try:
             proc = subprocess.run(
                 [str(measure), "--total-only"],
@@ -206,6 +212,21 @@ def main(argv: list[str] | None = None) -> int:
     memory_dir = memory_dir.resolve()
 
     return review(memory_dir)
+
+
+
+def _project_root(memory_dir: Path) -> Path:
+    """The nearest ancestor of ``memory_dir`` that Claude/Codex would seed from.
+
+    A project root is the directory holding ``CLAUDE.md`` or ``AGENTS.md`` - the
+    files ``measure_memory.sh`` starts its @-include walk from. Falling back to
+    the memory directory's parent keeps the previous behaviour for a layout that
+    has neither, where the total is unmeasurable either way.
+    """
+    for cand in (memory_dir, *memory_dir.parents):
+        if (cand / "CLAUDE.md").is_file() or (cand / "AGENTS.md").is_file():
+            return cand
+    return memory_dir.parent
 
 
 if __name__ == "__main__":
