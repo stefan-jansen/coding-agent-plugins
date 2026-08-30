@@ -222,6 +222,48 @@ before suggesting alternatives.
 EOF
 fi
 
+# MEMORY_INDEX.md — the ONLY memory file AGENTS.md @-includes. Everything else
+# in .workspace/memory/ is read on demand, so the auto-loaded cost stays the
+# size of the index rather than the size of the memory directory.
+if [ ! -f "$WS/memory/MEMORY_INDEX.md" ]; then
+  SEEDER="$MARKET/memory/bin/memory_init_index.sh"
+  if [ -x "$SEEDER" ] || [ -f "$SEEDER" ]; then
+    bash "$SEEDER" >/dev/null && echo "created: $WS/memory/MEMORY_INDEX.md (memory plugin seeder)"
+    # The seeder leaves the per-project cap unset and verify_index.sh warns
+    # about it. Set it here so a fresh project starts without a warning.
+    grep -q '^auto_loaded_cap:' "$WS/memory/MEMORY_INDEX.md" || \
+      sed -i.bak '0,/^---$/!{0,/^---$/s/^---$/auto_loaded_cap: 3500\n---/}' \
+        "$WS/memory/MEMORY_INDEX.md" && rm -f "$WS/memory/MEMORY_INDEX.md.bak"
+  else
+    # Fallback: the memory plugin is not on this machine. Write a valid index
+    # by hand; token counts are a chars/4 estimate and `/memory-gc` corrects
+    # them on its first run.
+    {
+      echo "---"
+      echo "# Auto-generated. This is the single auto-loaded memory artifact;"
+      echo "# @-include only this file. Edit statuses through /memory-gc."
+      echo "auto_loaded_cap: 3500"
+      echo "---"
+      echo
+      echo "# Memory Index"
+      echo
+      for f in "$WS"/memory/*.md; do
+        b=$(basename "$f")
+        [ "$b" = "MEMORY_INDEX.md" ] && continue
+        echo "## $b"
+        echo "- status: active"
+        echo "- last_referenced: $(date +%Y-%m-%d)"
+        echo "- tokens: $(( $(wc -c < "$f") / 4 ))"
+        echo "- anchors: -"
+        echo
+      done
+    } > "$WS/memory/MEMORY_INDEX.md"
+    echo "created: $WS/memory/MEMORY_INDEX.md (inline fallback; run /memory-gc to correct counts)"
+  fi
+else
+  echo "kept: $WS/memory/MEMORY_INDEX.md (already present)"
+fi
+
 # CLAUDE.md is always exactly the include (safe to rewrite)
 echo "@AGENTS.md" > CLAUDE.md
 echo "infrastructure ready."
@@ -275,24 +317,26 @@ Use this structure:
 
 ## Project memory
 
-Persistent project state — survives `/clear` for Claude, read on demand by Codex:
+Memory is index-only at session start. `.workspace/memory/MEMORY_INDEX.md`
+lists every memory file with its `status`, `last_referenced`, `tokens` and
+`anchors`. Read the body of an indexed file on demand when its topic is
+relevant; the index tells you what exists and whether it is current. Never
+`@`-include a memory file other than the index — that loads the full text into
+every context window and bypasses the memory budget.
 
-@.workspace/memory/project_state.md
-@.workspace/memory/conventions.md
-@.workspace/memory/decisions.md
+@.workspace/memory/MEMORY_INDEX.md
 
 ### Claude auto-memory (writer-asymmetric)
 
-Claude Code writes autonomous learnings to `.workspace/memory-auto/` —
-redirected here from the default `~/.claude/projects/<slug>/memory/` via
-`autoMemoryDirectory` in `.claude/settings.json`. First 200 lines of
-`MEMORY.md` load into every Claude session. Codex has no native equivalent
-but reads the same file via `@-include`:
+Claude Code writes autonomous learnings to `.workspace/memory-auto/MEMORY.md`,
+redirected there from the default `~/.claude/projects/<slug>/memory/` via
+`autoMemoryDirectory` in `.claude/settings.json`. Claude loads it natively.
+Codex has no equivalent and reads it on demand, like any other memory file.
 
-@.workspace/memory-auto/MEMORY.md
-
-Model-authored memory accumulates through Claude sessions only.
-Codex-only sessions rely on the human-curated files above.
+It sits outside `.workspace/memory/` on purpose: the memory plugin recurses
+into that directory, so auto-memory nested inside it would be seeded into the
+index and swept by `/memory-gc`. Model-authored memory accumulates through
+Claude sessions only; Codex-only sessions rely on the curated files.
 
 ### Session progress
 
@@ -312,7 +356,7 @@ ls -r .workspace/transitions/$(date +%Y-%m-%d)/*.md   # newest first
 AGENTS.md                  # this file — Codex reads natively
 CLAUDE.md                  # one line: @AGENTS.md
 .workspace/                # SHARED state for both Claude and Codex
-  memory/                  #   persistent context (referenced above via @-include)
+  memory/                  #   curated memory; only MEMORY_INDEX.md is @-included
   memory-auto/             #   Claude auto-memory (harness writes; Codex reads). Kept
                            #   OUT of memory/ because the memory plugin recurses
                            #   into it: model-written notes would land in the
