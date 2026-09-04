@@ -36,7 +36,19 @@ EOF
 # Memory-relevance nudge (additive — only emits when the project opts in by
 # having a memory plugin sidecar, and only when /memory-gc is stale).
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
-SIDECAR="$PROJECT_ROOT/.workspace/memory/.index_state.json"
+# $CLAUDE_MEMORY_DIR (absolute, or relative to the project root) then
+# `.workspace/memory/`. Mirrors memory/bin/stamp_gc_run.sh and bin/memory_dir.py:
+# a project that relocates its memory directory must not be read here at the
+# default path, or the nudge reports the age of a directory nothing maintains.
+if [[ -n "${CLAUDE_MEMORY_DIR:-}" ]]; then
+    case "$CLAUDE_MEMORY_DIR" in
+        /*) MEMORY_DIR="$CLAUDE_MEMORY_DIR" ;;
+        *)  MEMORY_DIR="$PROJECT_ROOT/$CLAUDE_MEMORY_DIR" ;;
+    esac
+else
+    MEMORY_DIR="$PROJECT_ROOT/.workspace/memory"
+fi
+SIDECAR="$MEMORY_DIR/.index_state.json"
 if [[ -f "$SIDECAR" ]]; then
     python3 - "$SIDECAR" <<'PY' 2>/dev/null || true
 import datetime as dt
