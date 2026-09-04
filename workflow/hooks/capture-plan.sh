@@ -18,7 +18,18 @@
 
 set -e
 
-WORK_DIR=".workspace/work"
+# Resolve the work directory: $CLAUDE_WORK_DIR (absolute, or relative to the
+# project root), then the conventional `.workspace/work/`. Mirrors
+# memory/bin/memory_dir.py's $CLAUDE_MEMORY_DIR rule; kept inline so this hook
+# stands alone (no sourcing).
+if [ -n "${CLAUDE_WORK_DIR:-}" ]; then
+    case "$CLAUDE_WORK_DIR" in
+        /*) WORK_DIR="$CLAUDE_WORK_DIR" ;;
+        *)  WORK_DIR="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}/$CLAUDE_WORK_DIR" ;;
+    esac
+else
+    WORK_DIR=".workspace/work"
+fi
 
 if ! command -v jq >/dev/null 2>&1; then
   echo "capture-plan: jq not on PATH — payload cannot be parsed; skipping" >&2

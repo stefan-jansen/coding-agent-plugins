@@ -17,6 +17,19 @@ Over time, transitions become more valuable than commit history—they capture t
 
 **Storage location**: Hooks write to `.workspace/transitions/` (shared workspace for Claude Code and Codex). Run `/setup` first to scaffold `.workspace/`.
 
+Set `CLAUDE_TRANSITIONS_DIR` to put them somewhere else - absolute, or relative
+to the project root. Same rule as the memory plugin's `CLAUDE_MEMORY_DIR`, and
+set the same way, in the `env` block of the project's `.claude/settings.json`:
+
+```json
+{"env": {"CLAUDE_TRANSITIONS_DIR": "transitions"}}
+```
+
+A project that keeps its agent state at the root rather than under `.workspace/`
+needs this, or the hooks recreate `.workspace/transitions/` after every move.
+`bin/test_transitions_dir.sh` runs the hooks against throwaway roots and asserts
+where the files land.
+
 ---
 
 ## Hooks (plugin-owned, v1.2.0+)
@@ -34,8 +47,8 @@ level.
   `/memory-gc` staleness nudge when the memory plugin's sidecar is present and
   overdue.
 - **`PostCompact`** (`auto|manual`) → `hooks/post-compact.sh` — writes the
-  compaction summary to a timestamped `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`
-  (one file per event — the same convention `/handoff` uses).
+  compaction summary to a timestamped `<transitions>/YYYY-MM-DD/HHMMSS.md`
+  (one file per event - the same convention `/handoff` uses).
 - **`SessionEnd`** → `hooks/session-end.sh` — appends a session-exit marker to
   today's most-recent transition file, or does nothing if none exists (a bare
   marker file would be the thin-file anti-pattern below).

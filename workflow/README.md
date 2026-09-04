@@ -67,6 +67,20 @@ These are Claude-only and have no Codex mirror. They track work in
 Both agents read these paths natively, which is what makes swapping hosts
 mid-feature work. There is deliberately no "run as the other host" command.
 
+Each of the three is relocatable through the `env` block of the project's
+`.claude/settings.json` - `CLAUDE_WORK_DIR`, `CLAUDE_TRANSITIONS_DIR`,
+`CLAUDE_MEMORY_DIR`, each absolute or relative to the project root:
+
+```json
+{"env": {"CLAUDE_WORK_DIR": "work", "CLAUDE_TRANSITIONS_DIR": "transitions"}}
+```
+
+`.workspace/` is the default because it keeps agent state out of the way in a
+normal codebase. A repo that *is* the agent workspace has no second thing to
+stay out of the way of, and should point these at the root. Relocating without
+setting the variables does not work: the hooks recreate the default paths.
+`bin/test_work_dir.sh` covers the resolution rules.
+
 ## Naming
 
 A plugin's skills are namespaced as `/workflow:align`, `/workflow:ship` and so

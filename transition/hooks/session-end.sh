@@ -5,7 +5,8 @@
 #   { "reason": "clear"|"logout"|"prompt_input_exit"|"other" }
 #
 # Appends a session-end marker to today's most-recent transition file under
-# .workspace/transitions/YYYY-MM-DD/ (or does nothing if none exists).
+# <transitions>/YYYY-MM-DD/ (or does nothing if none exists), where
+# <transitions> is $CLAUDE_TRANSITIONS_DIR or .workspace/transitions/.
 
 INPUT=$(cat)
 
@@ -24,7 +25,20 @@ except: print('unknown')
 PROJECT_ROOT="${CLAUDE_PROJECT_DIR:-$(git rev-parse --show-toplevel 2>/dev/null || pwd)}"
 TODAY=$(date +%Y-%m-%d)
 NOW=$(date +%H:%M:%S)
-DIR="$PROJECT_ROOT/.workspace/transitions/$TODAY"
+# Resolve the transitions directory: $CLAUDE_TRANSITIONS_DIR (absolute, or
+# relative to the project root), then the conventional `.workspace/transitions/`.
+# Mirrors memory/bin/memory_dir.py's $CLAUDE_MEMORY_DIR rule; kept inline so
+# each hook stands alone (no sourcing).
+if [ -n "${CLAUDE_TRANSITIONS_DIR:-}" ]; then
+    case "$CLAUDE_TRANSITIONS_DIR" in
+        /*) TRANSITIONS_DIR="$CLAUDE_TRANSITIONS_DIR" ;;
+        *)  TRANSITIONS_DIR="$PROJECT_ROOT/$CLAUDE_TRANSITIONS_DIR" ;;
+    esac
+else
+    TRANSITIONS_DIR="$PROJECT_ROOT/.workspace/transitions"
+fi
+
+DIR="$TRANSITIONS_DIR/$TODAY"
 
 LATEST=$(ls -t "$DIR"/*.md 2>/dev/null | head -1)
 [ -z "$LATEST" ] && exit 0
