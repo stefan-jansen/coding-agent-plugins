@@ -2,7 +2,7 @@
 
 **Purpose**: System configuration and health monitoring
 **Category**: System
-**Version**: 1.0.0
+**Version**: 1.5.0
 
 ## Overview
 
@@ -83,6 +83,25 @@ Intelligent cleanup operations:
 /cleanup work            # Archive completed work units
 /cleanup all             # Comprehensive cleanup
 ```
+
+## Skills (2)
+
+Lazily loaded - only the description sits in context until one is invoked.
+
+### /housekeep
+Sweeps stray `.workspace/` and `.claude/` directories left where hooks wrote to
+the wrong project root. Classifies each as expected or debris, dry-run by
+default, prunes on approval.
+
+### /instructions-audit
+Audits `AGENTS.md`, `CLAUDE.md` and `.claude/rules/*.md` for two failures: a
+rule that is loaded and ignored, and content that is written and never loaded.
+Judged against the vendored `best-practices.md` include/exclude table, not
+house opinion. Proposes exact replacement text and applies only what is
+approved, validating the whole batch before writing any of it. `--user` reads
+evidence across every project to judge the user-level file alone.
+
+Codex binding: `~/.codex/prompts/instructions-audit.md`.
 
 ## Integration
 
@@ -171,5 +190,5 @@ None - System plugin is foundational.
 ---
 
 **Maintained by**: Claude Code Framework Team
-**Version**: 1.0.0
+**Version**: 1.5.0
 **Last Updated**: 2025-10-18

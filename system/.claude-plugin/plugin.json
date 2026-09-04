@@ -1,11 +1,16 @@
 {
   "name": "system",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "System health and maintenance",
   "author": {
     "name": "Claude Code Framework"
   },
-  "keywords": ["system", "health", "audit", "maintenance"],
+  "keywords": [
+    "system",
+    "health",
+    "audit",
+    "maintenance"
+  ],
   "commands": [
     "./commands/audit.md",
     "./commands/cleanup.md",
@@ -16,7 +21,8 @@
     "./agents/reasoning-specialist.md"
   ],
   "skills": [
-    "./skills/housekeep"
+    "./skills/housekeep",
+    "./skills/instructions-audit"
   ],
   "license": "MIT"
 }
