@@ -99,6 +99,15 @@ Category 1 does not mean the rule should be cut. It usually means the opposite:
 the rule is right and is being lost. The fix is to shorten what surrounds it,
 move it, or emphasise it - and emphasis only works if few lines carry it.
 
+**Check every piece of evidence against both files.** A correction can breach a
+user-level rule that the project file never restates, and that is still a
+category-1 finding - the first one to report, since the user-level file loads
+in every session of every project. Anchoring category 1 to project rules alone
+silently drops exactly the breaches with the widest blast radius. Walk the
+evidence, not the project file: for each correction, name the rule it breaches
+wherever that rule lives, and say so explicitly when the breached rule has no
+project counterpart.
+
 ### The prohibition
 
 **Never propose removing a rule because no violation of it was found.**
