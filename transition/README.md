@@ -25,8 +25,17 @@ set the same way, in the `env` block of the project's `.claude/settings.json`:
 {"env": {"CLAUDE_TRANSITIONS_DIR": "transitions"}}
 ```
 
-A project that keeps its agent state at the root rather than under `.workspace/`
-needs this, or the hooks recreate `.workspace/transitions/` after every move.
+Relocating the directory without setting the variable does not work: the hooks
+recreate `.workspace/transitions/` after every move.
+
+Most projects should leave it unset, including a repo that *is* an agent
+workspace and has moved its memory and work to the root. Transitions are
+machine-written session logs, not curated content - one directory per day,
+several files per day, never edited by hand. `.workspace/` is where that belongs
+even when nothing else is left there. Set the variable when a project already
+has a `transitions/` of its own, or when the logs must sit beside something that
+reads them.
+
 `bin/test_transitions_dir.sh` runs the hooks against throwaway roots and asserts
 where the files land.
 

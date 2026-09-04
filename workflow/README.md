@@ -72,13 +72,19 @@ Each of the three is relocatable through the `env` block of the project's
 `CLAUDE_MEMORY_DIR`, each absolute or relative to the project root:
 
 ```json
-{"env": {"CLAUDE_WORK_DIR": "work", "CLAUDE_TRANSITIONS_DIR": "transitions"}}
+{"env": {"CLAUDE_MEMORY_DIR": "memory", "CLAUDE_WORK_DIR": "work"}}
 ```
 
 `.workspace/` is the default because it keeps agent state out of the way in a
 normal codebase. A repo that *is* the agent workspace has no second thing to
-stay out of the way of, and should point these at the root. Relocating without
-setting the variables does not work: the hooks recreate the default paths.
+stay out of the way of, and should point memory and work at the root - those are
+curated, hand-edited content, and burying them under `.workspace/` in a repo
+that is nothing but agent state only adds a level.
+
+Transitions are the exception and the example above leaves them alone
+deliberately: they are machine-written session logs, so `.workspace/transitions/`
+stays the right home even in that repo. Relocating any of the three without
+setting its variable does not work - the hooks recreate the default path.
 `bin/test_work_dir.sh` covers the resolution rules.
 
 ## Naming
