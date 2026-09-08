@@ -12,7 +12,7 @@ documentation, and this file only says what exists and how the pieces fit.
 ## The pipeline
 
 ```
-align ──▶ plan ──▶ plan-issues ──▶ next-issue ──▶ ship
+align ──▶ decompose ──▶ plan-issues ──▶ next-issue ──▶ ship
 spec.md   plan.md   milestone       branch, impl,   squash-merge,
                     + issues        tests, PR       close milestone
 ```
@@ -20,7 +20,7 @@ spec.md   plan.md   milestone       branch, impl,   squash-merge,
 | Step | Kind | Does |
 |---|---|---|
 | `/align` | skill | Surveys the repo and prior work read-only, then interrogates you into `spec.md`: a verifiable end-state covering both what you want and what already exists. Give it a brief (`/align @brief.md`) and it only asks what the brief left open. |
-| `/plan` | command | Breaks the spec into issue-sized chunks with dependencies, using Claude's plan mode. |
+| `/decompose` | skill | Decomposes `spec.md` into `plan.md`: one milestone, numbered issues, each separately verifiable. Asks you nothing - the spec is the contract. Validates the file with `check_plan.py` before handing off, in the exact shape `/plan-issues` parses. Not named `plan`: on Claude Code `/plan` is the built-in plan-mode prefix and cannot be claimed by a skill. |
 | `/plan-issues` | skill | Creates a GitHub milestone and one issue per chunk. Dry-run unless you pass `--apply`. |
 | `/next-issue` | skill | Takes the lowest-numbered open issue in the active milestone: branch, implementation, tests, `Closes #N`, PR. |
 | `/ship` | skill | Verifies every milestone issue has a closing-footer commit, squash-merges, confirms the issues auto-closed, closes the milestone. |
@@ -30,7 +30,10 @@ last issue closing closes the milestone. GitHub holds the state; the file each
 step writes is the contract the next step reads instead of re-deriving it.
 
 Nothing invokes `/align` on its own. If you want work to start there by
-default, say so in your `AGENTS.md`.
+default, say so in your `AGENTS.md` - and write it as a directive. A rule that
+describes the behaviour ("the agent does not reach for this unprompted") reads
+as permission not to, and measurably does not fire. State what to invoke, when,
+and that it outranks any instruction to start work immediately.
 
 ## Session continuity
 

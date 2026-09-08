@@ -1,6 +1,6 @@
 {
   "name": "workflow",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "The align -> ship workflow: spec, issues, implementation, delivery, and session handoffs",
   "author": {
     "name": "Claude Code Framework"
@@ -15,13 +15,13 @@
   ],
   "commands": [
     "./commands/next.md",
-    "./commands/plan.md",
     "./commands/spike.md",
     "./commands/work.md"
   ],
   "skills": [
     "./skills/align",
     "./skills/continue",
+    "./skills/decompose",
     "./skills/delegate",
     "./skills/handoff",
     "./skills/next-issue",
