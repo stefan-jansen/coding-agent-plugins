@@ -1,0 +1,31 @@
+# Skills that are NOT projected into Codex's namespace.
+#
+# Codex lists every skill it can see in the system prompt, and caps that listing
+# at 2% of the context window (8,000 characters when the window is unknown).
+# Over the cap it shortens descriptions and can drop entries, so an unused skill
+# does not cost nothing - it costs the matching accuracy of the used ones. On
+# 2026-09-15 the listing was 18,811 characters over 53 skills and the workflow
+# pipeline's own descriptions were being truncated.
+#
+# Claude keeps all of these; exclusion only affects `~/.codex/skills`. Exclude a
+# skill when Codex cannot run it, or when it is invoked from Claude in practice.
+# One name per line.
+
+# Claude-only: the skill itself says Codex has no equivalent.
+delegate
+
+# Need private data or an MCP server that Codex does not have.
+cme-futures-data
+lightgbm-training
+ml-cv-pipeline
+reference-workflow
+research-write
+
+# Web-copy skills, written for and invoked from Claude.
+concise-web-copy
+search-intent-alignment
+seo-copywriting
+
+# Long descriptions, run rarely, and from Claude when they are.
+housekeep
+instructions-audit

@@ -24,6 +24,12 @@ set -euo pipefail
 # Roots default to this marketplace plus a sibling `plugins-internal` when it
 # exists. Override the destination with $CODEX_SKILLS_DIR.
 #
+# Not every plugin skill belongs in Codex. Codex caps its skill listing at 2% of
+# the context window and shortens descriptions to fit, so a skill Codex cannot
+# run still costs the matching accuracy of the ones it can. Names listed in
+# scripts/codex-skills-exclude.txt are skipped here and unlinked if present;
+# Claude keeps them either way. Override with $CODEX_SKILLS_EXCLUDE.
+#
 # Safety: only symlinks pointing inside the given roots are ever created,
 # repointed, or removed. A real directory, or a symlink aimed anywhere else
 # (Codex's own skills, the toolkit, hand-written ones), is reported and left
@@ -50,6 +56,13 @@ if [[ ${#roots[@]} -eq 0 ]]; then
 fi
 
 DEST="${CODEX_SKILLS_DIR:-$HOME/.codex/skills}"
+
+EXCLUDE_FILE="${CODEX_SKILLS_EXCLUDE:-$PLUGINS_ROOT/scripts/codex-skills-exclude.txt}"
+EXCLUDED=""
+[[ -f "$EXCLUDE_FILE" ]] &&
+  EXCLUDED="$(sed -e 's/#.*//' -e 's/[[:space:]]//g' "$EXCLUDE_FILE" | grep . || true)"
+
+is_excluded() { printf '%s\n' "$EXCLUDED" | grep -qxF "$1"; }
 
 # Codex absent is not a failure: contributors who only use Claude Code must not
 # be blocked by a pre-commit hook about an agent they do not run.
@@ -108,6 +121,7 @@ for root in "${roots[@]}"; do
         fatal=1
         continue
       fi
+      is_excluded "$name" && continue
       [[ -n "$existing" ]] || RECORDS="${RECORDS}${name}"$'\t'"${src}"$'\t'"${plugin}"$'\n'
     done < <(jq -r '.skills[]? // empty' "$manifest")
   done < <(find "$root" -mindepth 3 -maxdepth 3 -path '*/.claude-plugin/plugin.json' -print)
@@ -188,6 +202,19 @@ done
 while IFS= read -r link; do
   name="$(basename "$link")"
   [[ -n "$(rec_src "$name")" ]] && continue
+  if is_excluded "$name"; then
+    target="$(readlink "$link")"
+    in_roots "$target" || in_roots "$(resolve_path "$link")" || continue
+    if [[ $CHECK -eq 1 ]]; then
+      echo "DRIFT: $name is excluded from Codex but still linked in $DEST" >&2
+      drift=1
+    else
+      rm "$link"
+      echo "removed excluded: $name"
+      removed=$((removed + 1))
+    fi
+    continue
+  fi
   target="$(readlink "$link")"
   resolved="$(resolve_path "$link")"
   in_roots "$target" || in_roots "$resolved" || continue
