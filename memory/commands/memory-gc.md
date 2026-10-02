@@ -18,6 +18,13 @@ description: Signal-driven garbage collection for `.workspace/memory/`. Produces
 Both live in the project's memory directory: `.workspace/memory/` unless
 `$CLAUDE_MEMORY_DIR` names another one (see the memory plugin README).
 
+GC does **not** touch Claude Code's auto memory, the `MEMORY.md` store the
+harness writes by itself. That store is measured (`/memory-review`,
+`measure_memory.sh`) but never swept: its files are model-written and carry no
+`status`. If this project's curated store looks nearly empty while sessions
+still start with thousands of tokens of memory loaded, the memory is in the
+auto store and running GC will not change it - check `/memory-review`.
+
 Transitions (v0.2 heuristic; LLM-grounded relevance is out of scope):
 
 - `active → dormant` — `last_referenced` older than `--stale` (default 90d),

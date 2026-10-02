@@ -30,6 +30,8 @@ from pathlib import Path
 _HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(_HERE))
 from gc_propose import parse_index, load_sidecar, _parse_date  # noqa: E402
+from auto_memory import report as auto_report  # noqa: E402
+from auto_memory import summarize as auto_summarize  # noqa: E402
 
 
 DISPLAY_ONLY_RE = re.compile(r"[\\/]\.claude[\\/]projects[\\/][^\\/]+[\\/]memory[\\/]?$")
@@ -180,6 +182,24 @@ def review(memory_dir: Path, out=sys.stdout) -> int:
         print(f"Auto-loaded: {auto_loaded} (no auto_loaded_cap set in frontmatter)", file=out)
     else:
         print("Auto-loaded: <unknown> (no measure_memory.sh, no cap set)", file=out)
+
+    # Claude Code's auto memory: a second store, loaded every session, that
+    # this command used to treat as display-only and never counted. Its
+    # MEMORY.md is auto-loaded on top of everything above.
+    try:
+        auto = auto_summarize(_project_root(memory_dir))
+    except OSError:
+        auto = None
+    if auto:
+        print("", file=out)
+        print("\n".join(auto_report(auto, indent="")), file=out)
+        if auto["index_tokens"] and auto_loaded is not None:
+            session = auto_loaded + auto["index_tokens"]
+            verdict = ""
+            if cap is not None:
+                verdict = f"  [{'OK' if session <= cap else 'OVER CAP vs ' + str(cap)}]"
+            print(f"Session total (auto-loaded + auto memory): {session}{verdict}", file=out)
+        print("", file=out)
 
     last_gc = sidecar.get("last_gc_run") if isinstance(sidecar, dict) else None
     last_gc_d = _parse_date(last_gc)

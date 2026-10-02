@@ -156,14 +156,32 @@ cat > "$CL/settings.json" << SETTINGS_EOF
     "workflow@local": true,
     "memory@local": true,
     "development@local": true
-  },
-  "autoMemoryDirectory": "./.workspace/memory-auto"
+  }
 }
 SETTINGS_EOF
 echo "created: $CL/settings.json (marketplace: $MARKET)"
 else
   echo "kept: $CL/settings.json (already present)"
 fi
+
+# Redirect Claude's auto memory into the repo, so it is committed, synced to
+# the other machine, and readable by Codex.
+#
+# The value MUST be absolute or start with `~/`: a relative path is parsed,
+# ignored, and writes go to ~/.claude/projects/<slug>/memory/ with nothing
+# said (probed against Claude Code v2.1.287, 2026-10-02). An absolute path
+# cannot be committed, because the two machines check the repo out at
+# different paths, so it goes in per-machine settings.local.json.
+if [ ! -f "$CL/settings.local.json" ]; then
+  printf '{\n  "autoMemoryDirectory": "%s/.workspace/memory-auto"\n}\n' "$PWD" \
+    > "$CL/settings.local.json"
+  echo "created: $CL/settings.local.json (autoMemoryDirectory -> $PWD/.workspace/memory-auto)"
+elif ! grep -q autoMemoryDirectory "$CL/settings.local.json" 2>/dev/null; then
+  echo "note: $CL/settings.local.json exists without autoMemoryDirectory - add"
+  echo "      \"autoMemoryDirectory\": \"$PWD/.workspace/memory-auto\" by hand."
+fi
+grep -q '^\.claude/settings\.local\.json' .gitignore 2>/dev/null \
+  || echo '.claude/settings.local.json' >> .gitignore
 
 # Memory seeds — only if absent
 if [ ! -f "$WS/memory/project_state.md" ]; then
@@ -329,9 +347,16 @@ every context window and bypasses the memory budget.
 ### Claude auto-memory (writer-asymmetric)
 
 Claude Code writes autonomous learnings to `.workspace/memory-auto/MEMORY.md`,
-redirected there from the default `~/.claude/projects/<slug>/memory/` via
-`autoMemoryDirectory` in `.claude/settings.json`. Claude loads it natively.
-Codex has no equivalent and reads it on demand, like any other memory file.
+redirected there from the default `~/.claude/projects/<slug>/memory/` by
+`autoMemoryDirectory` in **`.claude/settings.local.json`**. Claude loads
+`MEMORY.md` natively on every session. Codex has no equivalent and reads it on
+demand, like any other memory file.
+
+The setting is per-machine, not committed: Claude Code accepts only an absolute
+path or one starting with `~/`, and a relative path is ignored silently, so the
+value names this checkout and the other machine sets its own. After cloning,
+run `/setup` again or write the file by hand; `bin/auto_memory.py` in the memory
+plugin reports which store is live.
 
 It sits outside `.workspace/memory/` on purpose: the memory plugin recurses
 into that directory, so auto-memory nested inside it would be seeded into the
@@ -364,7 +389,8 @@ CLAUDE.md                  # one line: @AGENTS.md
   transitions/             #   session progress (transition plugin writes; timestamped HHMMSS.md)
   work/                    #   active work units / plans
 .claude/                   # CLAUDE-SPECIFIC ONLY (different schema from Codex)
-  settings.json            #   marketplaces, enabled plugins, permissions, autoMemoryDirectory
+  settings.json            #   marketplaces, enabled plugins, permissions
+  settings.local.json      #   per-machine, gitignored: autoMemoryDirectory (absolute path)
   commands/                #   project slash-commands
 ​```
 ```

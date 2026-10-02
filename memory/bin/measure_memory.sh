@@ -6,6 +6,14 @@
 # shared helper token_count.py, so this script and all downstream memory tooling
 # report the same numbers.
 #
+# Claude Code ALSO loads its own auto-memory index (`MEMORY.md`) on every
+# session, from a store that lives outside the repo by default. That is real
+# context spend and is reported here too, via bin/auto_memory.py, as a separate
+# block plus a session total. The cap and `--check` still gate the @-include
+# closure alone: auto memory is model-written and grows on its own, so a commit
+# must not start failing because of it. `--session-total` prints the combined
+# figure for anything that wants the honest number.
+#
 # The per-project budget (`auto_loaded_cap`) is read from
 # `.workspace/memory/.index_state.json`, falling back to `MEMORY_INDEX.md`
 # frontmatter. Human-readable output always reports the total against it.
@@ -16,6 +24,7 @@
 # Usage:
 #   measure_memory.sh                 Measure the current project (git root, else CWD).
 #   measure_memory.sh --total-only    Print just the integer token total (for scripts).
+#   measure_memory.sh --session-total Print @-include closure + auto-memory index.
 #   measure_memory.sh --check         Exit 1 if the total exceeds the cap.
 #   measure_memory.sh --cap N         Use N as the cap instead of the project's.
 #   measure_memory.sh --all-projects  Per-project totals under the search root.
@@ -42,6 +51,7 @@ usage() {
 
 MODE="single"
 TOTAL_ONLY=0
+SESSION_TOTAL=0
 CHECK=0
 CAP_OVERRIDE=""
 SEARCH_ROOT="${MEMORY_PROJECTS_ROOT:-$HOME}"
@@ -51,6 +61,7 @@ while [[ $# -gt 0 ]]; do
     case "$1" in
         --all-projects) MODE="all"; shift ;;
         --total-only)   TOTAL_ONLY=1; shift ;;
+        --session-total) SESSION_TOTAL=1; shift ;;
         --check)        CHECK=1; shift ;;
         --cap)          CAP_OVERRIDE="${2:?--cap needs a number}"; shift 2 ;;
         --root)         SEARCH_ROOT="${2:?--root needs a directory}"; shift 2 ;;
@@ -67,7 +78,13 @@ fi
 
 if [[ "$MODE" == "single" ]]; then
     PROJECT_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-    PY_MODE=$([[ "$TOTAL_ONLY" == "1" ]] && echo "single-total" || echo "single")
+    if [[ "$SESSION_TOTAL" == "1" ]]; then
+        PY_MODE="single-session-total"
+    elif [[ "$TOTAL_ONLY" == "1" ]]; then
+        PY_MODE="single-total"
+    else
+        PY_MODE="single"
+    fi
     TARGET="$PROJECT_ROOT"
 else
     PY_MODE="all"
@@ -81,6 +98,8 @@ import os
 import re
 import sys
 
+from auto_memory import report as auto_report
+from auto_memory import summarize as auto_summarize
 from include_graph import SEED_FILES, reachable
 from token_count import count_file
 
@@ -197,6 +216,11 @@ def print_single(project_root):
         print("  %-*s  %6d tokens" % (width, rel(f, project_root), n))
     print("  %s" % ("-" * (width + 16)))
     print("  Total auto-loaded: %d tokens (%d files)" % (total, len(counted)))
+    auto = auto_summarize(project_root)
+    print("\n".join(auto_report(auto)))
+    if auto["index_tokens"]:
+        print("  Session total (auto-loaded + auto memory): %d tokens"
+              % (total + auto["index_tokens"]))
     over = print_budget(total, cap)
     if over:
         print("  Trim the auto-loaded set: @-include only MEMORY_INDEX.md and "
@@ -210,7 +234,10 @@ def print_single(project_root):
 
 over_cap = False
 
-if MODE == "single-total":
+if MODE == "single-session-total":
+    _, _, total = measure(TARGET)
+    print(total + auto_summarize(TARGET)["index_tokens"])
+elif MODE == "single-total":
     _, _, total = measure(TARGET)
     print(total)
     cap = read_cap(TARGET)
@@ -220,24 +247,24 @@ elif MODE == "single":
 elif MODE == "all":
     projects = find_projects(TARGET, MAX_DEPTH)
     print("Per-project auto-loaded memory under %s" % os.path.abspath(TARGET))
-    print("%9s  %9s  %5s  %s" % ("TOKENS", "CAP", "FILES", "PROJECT"))
+    print("%9s  %9s  %9s  %5s  %s" % ("TOKENS", "AUTOMEM", "CAP", "FILES", "PROJECT"))
     grand = 0
     rows = []
     for p in projects:
         counted, _, total = measure(p)
         cap = read_cap(p)
-        rows.append((total, cap, len(counted), p))
+        rows.append((total, cap, len(counted), p, auto_summarize(p)["index_tokens"]))
         grand += total
     n_over = 0
-    for total, cap, nfiles, p in sorted(rows, key=lambda r: r[0], reverse=True):
+    for total, cap, nfiles, p, automem in sorted(rows, key=lambda r: r[0] + r[4], reverse=True):
         over = cap is not None and total > cap
         n_over += 1 if over else 0
-        print("%9d  %9s  %5d  %s%s"
-              % (total, "-" if cap is None else cap, nfiles, p,
+        print("%9d  %9s  %9s  %5d  %s%s"
+              % (total, automem or "-", "-" if cap is None else cap, nfiles, p,
                  "  <- OVER CAP" if over else ""))
-    print("%9s  %9s  %5s  %s" % ("-" * 9, "-" * 9, "-" * 5, "-" * 7))
-    print("%9d  %9s  %5d  %d project(s), %d over cap"
-          % (grand, "", sum(r[2] for r in rows), len(rows), n_over))
+    print("%9s  %9s  %9s  %5s  %s" % ("-" * 9, "-" * 9, "-" * 9, "-" * 5, "-" * 7))
+    print("%9d  %9d  %9s  %5d  %d project(s), %d over cap"
+          % (grand, sum(r[4] for r in rows), "", sum(r[2] for r in rows), len(rows), n_over))
     over_cap = n_over > 0
 else:
     sys.stderr.write("measure_memory.sh: unknown mode %r\n" % MODE)

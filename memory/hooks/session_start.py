@@ -170,13 +170,23 @@ def _cap(memory_dir: Path, sidecar: dict) -> int | None:
     return None
 
 
+AUTO_MEMORY_NOTICE_TOKENS = 2000
+
+
 def _budget_lines(project_root: Path, memory_dir: Path, sidecar: dict) -> list[str]:
     """Size signals: over the cap, and memory files auto-loaded directly.
 
     Independent of GC recency — intra-file growth is invisible to a status
     vocabulary driven by `last_referenced`.
+
+    Claude Code's own auto-memory index loads on every session too, from a
+    store that is outside the repo unless `autoMemoryDirectory` redirects it,
+    so it counts toward the cap here. It is left out of `measure_memory.sh
+    --check`, which gates commits, because it is model-written and grows
+    without anyone touching the repo.
     """
     try:
+        from auto_memory import summarize as auto_summarize
         from include_graph import reachable
         from token_count import count_file
     except ImportError:
@@ -205,15 +215,41 @@ def _budget_lines(project_root: Path, memory_dir: Path, sidecar: dict) -> list[s
             "(bin/verify_index.sh explains)."
         )
 
-    cap = _cap(memory_dir, sidecar)
-    if cap:
-        total = sum(count_file(p) for p in loaded)
-        if total > cap:
+    try:
+        auto = auto_summarize(project_root)
+    except OSError:
+        auto = None
+
+    if auto:
+        for note in auto["ignored_settings"]:
             lines.append(
-                f"memory-budget: {total} tokens auto-loaded every session vs a "
-                f"cap of {cap} ({round(100.0 * total / cap)}%); "
-                "run bin/measure_memory.sh to see the breakdown."
+                "memory-budget: autoMemoryDirectory is set but ignored — "
+                + note
+                + ". Claude Code accepts only an absolute path or one starting "
+                "with ~/, so auto memory is still going to the default store."
             )
+
+    auto_tokens = auto["index_tokens"] if auto else 0
+
+    cap = _cap(memory_dir, sidecar)
+    total = sum(count_file(p) for p in loaded)
+    if cap and total + auto_tokens > cap:
+        breakdown = (
+            f" ({total} in-repo + {auto_tokens} auto memory)" if auto_tokens else ""
+        )
+        lines.append(
+            f"memory-budget: {total + auto_tokens} tokens auto-loaded every "
+            f"session{breakdown} vs a cap of {cap} "
+            f"({round(100.0 * (total + auto_tokens) / cap)}%); "
+            "run bin/measure_memory.sh to see the breakdown."
+        )
+
+    if auto and auto_tokens >= AUTO_MEMORY_NOTICE_TOKENS and not auto["in_repo"]:
+        lines.append(
+            f"memory-budget: {auto_tokens} tokens of auto memory load every "
+            f"session from {auto['dir']}, outside the repo — not committed, "
+            "not synced to the other machine, not visible to Codex."
+        )
 
     return lines
 

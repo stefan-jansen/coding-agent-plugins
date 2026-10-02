@@ -177,9 +177,49 @@ session. Warnings cover the softer signals: a `tokens` field that no longer
 tracks its file, an entry over its `cap`, and an index that nothing
 `@`-includes.
 
-Claude's own auto-memory at `~/.claude/projects/.../memory/` is **recognized for
-display only** — `verify_index.sh` notes the shape and lists its files but never
-manages it (no writes, no redirects). Only `.workspace/memory/` is managed.
+## Auto memory (the second store)
+
+Claude Code maintains its own memory as it works: a `MEMORY.md` index plus one
+file per fact. The harness loads `MEMORY.md` on every session, so it spends the
+same budget as the `@`-include closure, and by default it lives **outside the
+repo** at `<config dir>/projects/<slug>/memory/`, where `<slug>` is the
+project's absolute path with every `/` replaced by `-`.
+
+This plugin does not manage that store: the status vocabulary, the index format
+and `/memory-gc` all apply to `.workspace/memory/` only. What it does now is
+*measure* it, through `bin/auto_memory.py`:
+
+- `measure_memory.sh` reports the auto-memory block and a session total.
+- `memory_review.py` prints the directory, where the setting came from,
+  `MEMORY.md` tokens, and the fact-file count.
+- the `SessionStart` hook counts `MEMORY.md` toward `auto_loaded_cap`.
+
+`measure_memory.sh --check`, which gates commits, still looks at the
+`@`-include closure alone. Auto memory is model-written and grows without
+anyone touching the repo, so a commit must not start failing because of it.
+`--session-total` prints the combined figure instead.
+
+### Redirecting auto memory into the repo
+
+`autoMemoryDirectory` moves the store, which is how it becomes committed,
+synced to the other machine, and visible to Codex. Two constraints, both probed
+against Claude Code v2.1.287 on 2026-10-02 rather than inferred:
+
+- **The value must be absolute or start with `~/`.** A relative path such as
+  `./.workspace/memory-auto` is accepted by the settings parser and then
+  ignored; writes go to the default store and nothing says so. There is no
+  variable expansion either, so `$CLAUDE_PROJECT_DIR/...` fails the same way.
+  `bin/auto_memory.py` reports an ignored value, and the `SessionStart` hook
+  surfaces it.
+- Because the path must be absolute, it cannot be committed: the two machines
+  check the repo out at different paths. It belongs in per-machine
+  `.claude/settings.local.json`, which is gitignored and still honored (the
+  same workspace-trust rule as hooks in settings files).
+
+Point it at `.workspace/memory-auto/`, never `.workspace/memory/` or a
+subdirectory of it. The memory plugin recurses into the curated store, so
+auto memory nested inside it lands in `MEMORY_INDEX.md` and gets swept by
+`/memory-gc`.
 
 ## Memory file guidelines
 

@@ -16,9 +16,12 @@ combines four sources:
 - `bin/measure_memory.sh` for the actual auto-loaded total to check
   against the `auto_loaded_cap` from the index frontmatter
 
-Recognizes Claude's auto-memory shape at
-`~/.claude/projects/<slug>/memory/` as display-only (listed but not
-analyzed for status — we don't manage it).
+Also reports Claude Code's auto memory (`MEMORY.md` plus fact files):
+the resolved directory, which settings layer named it, the auto-loaded
+`MEMORY.md` tokens, the fact-file count, and a session total against the
+cap. Status is still not managed for that store - `/memory-gc` and the
+index vocabulary cover `.workspace/memory/` only. See the README section
+"Auto memory (the second store)".
 
 ## Usage
 
