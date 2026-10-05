@@ -142,11 +142,13 @@ FORMATS = {
         "fields": {
             "id": (True, _slug),
             "summary": (True, _one_line),
+            "detail": (False, _str),
             "sources": (True, _str_list),
             "spec": (False, _str),
             "pre_defect_commit": (False, _str),
             "unrecoverable_reason": (False, _str),
             "reproduction": (False, _str),
+            "evidence": (False, _str),
             "classification": (True, None),
             "other_description": (False, _str),
         },

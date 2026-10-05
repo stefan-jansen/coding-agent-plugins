@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from . import store
+from . import classify, corpus, store
 
 
 def _store_or_absent():
@@ -38,6 +38,23 @@ def cmd_store_index(_args):
     return 0
 
 
+def cmd_corpus_report(_args):
+    path = _store_or_absent()
+    if path is None:
+        return 0
+    print(corpus.format_report(corpus.report(path)))
+    return 0
+
+
+def cmd_corpus_classify(args):
+    path = _store_or_absent()
+    if path is None:
+        return 1
+    n = classify.classify(path, args.family, batch=args.batch)
+    print(f"{args.family} classified {n} cause(s)")
+    return 0
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="verification")
     groups = parser.add_subparsers(dest="group", required=True)
@@ -49,6 +66,15 @@ def build_parser():
     st_cmds.add_parser("index", help="regenerate the loaded index").set_defaults(
         func=cmd_store_index
     )
+    co = groups.add_parser("corpus", help="the corpus of shipped defects")
+    co_cmds = co.add_subparsers(dest="command", required=True)
+    co_cmds.add_parser("report", help="recoverable share and classification").set_defaults(
+        func=cmd_corpus_report
+    )
+    cl = co_cmds.add_parser("classify", help="classify unclassified causes with one family")
+    cl.add_argument("--family", required=True, choices=["claude", "gpt"])
+    cl.add_argument("--batch", type=int, default=25)
+    cl.set_defaults(func=cmd_corpus_classify)
     return parser
 
 
