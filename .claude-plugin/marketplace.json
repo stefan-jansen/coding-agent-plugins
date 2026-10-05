@@ -113,6 +113,17 @@
         "cross-session",
         "context"
       ]
+    },
+    {
+      "name": "verification",
+      "source": "./verification",
+      "description": "Gates for premises and claims tested on their realistic violation, and a cross-repository store of lessons with what enforces each",
+      "version": "0.1.0",
+      "keywords": [
+        "verification",
+        "testing",
+        "gates"
+      ]
     }
   ]
 }

@@ -1,0 +1,11 @@
+{
+  "name": "verification",
+  "version": "0.1.0",
+  "description": "Gates that check stated premises and claims have tests failing on their realistic violation, and a cross-repository store of what enforces each lesson",
+  "author": {
+    "name": "Stefan Jansen"
+  },
+  "keywords": ["verification", "testing", "gates", "knowledge"],
+  "repository": "https://github.com/stefan-jansen/coding-agent-plugins",
+  "license": "MIT"
+}
