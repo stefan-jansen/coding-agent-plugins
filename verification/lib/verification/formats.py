@@ -151,9 +151,22 @@ FORMATS = {
             "evidence": (False, _str),
             "classification": (True, None),
             "other_description": (False, _str),
+            "resolved": (False, _one_of(CATEGORIES + ("other",))),
         },
         "pointers": ("spec", "pre_defect_commit", "reproduction"),
         "rules": _cause_rules,
+    },
+    "sources.jsonl": {
+        "fields": {
+            "id": (
+                True,
+                lambda v: _str(v) or (None if v.startswith(SOURCE_PREFIXES) else "unknown prefix"),
+            ),
+            "title": (True, _one_line),
+            "origin": (True, _str),
+        },
+        "pointers": ("origin",),
+        "rules": lambda row: [],
     },
     "misses.jsonl": {
         "fields": {
