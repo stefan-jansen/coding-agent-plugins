@@ -153,3 +153,12 @@ def test_a_banned_path_in_command_output_does_not_invalidate(world):
                  "command": "cat AGENTS.md", "aggregated_output": f"see {world['repo']}"}}
         return json.dumps(event), json.dumps({"items": ITEMS})
     assert run(world, ask_in, judges([], []))["blind"] is True
+
+
+def test_the_checkout_runs_with_the_repository_environment(world):
+    # Prevents: an agent invoking the live repository's interpreter, which voids the replay.
+    (world["repo"] / ".venv").mkdir()
+    seen = {}
+    run(world, fake(world, seen=seen), judges([], []))
+    venv = os.path.join(seen["cwd"], ".venv")
+    assert os.path.realpath(venv) == os.path.realpath(world["repo"] / ".venv")

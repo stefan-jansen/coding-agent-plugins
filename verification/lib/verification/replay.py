@@ -217,6 +217,11 @@ def run(cause_id, out_dir, root=None, store_path=None, ask=families.ask, ask_in=
     os.makedirs(work)
     archive = subprocess.run(["git", "-C", repo, "archive", sha], capture_output=True, check=True)
     subprocess.run(["tar", "-x", "-C", work], input=archive.stdout, check=True)
+    # The environment is not in git. Without it an agent reaches for the live repository's
+    # interpreter, which the scan must then count as a read of the live repository.
+    venv = os.path.join(repo, ".venv")
+    if os.path.isdir(venv) and not os.path.lexists(os.path.join(work, ".venv")):
+        os.symlink(venv, os.path.join(work, ".venv"))
     banned = forbidden(cause, store_path)
     run_id = f"{cause_id}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')}"
     os.makedirs(out_dir, exist_ok=True)
