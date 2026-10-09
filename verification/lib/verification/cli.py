@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from . import classify, corpus, store
+from . import classify, corpus, store, terms
 
 
 def _store_or_absent():
@@ -79,6 +79,46 @@ def cmd_corpus_disagreements(_args):
     return 0
 
 
+def cmd_terms_check(args):
+    with open(args.spec, encoding="utf-8") as fh:
+        problems = terms.check(fh.read(), store.location(), args.spec)
+    for p in problems:
+        print(p, file=sys.stderr)
+    if problems:
+        print(f"terms check: {len(problems)} unresolved", file=sys.stderr)
+        return 1
+    print("terms check: ok")
+    return 0
+
+
+def cmd_terms_apply(args):
+    with open(args.spec, encoding="utf-8") as fh:
+        text = fh.read()
+    new, applied = terms.apply(text, store.location())
+    if applied:
+        with open(args.spec, "w", encoding="utf-8") as fh:
+            fh.write(new)
+    for term in applied:
+        print(f"house-definition: {term}")
+    print(f"terms apply: {len(applied)} term(s) resolved from the store")
+    return 0
+
+
+def cmd_terms_define(args):
+    path = store.location()
+    if path is None:
+        print("store absent; cannot record a house definition", file=sys.stderr)
+        return 1
+    ctx = [c.strip() for c in args.context.split(",") if c.strip()]
+    try:
+        row = terms.define(path, args.term, ctx, args.definition, args.decided_by, args.origin)
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    print(f"recorded {row['id']}")
+    return 0
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="verification")
     groups = parser.add_subparsers(dest="group", required=True)
@@ -105,6 +145,21 @@ def build_parser():
     cl.add_argument("--family", required=True, choices=["claude", "gpt"])
     cl.add_argument("--batch", type=int, default=25)
     cl.set_defaults(func=cmd_corpus_classify)
+    te = groups.add_parser("terms", help="the term table and house definitions")
+    te_cmds = te.add_subparsers(dest="command", required=True)
+    tc = te_cmds.add_parser("check", help="every term resolved")
+    tc.add_argument("spec")
+    tc.set_defaults(func=cmd_terms_check)
+    ta = te_cmds.add_parser("apply", help="resolve terms from house definitions")
+    ta.add_argument("spec")
+    ta.set_defaults(func=cmd_terms_apply)
+    td = te_cmds.add_parser("define", help="record an author's resolution")
+    td.add_argument("--term", required=True)
+    td.add_argument("--context", required=True, help="comma-separated, e.g. xnys,us-equities")
+    td.add_argument("--definition", required=True)
+    td.add_argument("--decided-by", required=True)
+    td.add_argument("--origin", required=True, help="pointer to the spec that resolved it")
+    td.set_defaults(func=cmd_terms_define)
     return parser
 
 
