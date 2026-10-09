@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from . import classify, corpus, derive, retrieval, store, terms, units, violate
+from . import classify, corpus, derive, replay, retrieval, store, terms, units, violate
 
 
 def _store_or_absent():
@@ -194,6 +194,26 @@ def cmd_violate(args):
     return _report("violate", problems)
 
 
+def cmd_replay_run(args):
+    for cause in args.cause:
+        r = replay.run(cause, args.out, root=args.root)
+        if "skipped" in r:
+            print(f"{cause}\tskipped: {r['skipped']}")
+        else:
+            state = "blind" if r["blind"] else f"INVALID {r['invalid']}"
+            print(f"{cause}\t{r['surfaced_by']}\t{','.join(r['components']) or '-'}\t{state}")
+    return 0
+
+
+def cmd_replay_report(args):
+    counts, latest = replay.report(args.out)
+    for cause, r in sorted(latest.items()):
+        print(f"{cause}\t{','.join(r.get('components', [])) or 'none'}\t"
+              f"{'blind' if r.get('blind') else 'invalid'}")
+    print(" ".join(f"{k}={v}" for k, v in counts.items()))
+    return 1 if counts["invalid"] else 0
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="verification")
     groups = parser.add_subparsers(dest="group", required=True)
@@ -268,6 +288,16 @@ def build_parser():
     vi = groups.add_parser("violate", help="run a test on its violated variant and on correct code")
     vi.add_argument("declaration", help="JSON declaring the test, producer, variant and fixture")
     vi.set_defaults(func=cmd_violate)
+    rp = groups.add_parser("replay", help="replay corpus causes blind and count what caught them")
+    rps = rp.add_subparsers(dest="action", required=True)
+    rr = rps.add_parser("run")
+    rr.add_argument("cause", nargs="+", help="cause ids from causes.jsonl")
+    rr.add_argument("--out", required=True, help="directory for transcripts and results")
+    rr.add_argument("--root", help="where the neutral checkouts are created")
+    rr.set_defaults(func=cmd_replay_run)
+    rrep = rps.add_parser("report")
+    rrep.add_argument("--out", required=True)
+    rrep.set_defaults(func=cmd_replay_report)
     return parser
 
 
