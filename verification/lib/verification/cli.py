@@ -164,9 +164,12 @@ def _csv(value):
 
 def cmd_retrieve(args):
     if not args.report:
-        found = retrieval.query(
-            store.location(), _csv(args.shape), _csv(args.context), args.moved_from
-        )
+        path = store.location()
+        shapes, contexts = _csv(args.shape), _csv(args.context) + _csv(args.moved_from)
+        unknown = store.unknown_keys(store.vocabulary(path), shapes, contexts) if path else []
+        if unknown:
+            return _report("retrieve", unknown)
+        found = retrieval.query(path, shapes, _csv(args.context), args.moved_from)
         retrieval.record(args.unit, found)
         for e in found:
             print(f"{e['id']}\t{e['violation']}")

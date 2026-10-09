@@ -56,6 +56,45 @@ def render_index(store):
     return "\n".join(lines) + "\n"
 
 
+def vocabulary(store):
+    """{kind: set of keys} from keys.jsonl, the only shapes and contexts entries may use."""
+    vocab = {kind: set() for kind in formats.KEY_KINDS}
+    for _, row, _ in read_rows(store, "keys.jsonl"):
+        if isinstance(row, dict) and row.get("kind") in vocab:
+            vocab[row["kind"]].add(row.get("id"))
+    return vocab
+
+
+def unknown_keys(vocab, shapes, contexts):
+    """Reasons for every shape or context outside the vocabulary."""
+    return [
+        f"{kind} {key!r} is not in keys.jsonl"
+        for kind, keys in (("shape", shapes), ("context", contexts))
+        for key in keys
+        if key not in vocab[kind]
+    ]
+
+
+def check_keys(store):
+    """Entries use only vocabulary keys, and every key cites causes the corpus holds.
+
+    A synonym ("rolling-window" for "trailing-window") makes an entry unreachable by any
+    retrieval that uses the vocabulary, so it is refused here rather than missed later.
+    """
+    vocab = vocabulary(store)
+    causes = {r.get("id") for _, r, _ in read_rows(store, "causes.jsonl") if isinstance(r, dict)}
+    problems = []
+    for n, row, _ in read_rows(store, "keys.jsonl"):
+        for cause in (row or {}).get("derived_from") or []:
+            if cause not in causes:
+                problems.append(f"keys.jsonl:{n}: derived_from {cause!r} is not in causes.jsonl")
+    for n, row, _ in read_rows(store, "entries.jsonl"):
+        if isinstance(row, dict):
+            for reason in unknown_keys(vocab, row.get("shape") or [], row.get("context") or []):
+                problems.append(f"entries.jsonl:{n}: {reason}")
+    return problems
+
+
 def check(store):
     """Return a list of problems, each naming file:line. Empty means the store is sound."""
     problems = []
@@ -86,6 +125,7 @@ def check(store):
                 reason = pointers.resolve(value)
                 if reason:
                     problems.append(f"{where}: {field} does not resolve: {reason}")
+    problems += check_keys(store)
     index = render_index(store)
     tokens = count_tokens(index)
     if tokens > INDEX_TOKEN_CAP:

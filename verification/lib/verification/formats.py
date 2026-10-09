@@ -16,6 +16,7 @@ ADMISSION_TESTS = (
     "no-stronger-mechanism",
     "no-duplicate",
 )
+KEY_KINDS = ("shape", "context")
 SOURCE_PREFIXES = ("errata:", "issue:", "audit:", "quarantine:", "commit:")
 
 _SLUG = re.compile(r"^[a-z0-9][a-z0-9-]*$")
@@ -166,6 +167,16 @@ FORMATS = {
             "origin": (True, _str),
         },
         "pointers": ("origin",),
+        "rules": lambda row: [],
+    },
+    "keys.jsonl": {
+        "fields": {
+            "id": (True, _slug),
+            "kind": (True, _one_of(KEY_KINDS)),
+            "meaning": (True, _one_line),
+            "derived_from": (True, _str_list),
+        },
+        "pointers": (),
         "rules": lambda row: [],
     },
     "premise_questions.jsonl": {
