@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from . import classify, corpus, store, terms, units
+from . import classify, corpus, derive, retrieval, store, terms, units
 
 
 def _store_or_absent():
@@ -158,6 +158,31 @@ def cmd_closure_check(args):
     return _report("closure check", units.check_closure(_read(args.file)))
 
 
+def _csv(value):
+    return [x.strip() for x in (value or "").split(",") if x.strip()]
+
+
+def cmd_retrieve(args):
+    if not args.report:
+        found = retrieval.query(
+            store.location(), _csv(args.shape), _csv(args.context), args.moved_from
+        )
+        retrieval.record(args.unit, found)
+        for e in found:
+            print(f"{e['id']}\t{e['violation']}")
+    counts, problems = retrieval.report(args.unit)
+    print(" ".join(f"{k}={v}" for k, v in counts.items()))
+    return _report("retrieve", problems) if args.report else 0
+
+
+def cmd_derive(args):
+    if not args.report:
+        derive.derive(args.unit, args.spec)
+    counts, problems = derive.report(args.unit)
+    print(" ".join(f"{k}={v}" for k, v in counts.items()))
+    return _report("derive", problems)
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="verification")
     groups = parser.add_subparsers(dest="group", required=True)
@@ -217,6 +242,18 @@ def build_parser():
     cc = cl2_cmds.add_parser("check", help="every item closed by exactly one issue")
     cc.add_argument("file", help="plan.md")
     cc.set_defaults(func=cmd_closure_check)
+    rt = groups.add_parser("retrieve", help="store entries for a unit, and their disposition")
+    rt.add_argument("--unit", required=True, help="the work unit directory")
+    rt.add_argument("--shape", help="comma-separated shapes of the work")
+    rt.add_argument("--context", help="comma-separated contexts (venue, asset class, source)")
+    rt.add_argument("--moved-from", help="the context code or method is being moved from")
+    rt.add_argument("--report", action="store_true", help="counts; fail on undisposed entries")
+    rt.set_defaults(func=cmd_retrieve)
+    dv = groups.add_parser("derive", help="premises, claims, failure cases on both families")
+    dv.add_argument("--unit", required=True)
+    dv.add_argument("--spec", help="spec.md the derivation reads (required unless --report)")
+    dv.add_argument("--report", action="store_true")
+    dv.set_defaults(func=cmd_derive)
     return parser
 
 
