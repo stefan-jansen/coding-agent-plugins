@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from . import classify, corpus, derive, retrieval, store, terms, units
+from . import classify, corpus, derive, retrieval, store, terms, units, violate
 
 
 def _store_or_absent():
@@ -186,6 +186,14 @@ def cmd_derive(args):
     return _report("derive", problems)
 
 
+def cmd_violate(args):
+    decl = violate.load(args.declaration)
+    report, problems = violate.violate(decl)
+    for line in report:
+        print(line)
+    return _report("violate", problems)
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="verification")
     groups = parser.add_subparsers(dest="group", required=True)
@@ -257,6 +265,9 @@ def build_parser():
     dv.add_argument("--spec", help="spec.md the derivation reads (required unless --report)")
     dv.add_argument("--report", action="store_true")
     dv.set_defaults(func=cmd_derive)
+    vi = groups.add_parser("violate", help="run a test on its violated variant and on correct code")
+    vi.add_argument("declaration", help="JSON declaring the test, producer, variant and fixture")
+    vi.set_defaults(func=cmd_violate)
     return parser
 
 
