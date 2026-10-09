@@ -168,6 +168,16 @@ FORMATS = {
         "pointers": ("origin",),
         "rules": lambda row: [],
     },
+    "premise_questions.jsonl": {
+        "fields": {
+            "id": (True, _slug),
+            "applies_to": (True, _one_of(("data", "simulation"))),
+            "question": (True, _one_line),
+            "added_because": (False, _str),
+        },
+        "pointers": (),
+        "rules": lambda row: [],
+    },
     "misses.jsonl": {
         "fields": {
             "id": (True, _slug),

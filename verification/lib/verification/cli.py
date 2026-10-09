@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from . import classify, corpus, store, terms
+from . import classify, corpus, store, terms, units
 
 
 def _store_or_absent():
@@ -119,6 +119,45 @@ def cmd_terms_define(args):
     return 0
 
 
+def _read(path):
+    with open(path, encoding="utf-8") as fh:
+        return fh.read()
+
+
+def _report(name, problems):
+    for p in problems:
+        print(p, file=sys.stderr)
+    if problems:
+        print(f"{name}: {len(problems)} problem(s)", file=sys.stderr)
+        return 1
+    print(f"{name}: ok")
+    return 0
+
+
+def cmd_premises_check(args):
+    return _report("premises check", units.check_premises(_read(args.file), store.location()))
+
+
+def cmd_premises_seed(_args):
+    path = _store_or_absent()
+    if path is None:
+        return 1
+    units.seed_questions(path)
+    print("wrote premise_questions.jsonl")
+    return 0
+
+
+def cmd_claims_list(args):
+    text = _read(args.file)
+    for n, cid, claim, how in units.list_claims(text):
+        print(f"issue {n}\t{cid}\t{claim}\t{how or '(no way of being false)'}")
+    return _report("claims list", units.check_claims(text))
+
+
+def cmd_closure_check(args):
+    return _report("closure check", units.check_closure(_read(args.file)))
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="verification")
     groups = parser.add_subparsers(dest="group", required=True)
@@ -160,6 +199,24 @@ def build_parser():
     td.add_argument("--decided-by", required=True)
     td.add_argument("--origin", required=True, help="pointer to the spec that resolved it")
     td.set_defaults(func=cmd_terms_define)
+    pr = groups.add_parser("premises", help="premise statements in issue bodies")
+    pr_cmds = pr.add_subparsers(dest="command", required=True)
+    pc = pr_cmds.add_parser("check", help="every input answers every question")
+    pc.add_argument("file", help="plan.md or one issue body")
+    pc.set_defaults(func=cmd_premises_check)
+    pr_cmds.add_parser("seed", help="write the question set to the store").set_defaults(
+        func=cmd_premises_seed
+    )
+    cm = groups.add_parser("claims", help="claims in issue bodies")
+    cm_cmds = cm.add_subparsers(dest="command", required=True)
+    cmlist = cm_cmds.add_parser("list", help="list claims; fail on one that cannot be false")
+    cmlist.add_argument("file")
+    cmlist.set_defaults(func=cmd_claims_list)
+    cl2 = groups.add_parser("closure", help="which issue closes each premise and claim")
+    cl2_cmds = cl2.add_subparsers(dest="command", required=True)
+    cc = cl2_cmds.add_parser("check", help="every item closed by exactly one issue")
+    cc.add_argument("file", help="plan.md")
+    cc.set_defaults(func=cmd_closure_check)
     return parser
 
 
