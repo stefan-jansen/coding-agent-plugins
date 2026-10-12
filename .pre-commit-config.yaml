@@ -29,3 +29,9 @@ repos:
         language: system
         files: ^([^/]+/skills/|[^/]+/\.claude-plugin/plugin\.json$)
         pass_filenames: false
+      - id: plugin-validate
+        name: claude plugin validate --strict (marketplace and every plugin.json)
+        entry: claude plugin validate --strict .
+        language: system
+        files: (^\.claude-plugin/marketplace\.json$|^[^/]+/\.claude-plugin/plugin\.json$)
+        pass_filenames: false
