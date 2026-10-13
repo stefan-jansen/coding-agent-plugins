@@ -145,14 +145,16 @@ def test_one_item_at_each_status_is_counted(unit):
 
 def passing(unit):
     """Resolve the one uncovered item the way the author would: a waiver."""
-    rows = evidence(unit)
-    rows[-1] = {
-        "item": "hand-built",
-        "status": "waived",
-        "level": "asserted",
-        "reason": "superseded by horizon",
-        "date": TODAY,
-    }
+    rows = [r for r in evidence(unit) if r["item"] != "hand-built"]
+    rows += [
+        {
+            "item": "hand-built",
+            "status": "waived",
+            "level": "asserted",
+            "reason": "superseded by horizon",
+            "date": TODAY,
+        }
+    ]
     write_evidence(unit, rows)
 
 

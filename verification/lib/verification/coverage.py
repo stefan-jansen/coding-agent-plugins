@@ -13,7 +13,14 @@ than trusting a recorded verdict. A waiver needs a reason and a date; `test-unre
 the missing prerequisite. A `finding` is a test that fails on the current code: the code lacks
 what the item asks for, so there is no correct version for violate to pass. Coverage confirms
 the test fails there, counts the finding and does not block on it. A finding whose test passes
-is uncovered. When every item is covered, each verdict is written to
+is uncovered.
+
+A `deferred` row names the later plan issue that will verify the item (`to_issue`) and the
+prerequisite missing now. It does not block the issue that closes the item; the named issue's
+gate then requires it like one of its own items, and `verification milestone-check` refuses
+while any row is still deferred.
+
+When every item is covered, each verdict is written to
 `<unit>/results/<item>.json` for the review table; a refusal writes nothing.
 """
 
@@ -26,9 +33,9 @@ from . import pointers, units, violate
 
 EVIDENCE = "evidence.jsonl"
 RESULTS = "results"
-STATUSES = ("test", "waived", "test-unreachable", "finding")
+STATUSES = ("test", "waived", "test-unreachable", "finding", "deferred")
 LEVELS = ("asserted", "pointed", "argued-unreachable", "test", "full-data")
-STATES = ("covered", "waived", "test-unreachable", "finding", "uncovered")
+STATES = ("covered", "waived", "test-unreachable", "finding", "uncovered", "deferred")
 TEST_LEVELS = ("test", "full-data")
 
 
@@ -79,6 +86,11 @@ def row_problems(unit, row):
         reason = pointers.resolve(row.get("full_data") or "")
         if reason:
             problems.append(f"full_data: {reason}")
+    if status == "deferred" and not isinstance(row.get("to_issue"), int):
+        problems.append("to_issue: the plan number of the issue that will verify it")
+    if status == "deferred" and row.get("declaration"):
+        if not os.path.isfile(os.path.join(unit, row["declaration"])):
+            problems.append(f"declaration: {row['declaration']} not found in the unit")
     if status in ("test", "finding"):
         decl = row.get("declaration") or ""
         if not decl or not os.path.isfile(os.path.join(unit, decl)):
@@ -88,21 +100,29 @@ def row_problems(unit, row):
             problems.append("reason: a waiver needs one")
         if not _date(row.get("date")):
             problems.append("date: must be an ISO date")
-    if status == "test-unreachable" and not (row.get("prerequisite") or "").strip():
+    if status in ("test-unreachable", "deferred") and not (row.get("prerequisite") or "").strip():
         problems.append("prerequisite: name what is missing")
     if status == "finding" and not (row.get("filed") or "").strip():
         problems.append("filed: name where the finding was filed")
     return problems
 
 
-def assess(unit, item, row):
-    """(state, problems, report) for one item."""
+def assess(unit, item, row, number=None, later=(), own=True):
+    """(state, problems, report) for one item, assessed at plan issue `number`; `later` holds the
+    plan's issue numbers after it, and `own` says the issue closes the item itself rather than
+    receiving it as a deferral."""
     if row is None:
         return "uncovered", ["no evidence row"], []
     problems = row_problems(unit, row)
     if problems:
         return "uncovered", problems, []
     status = row["status"]
+    if status == "deferred":
+        if not own:
+            return "uncovered", ["deferred to this issue; verify it now"], []
+        if row["to_issue"] not in later:
+            return "uncovered", ["a deferral names a later issue in the plan"], []
+        return "deferred", [], []
     if status in ("waived", "test-unreachable"):
         return status, [], []
     decl = violate.load(os.path.join(unit, row["declaration"]))
@@ -154,9 +174,11 @@ def issue_body(text, number):
     raise ValueError(f"issue {number} not found")
 
 
-def coverage(unit, body, number=None):
+def coverage(unit, body, number=None, plan_numbers=()):
     """({state: count}, [(item, state, problems, row, report)], refusal). Refusal is a reason the
-    issue cannot be assessed at all, such as no `Closes:` line. Nothing is written here."""
+    issue cannot be assessed at all, such as no `Closes:` line. Nothing is written here.
+
+    The items are those the issue closes plus those deferred to it from earlier issues."""
     closes = units.declared(body, "Closes")
     if closes is None:
         return None, [], f"issue {number} has no `Closes:` line"
@@ -165,12 +187,57 @@ def coverage(unit, body, number=None):
         return None, [], "; ".join(problems)
     counts = dict.fromkeys(STATES, 0)
     out = []
-    for item in closes:
+    deferred_here = [
+        i
+        for i, r in rows.items()
+        if r.get("status") == "deferred" and r.get("to_issue") == number and i not in closes
+    ]
+    later = {n for n in plan_numbers if number is not None and n > number}
+    for item in closes + deferred_here:
         row = rows.get(item)
-        state, problems, report = assess(unit, item, row)
+        state, problems, report = assess(unit, item, row, number, later, item in closes)
         counts[state] += 1
         out.append((item, state, problems, row, report))
     return counts, out, None
+
+
+def closer(plan_text, item):
+    for n, _, body in units.issues(plan_text):
+        if item in (units.declared(body, "Closes") or []):
+            return n
+    return None
+
+
+def deferrals(unit, plan_text, closed=()):
+    """(lines, problems): every deferred item, and each one that should not stay deferred: its
+    named issue has closed, or its prepared test already satisfies violate on this branch."""
+    rows, problems = read_evidence(unit)
+    lines = []
+    for item, row in rows.items():
+        if row.get("status") != "deferred":
+            continue
+        target = row.get("to_issue")
+        lines.append(
+            f"{item}\tissue {closer(plan_text, item)} -> issue {target}\t{row.get('prerequisite')}"
+        )
+        if target in closed:
+            problems.append(f"{item}: issue {target} closed without verifying it")
+        if row.get("declaration"):
+            decl = violate.load(os.path.join(unit, row["declaration"]))
+            if not violate.violate(decl)[1]:
+                problems.append(f"{item}: its test already runs on this branch; verify it now")
+    return lines, problems
+
+
+def milestone_check(unit, closed=()):
+    """Problems that stop the milestone closing: any item still deferred."""
+    rows, problems = read_evidence(unit)
+    for item, row in rows.items():
+        if row.get("status") == "deferred":
+            target = row.get("to_issue")
+            why = " (closed without verifying it)" if target in closed else ""
+            problems.append(f"{item}: still deferred to issue {target}{why}")
+    return problems
 
 
 def levels(unit):

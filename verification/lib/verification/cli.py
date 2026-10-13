@@ -183,13 +183,16 @@ def cmd_coverage(args):
     except ValueError as exc:
         print(exc, file=sys.stderr)
         return 1
-    counts, rows, refusal = coverage.coverage(unit, body, args.issue)
+    numbers = [n for n, _, _ in units.issues(_read(args.file))]
+    counts, rows, refusal = coverage.coverage(unit, body, args.issue, numbers)
     if refusal:
         print(f"coverage: {refusal}", file=sys.stderr)
         return 1
     for item, state, problems, row, _ in rows:
         if state == "finding":
             print(f"finding: {item}: filed at {row['filed']}")
+        if state == "deferred":
+            print(f"{item}: deferred to issue {row['to_issue']}: {row['prerequisite']}")
         for p in problems:
             print(f"{item}: {p}", file=sys.stderr)
     print(f"issue {args.issue}: " + " ".join(f"{k}={v}" for k, v in counts.items()))
@@ -233,6 +236,23 @@ def cmd_violate(args):
     for line in report:
         print(line)
     return _report("violate", problems)
+
+
+def _closed(value):
+    return {int(x) for x in _csv(value)}
+
+
+def cmd_deferrals(args):
+    unit = args.unit or os.path.dirname(os.path.abspath(args.file))
+    lines, problems = coverage.deferrals(unit, _read(args.file), _closed(args.closed))
+    for line in lines:
+        print(line)
+    return _report("deferrals", problems)
+
+
+def cmd_milestone_check(args):
+    unit = args.unit or os.path.dirname(os.path.abspath(args.file))
+    return _report("milestone check", coverage.milestone_check(unit, _closed(args.closed)))
 
 
 def cmd_review_table(args):
@@ -354,6 +374,16 @@ def build_parser():
     vi = groups.add_parser("violate", help="run a test on its violated variant and on correct code")
     vi.add_argument("declaration", help="JSON declaring the test, producer, variant and fixture")
     vi.set_defaults(func=cmd_violate)
+    df = groups.add_parser("deferrals", help="deferred items, and any that should not be")
+    df.add_argument("file", help="plan.md; its directory is the unit")
+    df.add_argument("--unit")
+    df.add_argument("--closed", help="comma-separated plan issue numbers already closed")
+    df.set_defaults(func=cmd_deferrals)
+    mc = groups.add_parser("milestone-check", help="the ship gate: nothing still deferred")
+    mc.add_argument("file", help="plan.md; its directory is the unit")
+    mc.add_argument("--unit")
+    mc.add_argument("--closed", help="comma-separated plan issue numbers already closed")
+    mc.set_defaults(func=cmd_milestone_check)
     rv = groups.add_parser("review-table", help="the table the author reviews for one issue")
     rv.add_argument("file", help="plan.md or one issue body; its directory is the unit")
     rv.add_argument("--issue", type=int)
