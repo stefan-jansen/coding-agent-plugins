@@ -134,6 +134,31 @@ def claims(body):
     return out
 
 
+MEASURED_QUESTIONS = (
+    "limiter",
+    "alternatives",
+    "work-happened",
+    "configured-alike",
+    "within-limits",
+)
+TEMPLATE = os.path.join(os.path.dirname(__file__), "..", "..", "templates", "measured-number.md")
+
+
+def claim_kinds(body):
+    """{id: kind} from the Claims table's optional fourth column."""
+    sec = _section(body, "Claims")
+    rows = _table_rows(sec.splitlines()) if sec else []
+    return {cells[0]: (cells[3] if len(cells) > 3 else "").lower() for cells in rows}
+
+
+def measured_answers(body, cid):
+    """{question: answer} from the issue's `### Measured: <cid>` section."""
+    m = re.search(rf"^###\s+Measured:\s*{re.escape(cid)}\s*$(.*?)(?=^###\s|\Z)", body, re.M | re.S)
+    if not m:
+        return {}
+    return {c[0]: c[1] if len(c) > 1 else "" for c in _table_rows(m.group(1).splitlines())}
+
+
 def declared(body, label):
     m = re.search(rf"^{label}:\s*(.*)$", body, re.M)
     if not m:
@@ -191,6 +216,14 @@ def check_claims(text):
         for cid, claim, how in claims(body):
             if not how or how in ("-", "?"):
                 problems.append(f"issue {n} ({title}): claim {cid!r} has no way of being false")
+            if claim_kinds(body).get(cid) == "measured":
+                answers = measured_answers(body, cid)
+                for q in MEASURED_QUESTIONS:
+                    if answers.get(q, "").strip() in ("", "-", "?"):
+                        problems.append(
+                            f"issue {n} ({title}): claim {cid!r} is a measured number and does "
+                            f"not answer {q} (`verification claims template` has the questions)"
+                        )
     return problems
 
 

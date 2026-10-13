@@ -242,6 +242,12 @@ def cmd_claims_list(args):
     return _report("claims list", units.check_claims(text))
 
 
+def cmd_claims_template(_args):
+    with open(units.TEMPLATE, encoding="utf-8") as fh:
+        print(fh.read(), end="")
+    return 0
+
+
 def cmd_closure_check(args):
     unit = os.path.dirname(os.path.abspath(args.file))
     return _report("closure check", units.check_closure(_read(args.file), unit))
@@ -452,6 +458,9 @@ def build_parser():
     cmlist = cm_cmds.add_parser("list", help="list claims; fail on one that cannot be false")
     cmlist.add_argument("file")
     cmlist.set_defaults(func=cmd_claims_list)
+    cm_cmds.add_parser(
+        "template", help="the checklist section a measured-number claim answers"
+    ).set_defaults(func=cmd_claims_template)
     cl2 = groups.add_parser("closure", help="which issue closes each premise and claim")
     cl2_cmds = cl2.add_subparsers(dest="command", required=True)
     cc = cl2_cmds.add_parser("check", help="every item closed by exactly one issue")
