@@ -225,6 +225,66 @@ def test_the_checkout_runs_with_the_repository_environment(world):
     assert (world["repo"] / ".venv").is_dir()
 
 
+def commit_at(repo, date, message):
+    env = {**os.environ, "GIT_AUTHOR_DATE": date, "GIT_COMMITTER_DATE": date}
+    subprocess.run(["git", "-C", str(repo), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", message], check=True, env=env)
+
+
+def test_a_spec_from_another_repository_brings_its_instructions_as_they_stood(world, tmp_path):
+    # Prevents: a stage rule that cites rules/notebook-standards.md arriving without it, so the
+    # agent searches the machine for it and finds the live repository (10 of 18 book replays
+    # voided, 2026-10-13).
+    rules = tmp_path / "agents"
+    (rules / "rules" / "stages").mkdir(parents=True)
+    git(rules, "init", "-q")
+    git(rules, "config", "user.email", "t@t")
+    git(rules, "config", "user.name", "t")
+    (rules / "AGENTS.md").write_text("canon is rules/canon.md, v1\n")
+    (rules / "rules" / "canon.md").write_text("canon v1\n")
+    (rules / "rules" / "stages" / "04.md").write_text("Stage 4 adds only what canon lacks.\n")
+    (rules / "errata").mkdir()
+    (rules / "errata" / "earlier.md").write_text("an earlier defect and its fix\n")
+    commit_at(rules, "2020-01-01T00:00:00", "v1")
+    (rules / "AGENTS.md").write_text("canon is rules/canon.md, v2\n")
+    (rules / "rules" / "canon.md").write_text("canon v2: exits must precede the holdout\n")
+    (rules / "errata" / "holdout.md").write_text("the defect\n")
+    commit_at(rules, "2099-01-01T00:00:00", "v2")
+    cause = json.loads((world["store"] / "causes.jsonl").read_text())
+    cause["spec"] = f"{rules}:rules/stages/04.md"
+    (world["store"] / "causes.jsonl").write_text(json.dumps(cause) + "\n")
+    seen = {}
+
+    def ask_in(family, prompt, cwd, timeout=0):
+        seen["files"] = sorted(
+            os.path.relpath(os.path.join(d, f), cwd) for d, _, fs in os.walk(cwd) for f in fs
+        )
+        seen["agents"] = open(os.path.join(cwd, "AGENTS.md")).read()
+        seen["canon"] = open(os.path.join(cwd, "rules", "canon.md")).read()
+        return "", json.dumps({"items": []})
+
+    run(world, ask_in, judges([], []))
+    assert seen["agents"] == "canon is rules/canon.md, v1\n"
+    assert seen["canon"] == "canon v1\n"
+    assert "labels.py" in seen["files"]
+    assert not any(f.startswith("errata") for f in seen["files"])
+
+
+def test_the_environment_link_does_not_name_the_live_repository(world):
+    # Prevents: `ls -la` in the checkout showing .venv -> <live repository>/.venv, which is
+    # how the book replays found the repository holding the fix.
+    (world["repo"] / ".venv").mkdir()
+    seen = {}
+
+    def ask_in(family, prompt, cwd, timeout=0):
+        seen["target"] = os.readlink(os.path.join(cwd, ".venv"))
+        return "", json.dumps({"items": []})
+
+    run(world, ask_in, judges([], []))
+    assert str(world["repo"]) not in seen["target"]
+    assert list(world["root"].iterdir()) == []
+
+
 def test_the_prompt_asks_the_premise_questions_of_the_current_process(world):
     # Prevents: a replay that measures an older process than the one sessions run, so a
     # change to the question set never shows up in the catch rate.

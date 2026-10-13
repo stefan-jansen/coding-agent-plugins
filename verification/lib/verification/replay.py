@@ -287,6 +287,15 @@ def _items(text):
     return [i for i in items if i.get("kind") in COMPONENT and i.get("id") and i.get("text")]
 
 
+def _extract(repo, sha, work, *paths):
+    """Write the tree of `repo` at `sha` (or only `paths` of it) into `work`, keeping files
+    already there."""
+    archive = subprocess.run(
+        ["git", "-C", repo, "archive", sha, "--", *paths], capture_output=True, check=True
+    )
+    subprocess.run(["tar", "-x", "--skip-old-files", "-C", work], input=archive.stdout, check=True)
+
+
 def run(cause_id, out_dir, root=None, store_path=None, ask=families.ask, ask_in=_ask_in):
     """Replay one cause on both families; write transcripts and the result under out_dir."""
     store_path = store_path or store.location()
@@ -297,18 +306,29 @@ def run(cause_id, out_dir, root=None, store_path=None, ask=families.ask, ask_in=
     if spec is None:
         return {"cause_id": cause_id, "skipped": provenance["missing"], **provenance}
     repo, sha = commit_of(cause)
-    work = os.path.join(root or tempfile.gettempdir(), "w" + secrets.token_hex(4))
+    token = secrets.token_hex(4)
+    work = os.path.join(root or tempfile.gettempdir(), "w" + token)
+    env = os.path.join(root or tempfile.gettempdir(), "env-" + token)
     os.makedirs(work)
     try:
-        archive = subprocess.run(
-            ["git", "-C", repo, "archive", sha], capture_output=True, check=True
-        )
-        subprocess.run(["tar", "-x", "-C", work], input=archive.stdout, check=True)
+        _extract(repo, sha, work)
+        # A spec kept in another repository arrives with that repository's instructions as they
+        # stood, since the spec cites them; without them an agent searches the machine.
+        if provenance.get("at") and ":" in (cause.get("spec") or ""):
+            spec_repo, path = cause["spec"].split(":", 1)
+            spec_repo = os.path.expanduser(spec_repo)
+            if os.path.realpath(spec_repo) != os.path.realpath(repo):
+                wanted = ["AGENTS.md", path.split("/")[0]]
+                present = _git(spec_repo, "ls-tree", "--name-only", provenance["at"], "--", *wanted)
+                if present.split():
+                    _extract(spec_repo, provenance["at"], work, *present.split())
         # The environment is not in git. Without it an agent reaches for the live repository's
-        # interpreter, which the scan must then count as a read of the live repository.
+        # interpreter, which the scan must then count as a read of the live repository. The link
+        # goes through a neutral name so that listing the checkout does not show that path.
         venv = os.path.join(repo, ".venv")
         if os.path.isdir(venv) and not os.path.lexists(os.path.join(work, ".venv")):
-            os.symlink(venv, os.path.join(work, ".venv"))
+            os.symlink(venv, env)
+            os.symlink(env, os.path.join(work, ".venv"))
         banned = forbidden(cause, store_path)
         run_id = f"{cause_id}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')}"
         os.makedirs(out_dir, exist_ok=True)
@@ -357,6 +377,8 @@ def run(cause_id, out_dir, root=None, store_path=None, ask=families.ask, ask_in=
         return result
     finally:
         shutil.rmtree(work)
+        if os.path.lexists(env):
+            os.unlink(env)
 
 
 def report(out_dir):
