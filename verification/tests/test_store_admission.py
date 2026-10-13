@@ -151,7 +151,8 @@ def test_content_that_fails_its_own_test_is_rejected_with_the_test(world, tmp_pa
     assert r.returncode == 0, r.stderr
     assert "rejected: skill:ratio: fails-its-test" in r.stdout
     decision = rows(store / "admissions.jsonl")[-1]
-    assert decision["failing_test"] == f"{repo}:tests/test_ratio.py::test_ratio"
+    # Written relative to ~, so it resolves on any machine with the same layout.
+    assert decision["failing_test"] == "~/project:tests/test_ratio.py::test_ratio"
     assert "fails on correct code" in decision["detail"]
 
 

@@ -41,7 +41,8 @@ def _load(path):
         cand = json.load(fh)
     decl = cand.get("declaration")
     if decl:
-        cand["declaration"] = os.path.join(os.path.dirname(os.path.abspath(path)), decl)
+        here = os.path.dirname(os.path.abspath(path))
+        cand["declaration"] = os.path.join(here, os.path.expanduser(decl))
     return cand
 
 
@@ -102,7 +103,9 @@ def _overlapping(stored, entry):
 
 
 def _failing_test(decl):
-    root = decl["root"]
+    root, home = decl["root"], os.path.expanduser("~")
+    if root == home or root.startswith(home + os.sep):
+        root = "~" + root[len(home) :]
     path, _, symbol = decl["test"].partition("::")
     return f"{root}:{path}" + (f"::{symbol.split('::')[-1]}" if symbol else "")
 
