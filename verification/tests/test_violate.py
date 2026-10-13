@@ -103,6 +103,22 @@ def test_labels_from_the_stage_script():
     run = subprocess.run([sys.executable, "stage.py"], capture_output=True, text=True, check=True)
     labels = json.loads(run.stdout)
     assert labels and all(x["exit_t"] - x["t"] == 2 for x in labels)
+
+
+def test_labels_from_the_stage_script_in_a_clean_environment():
+    import json
+    import subprocess
+    import sys
+
+    run = subprocess.run(
+        [sys.executable, "stage.py"],
+        capture_output=True,
+        text=True,
+        check=True,
+        env={"PATH": "/usr/bin:/bin"},
+    )
+    labels = json.loads(run.stdout)
+    assert labels and all(x["exit_t"] - x["t"] == 2 for x in labels)
 """
 
 STAGE = '''\
@@ -233,5 +249,18 @@ def test_producer_run_in_a_child_process_is_traced(repo):
     # Prevents: rejecting a sound test because the producer runs in a stage subprocess, as
     # R2P's run.py starts every stage; the trace saw only the pytest process.
     r = violate(repo, "test_labels_from_the_stage_script", {"mutation": ROW_LABEL}, "labels.py")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "violated run: exit 1" in r.stdout
+
+
+def test_child_started_with_its_own_environment_is_traced(repo):
+    # Prevents: the same rejection when the test starts the stage with an explicit env that
+    # drops PYTHONPATH, as R2P's tests/cases helpers do.
+    r = violate(
+        repo,
+        "test_labels_from_the_stage_script_in_a_clean_environment",
+        {"mutation": ROW_LABEL},
+        "labels.py",
+    )
     assert r.returncode == 0, r.stdout + r.stderr
     assert "violated run: exit 1" in r.stdout

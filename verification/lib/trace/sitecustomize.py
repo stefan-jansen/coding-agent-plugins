@@ -8,8 +8,9 @@ When $VERIFICATION_TRACE_DIR is set, each process writes <pid>.json there at exi
     {"functions": [[file, name], ...], "lines": [[file, line], ...]}
 Functions are every Python function or module body that started. Lines are recorded only for
 the file:line pairs listed in $VERIFICATION_TRACE_LINES (comma-separated), which is where a
-code mutation was applied. A child that ends with os._exit (a multiprocessing worker) or is
-killed writes nothing. Any sitecustomize later on sys.path still runs.
+code mutation was applied. A child started with its own env keeps the trace, because subprocess.Popen
+adds the trace variables back. A child that ends with os._exit (a multiprocessing worker), is
+killed, or is started by os.exec*/os.posix_spawn with a scrubbed environment writes nothing. Any sitecustomize later on sys.path still runs.
 """
 
 import atexit
@@ -73,6 +74,28 @@ def _dump(directory):
         json.dump({"functions": sorted(_functions), "lines": sorted(_lines)}, fh)
 
 
+def _propagate():
+    """Children started with an explicit env (a test helper that passes only PATH and its own
+    variables) would otherwise drop the trace: add the trace variables and this directory back."""
+    import subprocess
+
+    here = os.path.dirname(os.path.realpath(__file__))
+    keys = ("VERIFICATION_TRACE_DIR", "VERIFICATION_TRACE_LINES")
+
+    class Popen(subprocess.Popen):
+        def __init__(self, *args, env=None, **kwargs):
+            if env is not None:
+                env = dict(env)
+                for key in keys:
+                    env.setdefault(key, os.environ.get(key, ""))
+                paths = [x for x in env.get("PYTHONPATH", "").split(os.pathsep) if x]
+                if here not in paths:
+                    env["PYTHONPATH"] = os.pathsep.join([here, *paths])
+            super().__init__(*args, env=env, **kwargs)
+
+    subprocess.Popen = Popen
+
+
 def _chain():
     """Run the sitecustomize this module shadows, if one is further down sys.path."""
     here = os.path.dirname(os.path.realpath(__file__))
@@ -94,4 +117,5 @@ if _directory and os.path.isdir(_directory):
     else:
         _start_tracing()
     atexit.register(_dump, _directory)
+    _propagate()
 _chain()
