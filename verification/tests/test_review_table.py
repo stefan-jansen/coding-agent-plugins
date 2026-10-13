@@ -40,7 +40,7 @@ def test_the_table_has_a_row_per_item_and_the_term_reading(unit):
     for item in ("horizon", "vendor-terms", "full-panel", "gap-label", "hand-built"):
         assert f"| {item} |" in text
     assert "the exit is counted in rows across a gap" in text
-    assert "filed at ml4t/research-to-production-dev#302" in text
+    assert "filed at ml4t/research-to-production-dev#302 (the unit's author, 2026-10-13)" in text
 
 
 def test_every_row_points_to_a_test_and_a_verdict_that_resolve(unit):

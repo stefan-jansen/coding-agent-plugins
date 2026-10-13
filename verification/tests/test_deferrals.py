@@ -77,6 +77,12 @@ def test_the_milestone_cannot_close_with_an_open_deferral(unit):
     assert r.returncode == 1
     assert "full-panel: still deferred to issue 2" in r.stderr
     rows = [r for r in evidence(unit) if r["item"] != "full-panel"]
-    verified = {"item": "full-panel", "status": "test-unreachable", "level": "pointed"}
+    verified = {
+        "item": "full-panel",
+        "status": "test-unreachable",
+        "level": "pointed",
+        "decided_by": "the unit's author",
+        "date": "2026-10-13",
+    }
     write_evidence(unit, rows + [{**verified, "prerequisite": "no full panel on this machine"}])
     assert cli("milestone-check", unit / "plan.md").returncode == 0

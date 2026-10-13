@@ -58,12 +58,15 @@ def _test_pointer(unit, row):
 
 def _evidence(row):
     status = row.get("status")
+    by = f" ({row.get('decided_by')}, {row.get('date')})"
     if status == "waived":
-        return f"waived {row.get('date')}: {row.get('reason')}"
+        return f"waived: {row.get('reason')}{by}"
     if status == "test-unreachable":
-        return f"not testable yet: {row.get('prerequisite')}"
+        return f"not testable yet: {row.get('prerequisite')}{by}"
     if status == "finding":
-        return f"finding, filed at {row.get('filed')}"
+        return f"finding, filed at {row.get('filed')}{by}"
+    if status == "deferred":
+        return f"deferred to issue {row.get('to_issue')}: {row.get('prerequisite')}"
     return f"test ({row.get('level')})"
 
 

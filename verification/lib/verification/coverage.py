@@ -3,7 +3,8 @@
 Evidence for a unit's items lives beside its plan, in `<unit>/evidence.jsonl`, one row per item:
 
     {"item": "vol-7d", "status": "test", "level": "test", "declaration": "vol-7d.json"}
-    {"item": "terms", "status": "waived", "level": "asserted", "reason": "...", "date": "..."}
+    {"item": "terms", "status": "waived", "level": "asserted", "reason": "...", "date": "...",
+     "decided_by": "<the author>"}
     {"item": "panel", "status": "test-unreachable", "level": "pointed", "prerequisite": "..."}
     {"item": "gap", "status": "finding", "level": "asserted", "filed": "<repo>#<n>",
      "declaration": "gap.json"}
@@ -37,6 +38,9 @@ STATUSES = ("test", "waived", "test-unreachable", "finding", "deferred")
 LEVELS = ("asserted", "pointed", "argued-unreachable", "test", "full-data")
 STATES = ("covered", "waived", "test-unreachable", "finding", "uncovered", "deferred")
 TEST_LEVELS = ("test", "full-data")
+# Exceptions to testing are the author's, recorded with who decided and when; an agent writes
+# only `test` and `deferred` rows.
+AUTHOR_DECISIONS = ("waived", "test-unreachable", "finding")
 
 
 def read_evidence(unit):
@@ -95,11 +99,13 @@ def row_problems(unit, row):
         decl = row.get("declaration") or ""
         if not decl or not os.path.isfile(os.path.join(unit, decl)):
             problems.append(f"declaration: {decl or '(missing)'} not found in the unit")
-    if status == "waived":
-        if not (row.get("reason") or "").strip():
-            problems.append("reason: a waiver needs one")
+    if status in AUTHOR_DECISIONS:
+        if not (row.get("decided_by") or "").strip():
+            problems.append("decided_by: an author's decision names who made it")
         if not _date(row.get("date")):
             problems.append("date: must be an ISO date")
+    if status == "waived" and not (row.get("reason") or "").strip():
+        problems.append("reason: a waiver needs one")
     if status in ("test-unreachable", "deferred") and not (row.get("prerequisite") or "").strip():
         problems.append("prerequisite: name what is missing")
     if status == "finding" and not (row.get("filed") or "").strip():

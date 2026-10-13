@@ -51,6 +51,7 @@ Closes: none
 """
 
 TODAY = "2026-10-13"
+AUTHOR = "the unit's author"
 
 
 def decl(unit, name, test, variant=None, producer="observations.py"):
@@ -87,20 +88,25 @@ def unit(tmp_path_factory, repo):
             "item": "vendor-terms",
             "status": "waived",
             "level": "asserted",
-            "reason": "the vendor publishes no contract terms; Stefan accepted the risk",
+            "reason": "the vendor publishes no contract terms; the author accepted the risk",
             "date": TODAY,
+            "decided_by": AUTHOR,
         },
         {
             "item": "full-panel",
             "status": "test-unreachable",
             "level": "pointed",
             "prerequisite": "the full 2015-2024 panel is not on this machine",
+            "decided_by": AUTHOR,
+            "date": TODAY,
         },
         {
             "item": "gap-label",
             "status": "finding",
             "level": "asserted",
             "filed": "ml4t/research-to-production-dev#302",
+            "decided_by": AUTHOR,
+            "date": TODAY,
             "declaration": decl(
                 u, "gap-label", "test_finding.py::test_a_label_into_the_gap_is_kept"
             ),
@@ -153,6 +159,7 @@ def passing(unit):
             "level": "asserted",
             "reason": "superseded by horizon",
             "date": TODAY,
+            "decided_by": AUTHOR,
         }
     ]
     write_evidence(unit, rows)
@@ -183,7 +190,14 @@ def test_a_verdict_is_recorded_for_the_review_table(unit):
 def test_a_finding_whose_test_passes_is_uncovered(unit):
     # Prevents: parking a passing (or never-run) test as a finding to get it out of the gate.
     rows = evidence(unit)
-    rows[0] = {**rows[0], "status": "finding", "level": "asserted", "filed": "x/y#1"}
+    rows[0] = {
+        **rows[0],
+        "status": "finding",
+        "level": "asserted",
+        "filed": "x/y#1",
+        "decided_by": AUTHOR,
+        "date": TODAY,
+    }
     write_evidence(unit, rows)
     r = cli("coverage", unit / "plan.md", "--issue", "1")
     assert r.returncode == 1
@@ -260,3 +274,18 @@ def test_a_refusal_writes_nothing(unit):
     r = cli("coverage", unit / "plan.md", "--issue", "1")
     assert r.returncode == 1
     assert snapshot(unit) == before
+
+
+def test_an_author_decision_must_say_who_decided_it(unit):
+    # Prevents: an exception nobody can attribute passing the gate. In the scratch-repository
+    # run (factory #15) the agent rightly would not commit a test-unreachable row it could not
+    # tell from one an agent wrote to get past the gate.
+    passing(unit)
+    rows = evidence(unit)
+    for r in rows:
+        if r["item"] == "full-panel":
+            del r["decided_by"]
+    write_evidence(unit, rows)
+    r = cli("coverage", unit / "plan.md", "--issue", "1")
+    assert r.returncode == 1
+    assert "full-panel: decided_by: an author's decision names who made it" in r.stderr
