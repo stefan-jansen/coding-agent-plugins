@@ -16,6 +16,7 @@ import json
 import os
 import re
 import secrets
+import shutil
 import subprocess
 import tempfile
 from datetime import date, datetime, timezone
@@ -298,58 +299,64 @@ def run(cause_id, out_dir, root=None, store_path=None, ask=families.ask, ask_in=
     repo, sha = commit_of(cause)
     work = os.path.join(root or tempfile.gettempdir(), "w" + secrets.token_hex(4))
     os.makedirs(work)
-    archive = subprocess.run(["git", "-C", repo, "archive", sha], capture_output=True, check=True)
-    subprocess.run(["tar", "-x", "-C", work], input=archive.stdout, check=True)
-    # The environment is not in git. Without it an agent reaches for the live repository's
-    # interpreter, which the scan must then count as a read of the live repository.
-    venv = os.path.join(repo, ".venv")
-    if os.path.isdir(venv) and not os.path.lexists(os.path.join(work, ".venv")):
-        os.symlink(venv, os.path.join(work, ".venv"))
-    banned = forbidden(cause, store_path)
-    run_id = f"{cause_id}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')}"
-    os.makedirs(out_dir, exist_ok=True)
-    listed, invalid = [], {}
-    for family in ("claude", "gpt"):
-        transcript, final = ask_in(family, prompt(spec, store_path), work)
-        path = os.path.join(out_dir, f"{run_id}.{family}.jsonl")
-        with open(path, "w", encoding="utf-8") as fh:
-            fh.write(transcript)
-        bad = leaks(family, transcript, banned)
-        if bad:
-            invalid[family] = bad
-            continue
-        listed += [{**i, "id": f"{family}:{i['id']}", "family": family} for i in _items(final)]
-    defect = cause["summary"] + ("\n" + cause["detail"] if cause.get("detail") else "")
-    item_text = "\n".join(f"- {i['id']} ({i['kind']}): {i['text']}" for i in listed)
-    verdicts = {}
-    for judge in ("claude", "gpt"):
-        reply = families.parse_json_object(ask(judge, JUDGE.format(defect=defect, items=item_text)))
-        ids = {i["id"] for i in listed}
-        verdicts[judge] = {
-            "exposing": [x for x in reply.get("exposing", []) if x in ids],
-            "reason": reply.get("reason", ""),
+    try:
+        archive = subprocess.run(
+            ["git", "-C", repo, "archive", sha], capture_output=True, check=True
+        )
+        subprocess.run(["tar", "-x", "-C", work], input=archive.stdout, check=True)
+        # The environment is not in git. Without it an agent reaches for the live repository's
+        # interpreter, which the scan must then count as a read of the live repository.
+        venv = os.path.join(repo, ".venv")
+        if os.path.isdir(venv) and not os.path.lexists(os.path.join(work, ".venv")):
+            os.symlink(venv, os.path.join(work, ".venv"))
+        banned = forbidden(cause, store_path)
+        run_id = f"{cause_id}-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%f')}"
+        os.makedirs(out_dir, exist_ok=True)
+        listed, invalid = [], {}
+        for family in ("claude", "gpt"):
+            transcript, final = ask_in(family, prompt(spec, store_path), work)
+            path = os.path.join(out_dir, f"{run_id}.{family}.jsonl")
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(transcript)
+            bad = leaks(family, transcript, banned)
+            if bad:
+                invalid[family] = bad
+                continue
+            listed += [{**i, "id": f"{family}:{i['id']}", "family": family} for i in _items(final)]
+        defect = cause["summary"] + ("\n" + cause["detail"] if cause.get("detail") else "")
+        item_text = "\n".join(f"- {i['id']} ({i['kind']}): {i['text']}" for i in listed)
+        verdicts = {}
+        for judge in ("claude", "gpt"):
+            reply = families.parse_json_object(
+                ask(judge, JUDGE.format(defect=defect, items=item_text))
+            )
+            ids = {i["id"] for i in listed}
+            verdicts[judge] = {
+                "exposing": [x for x in reply.get("exposing", []) if x in ids],
+                "reason": reply.get("reason", ""),
+            }
+        agreed = set(verdicts["claude"]["exposing"]) & set(verdicts["gpt"]["exposing"])
+        kinds = {i["id"]: COMPONENT[i["kind"]] for i in listed}
+        surfaced = sorted({kinds[x] for x in agreed}, key=formats.CATEGORIES.index)
+        result = {
+            "run_id": run_id,
+            "cause_id": cause_id,
+            "date": date.today().isoformat(),
+            "surfaced_by": surfaced[0] if surfaced else "none",
+            "components": surfaced,
+            "agreed_items": sorted(agreed),
+            "verdicts": verdicts,
+            "items": listed,
+            "invalid": invalid,
+            "blind": not invalid,
+            **provenance,
+            "transcript": os.path.join(out_dir, f"{run_id}.claude.jsonl"),
         }
-    agreed = set(verdicts["claude"]["exposing"]) & set(verdicts["gpt"]["exposing"])
-    kinds = {i["id"]: COMPONENT[i["kind"]] for i in listed}
-    surfaced = sorted({kinds[x] for x in agreed}, key=formats.CATEGORIES.index)
-    result = {
-        "run_id": run_id,
-        "cause_id": cause_id,
-        "date": date.today().isoformat(),
-        "surfaced_by": surfaced[0] if surfaced else "none",
-        "components": surfaced,
-        "agreed_items": sorted(agreed),
-        "verdicts": verdicts,
-        "items": listed,
-        "invalid": invalid,
-        "blind": not invalid,
-        "workdir": work,
-        **provenance,
-        "transcript": os.path.join(out_dir, f"{run_id}.claude.jsonl"),
-    }
-    with open(os.path.join(out_dir, f"{run_id}.json"), "w", encoding="utf-8") as fh:
-        json.dump(result, fh, indent=1, ensure_ascii=False)
-    return result
+        with open(os.path.join(out_dir, f"{run_id}.json"), "w", encoding="utf-8") as fh:
+            json.dump(result, fh, indent=1, ensure_ascii=False)
+        return result
+    finally:
+        shutil.rmtree(work)
 
 
 def report(out_dir):

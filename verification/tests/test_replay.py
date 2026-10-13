@@ -84,7 +84,8 @@ ITEMS = [
 def fake(world, claude_reads=(), gpt_commands=(), seen=None):
     def ask_in(family, prompt, cwd, timeout=0):
         if seen is not None:
-            seen.update(cwd=cwd, prompt=prompt, files=sorted(os.listdir(cwd)))
+            venv = os.path.realpath(os.path.join(cwd, ".venv"))
+            seen.update(cwd=cwd, prompt=prompt, files=sorted(os.listdir(cwd)), venv=venv)
         if family == "claude":
             reads = [r.format(cwd=cwd) for r in claude_reads]
             return claude_transcript(ITEMS, reads), json.dumps({"items": ITEMS})
@@ -126,6 +127,22 @@ def test_the_replay_reads_the_spec_and_code_as_the_work_began(world):
     assert "Label each ETF over 21 sessions." in seen["prompt"]
     assert seen["files"] == ["labels.py", "spec.md"]
     assert "holdout" not in os.path.basename(seen["cwd"])
+
+
+def test_a_replay_leaves_no_checkout_behind(world):
+    # Prevents: every replay leaving a full checkout of the repository on disk; a book batch
+    # left nine of 243 MB each.
+    run(world, fake(world), judges([], []))
+    assert list(world["root"].iterdir()) == []
+
+
+def test_a_failed_agent_call_still_removes_the_checkout(world):
+    def broken(family, prompt, cwd):
+        raise RuntimeError("agent killed")
+
+    with pytest.raises(RuntimeError):
+        run(world, broken, judges([], []))
+    assert list(world["root"].iterdir()) == []
 
 
 def test_a_read_of_the_live_repository_invalidates_the_replay(world):
@@ -203,8 +220,9 @@ def test_the_checkout_runs_with_the_repository_environment(world):
     (world["repo"] / ".venv").mkdir()
     seen = {}
     run(world, fake(world, seen=seen), judges([], []))
-    venv = os.path.join(seen["cwd"], ".venv")
-    assert os.path.realpath(venv) == os.path.realpath(world["repo"] / ".venv")
+    assert seen["venv"] == os.path.realpath(world["repo"] / ".venv")
+    # Removing the checkout removes the link, never the environment it points to.
+    assert (world["repo"] / ".venv").is_dir()
 
 
 def test_the_prompt_asks_the_premise_questions_of_the_current_process(world):
