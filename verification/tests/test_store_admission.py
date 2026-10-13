@@ -155,6 +155,53 @@ def test_content_that_fails_its_own_test_is_rejected_with_the_test(world, tmp_pa
     assert "fails on correct code" in decision["detail"]
 
 
+def ratio_case(repo, tmp_path, d="d - 1"):
+    (repo / "src" / "ratio.py").write_text(f"def ratio(n, d):\n    return n / ({d})\n")
+    (repo / "tests" / "test_ratio.py").write_text(
+        "import sys\nsys.path.insert(0, 'src')\nfrom ratio import ratio\n\n"
+        "def test_ratio():\n    assert ratio(1, 6) == 1 / 6\n"
+    )
+    decl = tmp_path / "ratio.decl.json"
+    decl.write_text(
+        json.dumps(
+            {
+                "test": "tests/test_ratio.py::test_ratio",
+                "root": str(repo),
+                "command": [sys.executable, "-m", "pytest", "-q"],
+                "producer": "src/ratio.py",
+                "variant": {
+                    "mutation": {"file": "src/ratio.py", "old": f"({d})", "new": "(d + 1)"}
+                },
+                "fixture": "src/ratio.py",
+            }
+        )
+    )
+    return decl
+
+
+def test_a_skill_whose_content_fails_its_test_needs_no_entry(world, tmp_path):
+    # Prevents: a wrong skill having to be written up as a store entry before it can be rejected.
+    repo, store, env = world
+    decl = ratio_case(repo, tmp_path)
+    note = "WRONG block describes holidays as gaps"
+    path = candidate(tmp_path, "cal", declaration=str(decl), detail=note)
+    r = run(["store", "admit", str(path)], env)
+    assert r.returncode == 0, r.stderr
+    assert "rejected: skill:cal: fails-its-test" in r.stdout
+    decision = rows(store / "admissions.jsonl")[-1]
+    assert "entry" not in decision and note in decision["detail"]
+
+
+def test_an_entryless_candidate_whose_test_passes_is_refused(world, tmp_path):
+    repo, store, env = world
+    before = snapshot(store)
+    decl = ratio_case(repo, tmp_path, d="d")
+    r = run(["store", "admit", str(candidate(tmp_path, "ok", declaration=str(decl)))], env)
+    assert r.returncode == 1
+    assert "give the entry it would become" in r.stderr
+    assert snapshot(store) == before
+
+
 def test_rejections_are_counted_by_reason(world, tmp_path):
     repo, store, env = world
     stale = {**PASSED, "durability": {"pass": False, "reason": "one-off"}}

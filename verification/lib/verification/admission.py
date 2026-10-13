@@ -7,8 +7,12 @@ A candidate is a JSON file:
       "entry": {...},                            the entry it would become
       "tests": {"durability": {"pass": true, "reason": "..."}, ...},   all five tests
       "revises": "<entry id>",                   optional: the stored entry it replaces
-      "declaration": "<violate declaration>"     optional: a criterion 7 test of its content
+      "declaration": "<violate declaration>",    optional: a criterion 7 test of its content
+      "detail": "..."                            optional: a note kept on the decision row
     }
+
+A candidate whose content is tested by its declaration may omit the entry: if the content
+fails, the rejection needs none, and if it passes, the candidate is refused until it gives one.
 
 A malformed candidate is refused and nothing is written: a missing test or reason, or an entry
 the store would not hold, such as a prose entry that does not say why stronger levels failed.
@@ -60,7 +64,8 @@ def _refusals(path, cand):
             problems.append(f"tests.{name}: reason missing")
     entry = cand.get("entry")
     if entry is None:
-        if problems or all(tests[n]["pass"] for n in formats.ADMISSION_TESTS):
+        failing = problems or all(tests[n]["pass"] for n in formats.ADMISSION_TESTS)
+        if failing and not cand.get("declaration"):
             problems.append("entry: only a candidate that fails a test may omit its entry")
         return problems
     row = dict(entry)
@@ -133,6 +138,9 @@ def admit(path, candidate_path, today=None):
         "reasons": {n: cand["tests"][n]["reason"] for n in formats.ADMISSION_TESTS},
     }
     failed, failing, detail = _rejection(cand)
+    detail = "; ".join(x for x in (detail, cand.get("detail")) if x) or None
+    if not failed and entry is None:
+        return None, ["entry: its declaration passed, so give the entry it would become"]
     if failed:
         decision.update(decision="rejected", failed=failed)
         if failing:
