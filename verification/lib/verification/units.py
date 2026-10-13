@@ -194,9 +194,19 @@ def check_claims(text):
     return problems
 
 
-def check_closure(text):
+def applied_entries(unit):
+    """`entry:<id>` for every store entry retrieved for the unit and disposed `applies`: each is
+    an item some issue must close and verify, like a premise or claim the plan states."""
+    from . import retrieval
+
+    return [
+        f"entry:{r['entry']}" for r in retrieval.read(unit) if r.get("disposition") == "applies"
+    ]
+
+
+def check_closure(text, unit=None):
     problems = []
-    defined, closers = set(), {}
+    defined, closers = set(applied_entries(unit) if unit else []), {}
     for n, title, body in issues(text):
         who = f"issue {n} ({title})"
         defined.update(items(body))

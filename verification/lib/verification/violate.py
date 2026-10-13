@@ -117,6 +117,11 @@ def _run(decl, variant, watch_lines):
     return proc, functions, lines
 
 
+def run_once(decl, variant):
+    """Run the test once on the code as it stands, without judging it."""
+    return _run(decl, variant, [])[0]
+
+
 def _producer_ran(functions, producer):
     """A function of the producer ran. Importing it runs only its module body, which emits
     nothing, so a test that imports the producer and checks a hand-built frame does not count."""

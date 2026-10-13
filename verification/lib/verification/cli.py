@@ -4,7 +4,7 @@ import argparse
 import os
 import sys
 
-from . import classify, corpus, derive, replay, retrieval, store, terms, units, violate
+from . import classify, corpus, coverage, derive, replay, retrieval, store, terms, units, violate
 
 
 def _store_or_absent():
@@ -155,7 +155,32 @@ def cmd_claims_list(args):
 
 
 def cmd_closure_check(args):
-    return _report("closure check", units.check_closure(_read(args.file)))
+    unit = os.path.dirname(os.path.abspath(args.file))
+    return _report("closure check", units.check_closure(_read(args.file), unit))
+
+
+def cmd_coverage(args):
+    unit = args.unit or os.path.dirname(os.path.abspath(args.file))
+    if args.levels:
+        counts, problems = coverage.levels(unit)
+        print(" ".join(f"{k}={v}" for k, v in counts.items()))
+        return _report("coverage levels", problems)
+    try:
+        body = coverage.issue_body(_read(args.file), args.issue)
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 1
+    counts, rows, refusal = coverage.coverage(unit, body, args.issue)
+    if refusal:
+        print(f"coverage: {refusal}", file=sys.stderr)
+        return 1
+    for item, state, problems, row in rows:
+        if state == "finding":
+            print(f"finding: {item}: filed at {row['filed']}")
+        for p in problems:
+            print(f"{item}: {p}", file=sys.stderr)
+    print(f"issue {args.issue}: " + " ".join(f"{k}={v}" for k, v in counts.items()))
+    return 1 if counts["uncovered"] else 0
 
 
 def _csv(value):
@@ -275,6 +300,12 @@ def build_parser():
     cc = cl2_cmds.add_parser("check", help="every item closed by exactly one issue")
     cc.add_argument("file", help="plan.md")
     cc.set_defaults(func=cmd_closure_check)
+    cv = groups.add_parser("coverage", help="is every item an issue closes covered")
+    cv.add_argument("file", help="plan.md or one issue body; its directory is the unit")
+    cv.add_argument("--issue", type=int, help="the issue in plan.md (omit for a single body)")
+    cv.add_argument("--unit", help="unit directory holding evidence.jsonl, if not the file's")
+    cv.add_argument("--levels", action="store_true", help="evidence level distribution")
+    cv.set_defaults(func=cmd_coverage)
     rt = groups.add_parser("retrieve", help="store entries for a unit, and their disposition")
     rt.add_argument("--unit", required=True, help="the work unit directory")
     rt.add_argument("--shape", help="comma-separated shapes of the work")
