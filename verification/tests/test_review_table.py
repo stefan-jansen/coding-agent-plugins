@@ -45,11 +45,14 @@ def test_the_table_has_a_row_per_item_and_the_term_reading(unit):
 
 def test_every_row_points_to_a_test_and_a_verdict_that_resolve(unit):
     _, path = table(unit)
-    found = re.findall(r"`([^`]+)`", path.read_text())
-    assert any("::test_labels_span_the_horizon" in p for p in found)
-    assert any(p.endswith("results/horizon.json") for p in found)
+    text = path.read_text()
+    found = re.findall(r"`([^`]+)`", text.split("| Item |", 1)[1])
+    assert "repo/test_pipeline.py::test_labels_span_the_horizon" in found
+    assert "results/horizon.json" in found
+    # Prevents: a committed table whose pointers name one machine's absolute paths.
+    assert str(unit) not in text
     for p in found:
-        assert pointers.resolve(p) is None, p
+        assert pointers.resolve(f"{unit}:{p}") is None, p
 
 
 def test_the_table_carries_no_test_code(unit):

@@ -199,6 +199,8 @@ def cmd_coverage(args):
     if counts["uncovered"]:
         return 1
     coverage.record(unit, [(i, s, p, rep) for i, s, p, _, rep in rows])
+    where = os.path.relpath(os.path.join(unit, coverage.RESULTS), review.base(unit))
+    print(f"recorded {len(rows)} verdicts in {where}/ (commit them with the closing commit)")
     return 0
 
 

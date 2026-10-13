@@ -170,6 +170,7 @@ def test_the_gate_opens_once_the_uncovered_item_is_resolved(unit):
     r = cli("coverage", unit / "plan.md", "--issue", "1")
     assert r.returncode == 0, r.stdout + r.stderr
     assert "covered=1 waived=2 test-unreachable=1 finding=1 uncovered=0" in r.stdout
+    assert "recorded 5 verdicts in results/" in r.stdout
 
 
 def test_an_item_with_no_evidence_is_uncovered(unit):

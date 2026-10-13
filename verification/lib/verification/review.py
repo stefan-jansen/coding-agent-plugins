@@ -12,8 +12,17 @@ A tested premise has no stated way of being false in the plan, so its evidence r
 
 import os
 import re
+import subprocess
 
 from . import coverage, retrieval, store, terms, units
+
+
+def base(unit):
+    """What the table's paths are relative to: the repository holding the unit, else the unit."""
+    r = subprocess.run(
+        ["git", "-C", unit, "rev-parse", "--show-toplevel"], capture_output=True, text=True
+    )
+    return r.stdout.strip() if r.returncode == 0 else os.path.abspath(unit)
 
 
 def _cell(text):
@@ -49,11 +58,12 @@ def _statements(unit, body):
     return out
 
 
-def _test_pointer(unit, row):
+def _test_pointer(unit, row, root):
     decl = coverage.violate.load(os.path.join(unit, row["declaration"]))
     path, _, name = decl["test"].partition("::")
     name = re.sub(r"\[.*\]$", "", name)
-    return f"{decl['root']}:{path}" + (f"::{name}" if name else "")
+    path = os.path.relpath(os.path.join(decl["root"], path), root)
+    return path + (f"::{name}" if name else "")
 
 
 def _evidence(row):
@@ -81,10 +91,13 @@ def build(unit, plan_text, number, spec_text=None):
     closes = units.declared(body, "Closes") or []
     rows, problems = coverage.read_evidence(unit)
     statements = _statements(unit, body)
+    root = base(unit)
     lines = [
         f"# Issue {number}: {title}",
         "",
         f"Requirement: {_cell(requirement(body))}",
+        "",
+        "Paths are relative to the repository root.",
         "",
     ]
     term_rows = [r for _, r in terms.rows(terms.section(spec_text) or "")] if spec_text else []
@@ -105,10 +118,10 @@ def build(unit, plan_text, number, spec_text=None):
             problems.append(f"{item}: say what error its test targets (`targets` in evidence)")
         test = verdict = "-"
         if row.get("declaration"):
-            test = f"`{_test_pointer(unit, row)}`"
+            test = f"`{_test_pointer(unit, row, root)}`"
         result = os.path.join(unit, coverage.RESULTS, coverage.result_name(item))
         if os.path.exists(result):
-            verdict = f"`{os.path.abspath(unit)}:{coverage.RESULTS}/{coverage.result_name(item)}`"
+            verdict = f"`{os.path.relpath(result, root)}`"
         else:
             problems.append(f"{item}: no verdict; run verification coverage first")
         evidence = _evidence(row) if row else "none"
