@@ -1,5 +1,5 @@
 ---
-allowed-tools: [Bash, Read, Write, Grep, Glob, MultiEdit]
+allowed-tools: [Bash, Read, Write, Grep, Glob, Edit]
 argument-hint: "[--framework | --tools | --fix]"
 description: "Framework setup and infrastructure compliance audit"
 ---

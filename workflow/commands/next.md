@@ -1,5 +1,5 @@
 ---
-allowed-tools: [Task, Bash, Read, Write, MultiEdit, Grep, Glob, TodoWrite]
+allowed-tools: [Agent, Bash, Read, Write, Edit, Grep, Glob]
 argument-hint: "[--task ID | --parallel [N|auto] | --preview | --status]"
 description: "Execute tasks from a local work unit plan. For work tracked as GitHub issues use /next-issue."
 ---

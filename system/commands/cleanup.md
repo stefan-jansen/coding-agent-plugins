@@ -2,7 +2,7 @@
 title: cleanup
 aliases: [housekeeping, organize, tidy, clean]
 description: Clean up Claude-generated clutter and consolidate documentation
-allowed-tools: [Bash, Read, Write, Glob, MultiEdit]
+allowed-tools: [Bash, Read, Write, Glob, Edit]
 argument-hint: "[--dry-run | --auto | root | tests | reports | work | all]"
 ---
 

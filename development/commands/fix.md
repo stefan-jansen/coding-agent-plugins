@@ -1,5 +1,5 @@
 ---
-allowed-tools: [Task, Read, Edit, MultiEdit, Write, Bash, Grep, mcp__serena__find_symbol, mcp__serena__search_for_pattern, mcp__serena__get_symbols_overview, mcp__serena__find_referencing_symbols, mcp__serena__replace_symbol_body]
+allowed-tools: [Agent, Read, Edit, Write, Bash, Grep, mcp__serena__find_symbol, mcp__serena__search_for_pattern, mcp__serena__get_symbols_overview, mcp__serena__find_referencing_symbols, mcp__serena__replace_symbol_body]
 argument-hint: "[error|review|audit|all] [file/pattern]"
 description: Universal debugging and fix application with semantic code analysis
 ---

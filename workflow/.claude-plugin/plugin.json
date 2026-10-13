@@ -1,6 +1,6 @@
 {
   "name": "workflow",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "The align -> ship workflow: spec, issues, implementation, delivery, and session handoffs",
   "author": {
     "name": "Claude Code Framework"

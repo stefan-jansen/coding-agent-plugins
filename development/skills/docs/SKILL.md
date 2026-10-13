@@ -1,7 +1,7 @@
 ---
 name: docs
 description: This skill should be used when the user asks to "document this", "add documentation", "write docs", "update the README", "generate API docs", "fetch library docs", or when working with project documentation, external library references, or documentation generation. Do NOT use for code changes or implementation.
-allowed-tools: [Bash, Read, Write, MultiEdit, Grep, Glob, Task, WebFetch, mcp__context7__resolve-library-id, mcp__context7__get-library-docs]
+allowed-tools: [Bash, Read, Write, Edit, Grep, Glob, Agent, WebFetch, mcp__context7__resolve-library-id, mcp__context7__query-docs]
 ---
 
 # Documentation Operations
