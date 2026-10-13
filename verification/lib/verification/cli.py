@@ -366,7 +366,40 @@ def cmd_replay_run(args):
     return 0
 
 
+def cmd_replay_history(args):
+    path = _store_or_absent()
+    if path is None:
+        return 1
+    h = replay.history(args.history, path)
+    comps = replay.COMPARED
+    print("run\treplayed\tinvalid\t" + "\t".join(comps) + "\tnone")
+    for r in h["runs"]:
+        rates = "\t".join(f"{r['rates'][c]:.2f}" for c in comps)
+        print(f"{r['run']}\t{r['replayed']}\t{r['invalid']}\t{rates}\t{r['none']}")
+    if len(h["runs"]) < 2:
+        print("one run: nothing to compare yet")
+    else:
+        print(f"compared on {h['common']} cause(s) common to the last two runs")
+        print(f"improved: {', '.join(h['improved']) or 'none'}")
+    print(f"next to change: {', '.join(h['next']['components']) or 'none'}")
+    cats = h["next"]["uncaught_categories"]
+    print(f"categories no component caught: {', '.join(cats) or 'none'}")
+    return 0
+
+
+def cmd_replay_record(args):
+    path = _store_or_absent()
+    if path is None:
+        return 1
+    print(f"recorded {replay.record(args.out, path)} replay(s) in {replay.RESULTS}")
+    return 0
+
+
 def cmd_replay_report(args):
+    if args.history:
+        return cmd_replay_history(args)
+    if not args.out:
+        return _report("replay report", ["give --out <run dir> or --history <runs dir>"])
     counts, latest = replay.report(args.out)
     for cause, r in sorted(latest.items()):
         print(
@@ -521,8 +554,12 @@ def build_parser():
     rr.add_argument("--root", help="where the neutral checkouts are created")
     rr.set_defaults(func=cmd_replay_run)
     rrep = rps.add_parser("report")
-    rrep.add_argument("--out", required=True)
+    rrep.add_argument("--out", help="one run's directory")
+    rrep.add_argument("--history", help="directory whose subdirectories are successive runs")
     rrep.set_defaults(func=cmd_replay_report)
+    rrec = rps.add_parser("record", help="append a run's results to the store's replays.jsonl")
+    rrec.add_argument("--out", required=True, help="one run's directory")
+    rrec.set_defaults(func=cmd_replay_record)
     return parser
 
 

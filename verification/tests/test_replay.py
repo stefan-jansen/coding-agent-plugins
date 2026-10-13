@@ -205,3 +205,116 @@ def test_the_checkout_runs_with_the_repository_environment(world):
     run(world, fake(world, seen=seen), judges([], []))
     venv = os.path.join(seen["cwd"], ".venv")
     assert os.path.realpath(venv) == os.path.realpath(world["repo"] / ".venv")
+
+
+def test_the_prompt_asks_the_premise_questions_of_the_current_process(world):
+    # Prevents: a replay that measures an older process than the one sessions run, so a
+    # change to the question set never shows up in the catch rate.
+    rows = [
+        {
+            "id": "ordering-spacing",
+            "applies_to": "data",
+            "question": "what spacing the code relies on",
+        },
+        {
+            "id": "order-timing",
+            "applies_to": "simulation",
+            "question": "when an order can be placed",
+        },
+    ]
+    (world["store"] / "premise_questions.jsonl").write_text(
+        "".join(json.dumps(r) + "\n" for r in rows)
+    )
+    seen = {}
+    run(world, fake(world, seen=seen), judges([], []))
+    assert "ordering-spacing: what spacing the code relies on" in seen["prompt"]
+    assert "order-timing: when an order can be placed" in seen["prompt"]
+    assert "what bounds it" in seen["prompt"]  # the measured-number checklist
+
+
+def result(out, cause, components, blind=True):
+    out.mkdir(parents=True, exist_ok=True)
+    row = {
+        "run_id": f"{cause}-{out.name}",
+        "cause_id": cause,
+        "date": "2026-10-13",
+        "surfaced_by": (components or ["none"])[0],
+        "components": components,
+        "blind": blind,
+        "transcript": str(out / f"{cause}.claude.jsonl"),
+    }
+    (out / f"{cause}.json").write_text(json.dumps(row))
+    (out / f"{cause}.claude.jsonl").write_text("")
+
+
+def history_store(tmp_path):
+    store = tmp_path / "hstore"
+    store.mkdir()
+    causes = [("a", "premise"), ("b", "premise"), ("c", "test"), ("d", "claim")]
+    (store / "causes.jsonl").write_text(
+        "".join(
+            json.dumps(
+                {
+                    "id": i,
+                    "summary": i,
+                    "sources": ["audit:x"],
+                    "classification": {"claude": c, "gpt": c},
+                }
+            )
+            + "\n"
+            for i, c in causes
+        )
+    )
+    return store
+
+
+def test_history_names_the_component_that_did_not_improve_and_the_uncaught_category(tmp_path):
+    # Prevents: a process change shipped without anyone seeing that a component's catch rate
+    # stood still, or that a whole category of shipped defect is caught by nothing.
+    runs = tmp_path / "replays"
+    result(runs / "2026-10-09", "a", [])
+    result(runs / "2026-10-09", "b", ["term"])
+    result(runs / "2026-10-09", "c", ["test"])
+    result(runs / "2026-10-13", "a", ["premise"])
+    result(runs / "2026-10-13", "b", ["term"])
+    result(runs / "2026-10-13", "c", ["test"])
+    result(runs / "2026-10-13", "d", [])
+    hist = replay.history(str(runs), str(history_store(tmp_path)))
+    assert [r["run"] for r in hist["runs"]] == ["2026-10-09", "2026-10-13"]
+    assert hist["runs"][1]["rates"]["premise"] == 0.25
+    assert hist["common"] == 3
+    assert {"premise"} == set(hist["improved"])
+    assert set(hist["next"]["components"]) == {"term", "claim", "test"}
+    assert hist["next"]["uncaught_categories"] == ["claim"]
+
+
+def test_an_invalid_replay_is_left_out_of_the_rates(tmp_path):
+    runs = tmp_path / "replays"
+    result(runs / "r1", "a", ["premise"], blind=False)
+    result(runs / "r1", "c", [])
+    hist = replay.history(str(runs), str(history_store(tmp_path)))
+    assert hist["runs"][0]["replayed"] == 1 and hist["runs"][0]["invalid"] == 1
+    assert hist["runs"][0]["rates"]["premise"] == 0.0
+
+
+def test_record_appends_each_result_once(tmp_path):
+    store = history_store(tmp_path)
+    result(tmp_path / "replays" / "r1", "a", ["premise"])
+    assert replay.record(str(tmp_path / "replays" / "r1"), str(store)) == 1
+    assert replay.record(str(tmp_path / "replays" / "r1"), str(store)) == 0
+    (row,) = [json.loads(x) for x in (store / "replays.jsonl").read_text().splitlines()]
+    assert row["surfaced_by"] == "premise" and row["blind"] is True
+
+
+def test_a_run_that_adds_easier_causes_does_not_count_as_an_improvement(tmp_path):
+    # Prevents: a rerun that also replays newly sampled causes the process happens to catch
+    # reporting a better catch rate for a component that caught nothing more on the same causes.
+    runs = tmp_path / "replays"
+    result(runs / "r1", "a", [])
+    result(runs / "r1", "b", ["term"])
+    result(runs / "r2", "a", [])
+    result(runs / "r2", "b", ["term"])
+    result(runs / "r2", "c", ["term"])
+    hist = replay.history(str(runs), str(history_store(tmp_path)))
+    assert hist["runs"][1]["rates"]["term"] > hist["runs"][0]["rates"]["term"]
+    assert "term" not in hist["improved"] and "term" in hist["next"]["components"]

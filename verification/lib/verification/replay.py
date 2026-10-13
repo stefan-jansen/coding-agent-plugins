@@ -20,7 +20,7 @@ import subprocess
 import tempfile
 from datetime import date, datetime, timezone
 
-from . import families, formats, store
+from . import families, formats, store, units
 
 COMPONENT = {"term": "term", "premise": "premise", "claim": "claim", "failure-case": "test"}
 RESULTS = "replays.jsonl"
@@ -32,11 +32,12 @@ helps you.
 Before any code is written, list:
 - term: a word or phrase in the specification with more than one reading that would produce
   different code or different numbers ("20-day": rows or sessions). Give the readings.
-- premise: something the work will rely on about the data or the world: what a record or an
-  absent record means, ordering and spacing, entity identity, when a value was known, an
-  institution's rules.
+- premise: for each input the work reads, the answer to each of these questions{simulation}:
+{questions}
 - claim: a number, comparison or property the output will assert to a reader, and how it
-  could be false.
+  could be false. For a measured number (a time, throughput, speedup or size), also
+  what bounds it, what else it could be measuring, whether the work ran inside the measured region, whether
+  both sides ran configured alike, and the arithmetic limit it must respect.
 - failure-case: a specific way the work could be wrong that a test should catch, produced the
   way it would actually arise (a code defect, or input the real pipeline could emit).
 
@@ -88,6 +89,22 @@ COMMANDS = {
         prompt,
     ],
 }
+
+
+def prompt(spec, store_path):
+    """The spec-time listing as the process now defines it: the premise questions come from the
+    store's question set (criterion 3), claims carry the measured-number checklist."""
+    qs = units.questions(store_path)
+    lines = [f"  - {q}: {text}" for q, scope, text in qs if scope == "data"]
+    lines += [
+        f"  - {q}: {text} (if the work simulates trading)"
+        for q, scope, text in qs
+        if scope != "data"
+    ]
+    sim = (
+        "; the last ones only if it simulates trading" if any(s != "data" for _, s, _ in qs) else ""
+    )
+    return PROMPT.format(spec=spec, questions="\n".join(lines), simulation=sim)
 
 
 def _cause(path, cause_id):
@@ -283,7 +300,7 @@ def run(cause_id, out_dir, root=None, store_path=None, ask=families.ask, ask_in=
     os.makedirs(out_dir, exist_ok=True)
     listed, invalid = [], {}
     for family in ("claude", "gpt"):
-        transcript, final = ask_in(family, PROMPT.format(spec=spec), work)
+        transcript, final = ask_in(family, prompt(spec, store_path), work)
         path = os.path.join(out_dir, f"{run_id}.{family}.jsonl")
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(transcript)
@@ -337,3 +354,112 @@ def report(out_dir):
     counts = {c: sum(c in r.get("components", []) for r in valid) for c in formats.CATEGORIES}
     counts["none"] = sum(not r.get("components") for r in valid)
     return {"replayed": len(valid), "invalid": len(latest) - len(valid), **counts}, latest
+
+
+def _results(out_dir):
+    rows = []
+    for name in sorted(os.listdir(out_dir)):
+        if name.endswith(".json"):
+            with open(os.path.join(out_dir, name), encoding="utf-8") as fh:
+                rows.append(json.load(fh))
+    return rows
+
+
+def _category(cause):
+    if cause.get("resolved"):
+        return cause["resolved"]
+    seen = set((cause.get("classification") or {}).values())
+    return seen.pop() if len(seen) == 1 else "disagree"
+
+
+COMPARED = tuple(c for c in formats.CATEGORIES if c != "retrieval")  # the store is withheld
+
+
+def _rates(results):
+    n = len(results)
+    return {
+        c: (sum(c in r.get("components", []) for r in results) / n if n else 0.0) for c in COMPARED
+    }
+
+
+def history(runs_dir, store_path):
+    """Catch rates per component for each run (each subdirectory of runs_dir, in name order),
+    and what to change next: each component whose rate on the causes common to the last two runs
+    did not rise, and each category of cause that no component caught in the latest run."""
+    causes = {r.get("id"): r for _, r, _ in store.read_rows(store_path, "causes.jsonl") if r}
+    runs = []
+    for name in sorted(d for d in os.listdir(runs_dir) if os.path.isdir(os.path.join(runs_dir, d))):
+        latest = {r["cause_id"]: r for r in _results(os.path.join(runs_dir, name))}
+        valid = {c: r for c, r in latest.items() if r.get("blind")}
+        runs.append(
+            {
+                "run": name,
+                "replayed": len(valid),
+                "invalid": len(latest) - len(valid),
+                "rates": _rates(list(valid.values())),
+                "none": sum(not r.get("components") for r in valid.values()),
+                "_valid": valid,
+            }
+        )
+    improved, common = [], 0
+    if len(runs) >= 2:
+        prev, last = runs[-2]["_valid"], runs[-1]["_valid"]
+        shared = sorted(set(prev) & set(last))
+        common = len(shared)
+        before = _rates([prev[c] for c in shared])
+        after = _rates([last[c] for c in shared])
+        improved = [c for c in COMPARED if after[c] > before[c]]
+    uncaught = []
+    if runs:
+        by_cat = {}
+        for cid, r in runs[-1]["_valid"].items():
+            by_cat.setdefault(_category(causes.get(cid, {})), []).append(r)
+        uncaught = sorted(k for k, rs in by_cat.items() if not any(r.get("components") for r in rs))
+    for r in runs:
+        r.pop("_valid")
+    return {
+        "runs": runs,
+        "common": common,
+        "improved": improved,
+        "next": {
+            "components": [c for c in COMPARED if c not in improved],
+            "uncaught_categories": uncaught,
+        },
+    }
+
+
+def _pointer(path):
+    path = os.path.abspath(path)
+    top = subprocess.run(
+        ["git", "-C", os.path.dirname(path), "rev-parse", "--show-toplevel"],
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    base = top or os.path.dirname(path)
+    home = os.path.expanduser("~")
+    shown = "~" + base[len(home) :] if base.startswith(home + os.sep) else base
+    return f"{shown}:{os.path.relpath(path, base)}"
+
+
+def record(out_dir, store_path):
+    """Append a store row for each result in out_dir not already recorded; return how many."""
+    seen = {r.get("run_id") for _, r, _ in store.read_rows(store_path, RESULTS) if r}
+    rows = []
+    for r in _results(out_dir):
+        if r["run_id"] in seen:
+            continue
+        row = {
+            "run_id": r["run_id"],
+            "cause_id": r["cause_id"],
+            "date": r["date"],
+            "surfaced_by": r["surfaced_by"],
+            "transcript": _pointer(r["transcript"]),
+            "blind": r["blind"],
+        }
+        problems = store.row_problems(RESULTS, row)
+        if problems:
+            raise ValueError(f"{r['run_id']}: {'; '.join(problems)}")
+        rows.append(row)
+    with open(os.path.join(store_path, RESULTS), "a", encoding="utf-8") as fh:
+        fh.writelines(json.dumps(x, ensure_ascii=False) + "\n" for x in rows)
+    return len(rows)
