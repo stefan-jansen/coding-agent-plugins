@@ -16,6 +16,8 @@ ADMISSION_TESTS = (
     "no-stronger-mechanism",
     "no-duplicate",
 )
+REJECTION_REASONS = ADMISSION_TESTS + ("fails-its-test", "no-source")
+DECISIONS = ("admitted", "revised", "rejected")
 KEY_KINDS = ("shape", "context")
 SOURCE_PREFIXES = ("errata:", "issue:", "audit:", "quarantine:", "commit:")
 
@@ -80,6 +82,8 @@ def _entry_rules(row):
         errors.append("enforcement.reason: a prose entry must say why stronger levels failed")
     if level in ("unrepresentable", "check") and _str(enf.get("where")):
         errors.append(f"enforcement.where: a {level} entry must point to the enforcing code")
+    if "library" in enf and (_str(enf["library"]) or _str(enf.get("where"))):
+        errors.append("enforcement.library: names the library, with where pointing into it")
     if level in ("check", "test"):
         for field in ("test", "violated_variant"):
             if _str(row.get(field)):
@@ -107,6 +111,29 @@ def _cause_rules(row):
     return errors
 
 
+def _admission_rules(row):
+    errors = []
+    reasons = row.get("reasons")
+    if not isinstance(reasons, dict) or any(_str(reasons.get(t)) for t in ADMISSION_TESTS):
+        errors.append(f"reasons: one for each of {', '.join(ADMISSION_TESTS)}")
+    failed = row.get("failed") or []
+    if row.get("decision") == "rejected" and not failed:
+        errors.append("failed: a rejection names the tests it failed")
+    if row.get("decision") in ("admitted", "revised") and (failed or _slug(row.get("entry"))):
+        errors.append("entry: an admission names its entry and fails no test")
+    return errors
+
+
+def _retired_rules(row):
+    inner = row.get("entry")
+    errors = [f"entry.{e}" for e in validate_row("entries.jsonl", inner)]
+    if isinstance(inner, dict) and (inner.get("enforcement") or {}).get("level") != (
+        "unrepresentable"
+    ):
+        errors.append("entry: only an entry whose violation is unrepresentable is retired")
+    return errors
+
+
 FORMATS = {
     "entries.jsonl": {
         "fields": {
@@ -120,7 +147,6 @@ FORMATS = {
             "institutional": (True, _bool),
             "source": (False, _str),
             "fired": (True, lambda v: None if isinstance(v, list) else "must be a list"),
-            "admission": (True, _subset_of(ADMISSION_TESTS)),
         },
         "pointers": ("test", "violated_variant", "enforcement.where", "source"),
         "rules": _entry_rules,
@@ -201,6 +227,31 @@ FORMATS = {
         "pointers": ("pointer",),
         "rules": lambda row: [],
     },
+    "admissions.jsonl": {
+        "fields": {
+            "candidate": (True, _str),
+            "date": (True, _date),
+            "decision": (True, _one_of(DECISIONS)),
+            "entry": (False, _slug),
+            "failed": (True, _subset_of(REJECTION_REASONS)),
+            "reasons": (True, None),
+            "failing_test": (False, _str),
+            "detail": (False, _str),
+        },
+        "pointers": ("failing_test",),
+        "rules": _admission_rules,
+        "key": None,
+    },
+    "retired.jsonl": {
+        "fields": {
+            "entry": (True, None),
+            "retired_on": (True, _date),
+            "reason": (True, _one_line),
+        },
+        "pointers": ("entry.enforcement.where",),
+        "rules": _retired_rules,
+        "key": None,
+    },
     "replays.jsonl": {
         "fields": {
             "run_id": (True, _str),
@@ -212,6 +263,7 @@ FORMATS = {
         },
         "pointers": ("transcript",),
         "rules": lambda row: [],
+        "key": None,
     },
 }
 

@@ -27,7 +27,6 @@ def entry(eid, shape, context):
         "enforcement": {"level": "prose", "reason": "r"},
         "institutional": False,
         "fired": [],
-        "admission": [],
     }
 
 

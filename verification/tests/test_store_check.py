@@ -39,10 +39,21 @@ def entry(repo, **overrides):
         "enforcement": {"level": "test"},
         "institutional": False,
         "fired": [],
-        "admission": ["durability", "specificity"],
     }
     row.update(overrides)
     return row
+
+
+def admitted(ident):
+    tests = ("durability", "specificity", "decision-changing", "no-stronger-mechanism")
+    return {
+        "candidate": f"audit:{ident}",
+        "date": "2026-10-13",
+        "decision": "admitted",
+        "entry": ident,
+        "failed": [],
+        "reasons": {t: "seeded" for t in tests + ("no-duplicate",)},
+    }
 
 
 @pytest.fixture
@@ -90,9 +101,21 @@ def world(tmp_path):
             },
         ],
     )
+    write_rows(store / "admissions.jsonl", [admitted("bar-gap")])
     env = {**os.environ, "VERIFICATION_STORE": str(store), "HOME": str(tmp_path)}
     assert run(["store", "index"], env).returncode == 0
     return repo, store, env
+
+
+def test_an_entry_added_by_hand_without_admission_fails(world):
+    # Prevents: knowledge entering the store without passing the acceptance tests (criterion 20).
+    repo, store, env = world
+    write_rows(store / "entries.jsonl", [entry(repo), entry(repo, id="from-a-skill")])
+    run(["store", "index"], env)
+    r = run(["store", "check"], env)
+    assert r.returncode == 1
+    assert "entries.jsonl:2: from-a-skill has no admission row" in r.stderr
+    assert "entries.jsonl:1" not in r.stderr
 
 
 def test_sound_store_passes(world):

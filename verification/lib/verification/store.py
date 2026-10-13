@@ -95,37 +95,70 @@ def check_keys(store):
     return problems
 
 
+def row_problems(name, row):
+    """Format, size and pointer problems of one row, without its line number."""
+    problems = list(formats.validate_row(name, row))
+    limit = formats.FORMATS[name].get("token_limit")
+    if limit:
+        tokens = count_tokens(json.dumps(row, separators=(",", ":"), ensure_ascii=False))
+        if tokens > limit:
+            problems.append(f"{tokens} tokens, limit {limit}")
+    for field, value in formats.pointer_values(name, row):
+        reason = pointers.resolve(value)
+        if reason:
+            problems.append(f"{field} does not resolve: {reason}")
+    return problems
+
+
+def write_rows(store, name, rows):
+    with open(os.path.join(store, name), "w", encoding="utf-8") as fh:
+        fh.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in rows)
+
+
+def write_index(store):
+    with open(os.path.join(store, INDEX_FILE), "w", encoding="utf-8") as fh:
+        fh.write(render_index(store))
+
+
+def check_admitted(store):
+    """Every entry has an admission row: knowledge enters only through the acceptance tests.
+
+    The tests an entry passed, and their reasons, are on that row in admissions.jsonl rather
+    than on the entry, which is loaded into sessions and held to 120 tokens."""
+    admitted = {
+        r.get("entry")
+        for _, r, _ in read_rows(store, "admissions.jsonl")
+        if isinstance(r, dict) and r.get("decision") in ("admitted", "revised")
+    }
+    return [
+        f"entries.jsonl:{n}: {row.get('id')} has no admission row; enter it with "
+        "`verification store admit`"
+        for n, row, _ in read_rows(store, "entries.jsonl")
+        if isinstance(row, dict) and row.get("id") not in admitted
+    ]
+
+
 def check(store):
     """Return a list of problems, each naming file:line. Empty means the store is sound."""
     problems = []
     for name, fmt in formats.FORMATS.items():
-        key = "run_id" if name == "replays.jsonl" else "id"
+        key = fmt.get("key", "id")
         seen = {}
         for n, row, raw in read_rows(store, name):
             where = f"{name}:{n}"
             if row is None:
                 problems.append(f"{where}: {raw}")
                 continue
-            for reason in formats.validate_row(name, row):
-                problems.append(f"{where}: {reason}")
-            if name != "replays.jsonl":
+            problems += [f"{where}: {reason}" for reason in row_problems(name, row)]
+            if key:
                 ident = row.get(key)
                 if ident in seen:
                     problems.append(
                         f"{where}: duplicate {key} {ident!r} (first at line {seen[ident]})"
                     )
                 seen.setdefault(ident, n)
-            limit = fmt.get("token_limit")
-            if limit:
-                compact = json.dumps(row, separators=(",", ":"), ensure_ascii=False)
-                tokens = count_tokens(compact)
-                if tokens > limit:
-                    problems.append(f"{where}: {tokens} tokens, limit {limit}")
-            for field, value in formats.pointer_values(name, row):
-                reason = pointers.resolve(value)
-                if reason:
-                    problems.append(f"{where}: {field} does not resolve: {reason}")
     problems += check_keys(store)
+    problems += check_admitted(store)
     index = render_index(store)
     tokens = count_tokens(index)
     if tokens > INDEX_TOKEN_CAP:

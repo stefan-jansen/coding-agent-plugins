@@ -5,6 +5,7 @@ import os
 import sys
 
 from . import (
+    admission,
     classify,
     corpus,
     coverage,
@@ -49,6 +50,57 @@ def cmd_store_index(_args):
         fh.write(store.render_index(path))
     print(f"wrote {store.INDEX_FILE}")
     return 0
+
+
+def cmd_store_admit(args):
+    path = _store_or_absent()
+    if path is None:
+        return 1
+    line, problems = admission.admit(path, args.candidate)
+    if problems:
+        return _report("admit (nothing written)", problems)
+    print(line)
+    return 0
+
+
+def cmd_store_rejections(_args):
+    path = _store_or_absent()
+    if path is None:
+        return 0
+    decisions, reasons = admission.rejections(path)
+    for name, n in decisions.items():
+        print(f"{name}\t{n}")
+    print("rejected by reason:")
+    for name, n in reasons.items():
+        print(f"{name}\t{n}")
+    return 0
+
+
+def cmd_store_consolidate(_args):
+    path = _store_or_absent()
+    if path is None:
+        return 0
+    retired, problems = admission.consolidate(path)
+    for ident in retired:
+        print(f"retired: {ident}")
+    return _report("consolidate (nothing moved)" if problems else "consolidate", problems)
+
+
+def cmd_store_library_enforced(_args):
+    path = _store_or_absent()
+    if path is None:
+        return 0
+    for row in admission.library_enforced(path):
+        print("\t".join(row))
+    return 0
+
+
+def cmd_store_sources(_args):
+    path = _store_or_absent()
+    if path is None:
+        return 0
+    missing = admission.sourceless(path)
+    return _report("sources", [f"{i}: institutional, no source" for i in missing])
 
 
 def cmd_corpus_report(_args):
@@ -307,6 +359,21 @@ def build_parser():
     st_cmds.add_parser("index", help="regenerate the loaded index").set_defaults(
         func=cmd_store_index
     )
+    ad = st_cmds.add_parser("admit", help="record a candidate's admission, revision or rejection")
+    ad.add_argument("candidate", help="candidate JSON: entry, the five tests, optional declaration")
+    ad.set_defaults(func=cmd_store_admit)
+    st_cmds.add_parser("rejections", help="decisions, and rejections by reason").set_defaults(
+        func=cmd_store_rejections
+    )
+    st_cmds.add_parser(
+        "consolidate", help="retire entries whose violation is unrepresentable"
+    ).set_defaults(func=cmd_store_consolidate)
+    st_cmds.add_parser("library-enforced", help="entries enforced in a library").set_defaults(
+        func=cmd_store_library_enforced
+    )
+    st_cmds.add_parser(
+        "sources", help="fail on an institutional entry without an authoritative source"
+    ).set_defaults(func=cmd_store_sources)
     co = groups.add_parser("corpus", help="the corpus of shipped defects")
     co_cmds = co.add_subparsers(dest="command", required=True)
     co_cmds.add_parser("report", help="recoverable share and classification").set_defaults(
