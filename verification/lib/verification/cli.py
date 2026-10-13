@@ -4,7 +4,19 @@ import argparse
 import os
 import sys
 
-from . import classify, corpus, coverage, derive, replay, retrieval, store, terms, units, violate
+from . import (
+    classify,
+    corpus,
+    coverage,
+    derive,
+    fixture,
+    replay,
+    retrieval,
+    store,
+    terms,
+    units,
+    violate,
+)
 
 
 def _store_or_absent():
@@ -219,6 +231,12 @@ def cmd_violate(args):
     return _report("violate", problems)
 
 
+def cmd_fixture_reduce(args):
+    ok, message = fixture.reduce(args.src, args.dst, args.filter, args.python)
+    print(message, file=sys.stdout if ok else sys.stderr)
+    return 0 if ok else 1
+
+
 def cmd_replay_run(args):
     for cause in args.cause:
         r = replay.run(cause, args.out, root=args.root)
@@ -321,6 +339,16 @@ def build_parser():
     vi = groups.add_parser("violate", help="run a test on its violated variant and on correct code")
     vi.add_argument("declaration", help="JSON declaring the test, producer, variant and fixture")
     vi.set_defaults(func=cmd_violate)
+    fx = groups.add_parser("fixture", help="reduced fixtures for fast tests")
+    fx_cmds = fx.add_subparsers(dest="command", required=True)
+    fr = fx_cmds.add_parser("reduce", help="filtered copy of a parquet or CSV file, at most 10 MB")
+    fr.add_argument("src")
+    fr.add_argument("dst")
+    fr.add_argument(
+        "--filter", required=True, help='polars expression, e.g. pl.col("year") == 2015'
+    )
+    fr.add_argument("--python", default=sys.executable, help="interpreter with polars")
+    fr.set_defaults(func=cmd_fixture_reduce)
     rp = groups.add_parser("replay", help="replay corpus causes blind and count what caught them")
     rps = rp.add_subparsers(dest="action", required=True)
     rr = rps.add_parser("run")

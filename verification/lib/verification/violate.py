@@ -12,6 +12,18 @@ A declaration (JSON) names the test and how its violation arises:
       "fixture": "<the data both runs read>"
     }
 
+Instead of `fixture`, a declaration may list `fixtures`, smallest first:
+
+      "fixtures": [
+        {"name": "2015", "files": {"tests/fixtures/x.parquet": "<reduced copy>"}},
+        {"name": "committed", "files": {}}
+      ]
+
+For each, its files are copied over their targets for both runs and restored afterwards. The
+first fixture on which both runs hold is the one the test is accepted on; a reduction that
+dropped the rows the violation needs is rejected and the next larger fixture is tried (criterion
+8). A reduced copy may be at most 10 MB unless the fixture is marked `"full": true`.
+
 The test is run twice. In the correct run it must pass. In the violated run it must fail as a
 test failure (pytest exit 1), not as a crash. In both runs the producer must execute, so the
 violated input comes from the producing code rather than from a frame built by hand. A
@@ -37,6 +49,7 @@ import tempfile
 TRACE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "trace")
 PERTURBATIONS_FILE = os.path.join("diagnostic", "evaluation", "violations.py")
 TEST_FAILED = 1
+FIXTURE_LIMIT = 10 * 1024 * 1024
 
 
 def load(path):
@@ -55,11 +68,15 @@ def _abs(decl, rel):
 def validate(decl):
     """Everything wrong with the declaration, found before anything runs or is edited."""
     problems = []
-    for field in ("test", "producer", "variant", "fixture"):
+    for field in ("test", "producer", "variant"):
         if not decl.get(field):
             problems.append(f"declaration: {field} missing")
+    if bool(decl.get("fixture")) == bool(decl.get("fixtures")):
+        problems.append("declaration: give exactly one of fixture or fixtures")
     if problems:
         return problems
+    for fx in _fixtures(decl):
+        problems += _fixture_problems(decl, fx)
     if not os.path.isfile(_abs(decl, decl["producer"])):
         problems.append(f"producer {decl['producer']} does not exist under {decl['root']}")
     variant = decl["variant"]
@@ -78,6 +95,49 @@ def validate(decl):
     elif set(variant) != {"perturbation"} or not variant["perturbation"]:
         problems.append("variant: give exactly one of mutation or perturbation")
     return problems
+
+
+def _fixtures(decl):
+    if decl.get("fixtures"):
+        return decl["fixtures"]
+    return [{"name": decl["fixture"], "files": {}}]
+
+
+def _fixture_problems(decl, fx):
+    name = fx.get("name")
+    if not name or not isinstance(fx.get("files"), dict):
+        return [f"fixture {name or '?'}: needs a name and a files map"]
+    problems = []
+    for target, source in fx["files"].items():
+        if not os.path.isfile(_abs(decl, target)):
+            problems.append(f"fixture {name}: target {target} does not exist")
+        source = _abs(decl, source)
+        if not os.path.isfile(source):
+            problems.append(f"fixture {name}: {os.path.basename(source)} does not exist")
+        elif not fx.get("full") and os.path.getsize(source) > FIXTURE_LIMIT:
+            problems.append(f"fixture {name}: {os.path.basename(source)} is over 10 MB")
+    return problems
+
+
+def _swap(decl, files):
+    """Copy each source over its target; return what to restore."""
+    saved = []
+    try:
+        for target, source in files.items():
+            target = _abs(decl, target)
+            with open(target, "rb") as fh:
+                saved.append((target, fh.read()))
+            shutil.copyfile(_abs(decl, source), target)
+    except BaseException:
+        _restore(saved)
+        raise
+    return saved
+
+
+def _restore(saved):
+    for target, data in saved:
+        with open(target, "wb") as fh:
+            fh.write(data)
 
 
 def _mutated_lines(text, old, new):
@@ -129,13 +189,33 @@ def _producer_ran(functions, producer):
 
 
 def violate(decl):
-    """Return (verdict lines, problems). No problems means the test satisfies criterion 7."""
+    """Return (verdict lines, problems). No problems means the test satisfies criterion 7, on
+    the first fixture where both runs hold."""
     problems = validate(decl)
     if problems:
         return [], problems
+    fixtures = _fixtures(decl)
+    report = [f"test: {decl['test']}"]
+    rejected = []
+    for fx in fixtures:
+        saved = _swap(decl, fx["files"])
+        try:
+            lines, problems = _judge(decl)
+        finally:
+            _restore(saved)
+        if not problems or decl.get("fixture"):
+            return report + [f"fixture (both runs): {fx['name']}", *lines], problems
+        report.append(f"fixture {fx['name']}: rejected: {'; '.join(problems)}")
+        rejected += [f"fixture {fx['name']}: {p}" for p in problems]
+    return report, ["no fixture satisfies both runs", *rejected]
+
+
+def _judge(decl):
+    """Both runs on whatever fixture is in place."""
+    problems = []
     producer = _abs(decl, decl["producer"])
     variant = decl["variant"]
-    report = [f"test: {decl['test']}", f"fixture (both runs): {decl['fixture']}"]
+    report = []
 
     correct, functions, _ = _run(decl, "correct", [])
     report.append(f"correct run: exit {correct.returncode}")

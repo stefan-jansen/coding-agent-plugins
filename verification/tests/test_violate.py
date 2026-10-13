@@ -95,6 +95,15 @@ def test_gap_check_that_never_perturbs():
     no_gaps(observations.build([(t, 1.0) for t in range(48)]))
 
 
+def test_labels_span_the_horizon_on_the_bars_file():
+    import json
+
+    with open("bars.json") as fh:
+        raw = [tuple(x) for x in json.load(fh)]
+    labels = label(observations.build(raw), 2)
+    assert labels and all(x["exit_t"] - x["t"] == 2 for x in labels)
+
+
 def test_labels_from_the_stage_script():
     import json
     import subprocess
@@ -132,6 +141,8 @@ RAW = [(t, 100.0 + t) for t in range(48) if not 20 <= t < 23]
 print(json.dumps(label(observations.build(RAW), 2)))
 '''
 
+BARS = json.dumps([[t, 100.0 + t] for t in range(48) if not 20 <= t < 23])
+
 ROW_LABEL = {
     "file": "labels.py",
     "old": '        exit_bar = by_time.get(o["t"] + horizon)\n',
@@ -146,6 +157,7 @@ def repo(tmp_path):
         "observations.py": OBSERVATIONS,
         "labels.py": LABELS,
         "stage.py": STAGE,
+        "bars.json": BARS,
         "test_pipeline.py": TESTS,
         "ml4t/__init__.py": "",
         "ml4t/diagnostic/__init__.py": "",
@@ -158,15 +170,18 @@ def repo(tmp_path):
     return tmp_path
 
 
-def violate(repo, test, variant, producer="observations.py"):
+def violate(repo, test, variant, producer="observations.py", fixtures=None):
     decl = {
         "test": f"test_pipeline.py::{test}",
         "root": str(repo),
         "command": [sys.executable, "-m", "pytest", "-q"],
         "producer": producer,
         "variant": variant,
-        "fixture": "RAW in test_pipeline.py",
     }
+    if fixtures is None:
+        decl["fixture"] = "RAW in test_pipeline.py"
+    else:
+        decl["fixtures"] = fixtures
     path = repo / "violation.json"
     path.write_text(json.dumps(decl))
     env = {**os.environ, "PYTHONPATH": str(repo)}
@@ -264,3 +279,58 @@ def test_child_started_with_its_own_environment_is_traced(repo):
     )
     assert r.returncode == 0, r.stdout + r.stderr
     assert "violated run: exit 1" in r.stdout
+
+
+def bars(repo, name, hours):
+    path = repo / name
+    path.write_text(json.dumps([[t, 100.0 + t] for t in hours if not 20 <= t < 23]))
+    return str(path)
+
+
+FILE_TEST = "test_labels_span_the_horizon_on_the_bars_file"
+
+
+def test_a_reduction_without_the_gap_falls_back_to_the_larger_fixture(repo):
+    # Prevents: accepting a test on a reduced fixture that no longer holds the rows the
+    # violation needs, where the violated variant passes for want of a gap.
+    fixtures = [
+        {"name": "no-gap", "files": {"bars.json": bars(repo, "small.json", range(15))}},
+        {"name": "committed", "files": {}},
+    ]
+    r = violate(repo, FILE_TEST, {"mutation": ROW_LABEL}, fixtures=fixtures)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "fixture no-gap: rejected: the test passes on the violated variant" in r.stdout
+    assert "fixture (both runs): committed" in r.stdout
+    assert (repo / "bars.json").read_text() == BARS
+
+
+def test_a_reduction_that_keeps_the_gap_is_accepted(repo):
+    fixtures = [
+        {"name": "gap-window", "files": {"bars.json": bars(repo, "w.json", range(15, 31))}},
+        {"name": "committed", "files": {}},
+    ]
+    r = violate(repo, FILE_TEST, {"mutation": ROW_LABEL}, fixtures=fixtures)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "fixture (both runs): gap-window" in r.stdout
+    assert (repo / "bars.json").read_text() == BARS
+
+
+def test_every_fixture_rejected_is_a_rejection(repo):
+    fixtures = [{"name": "no-gap", "files": {"bars.json": bars(repo, "s.json", range(15))}}]
+    r = violate(repo, FILE_TEST, {"mutation": ROW_LABEL}, fixtures=fixtures)
+    assert r.returncode == 1
+    assert "no fixture satisfies both runs" in r.stderr
+
+
+def test_an_oversized_reduced_fixture_is_refused_before_anything_runs(repo):
+    big = repo / "big.json"
+    big.write_text(" " * (10 * 1024 * 1024 + 1))
+    fixtures = [
+        {"name": "big", "files": {"bars.json": str(big)}},
+        {"name": "committed", "files": {}},
+    ]
+    r = violate(repo, FILE_TEST, {"mutation": ROW_LABEL}, fixtures=fixtures)
+    assert r.returncode == 1
+    assert "fixture big: big.json is over 10 MB" in r.stderr
+    assert "correct run" not in r.stdout
+    assert (repo / "bars.json").read_text() == BARS
