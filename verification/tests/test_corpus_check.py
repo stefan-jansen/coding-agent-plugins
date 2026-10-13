@@ -1,4 +1,5 @@
 """`verification corpus check`: every source maps to exactly one cause, both families classify."""
+
 import json
 import os
 import subprocess

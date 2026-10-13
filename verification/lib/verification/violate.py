@@ -72,7 +72,9 @@ def validate(decl):
             with open(path, encoding="utf-8") as fh:
                 count = fh.read().count(m.get("old") or "\0")
             if count != 1:
-                problems.append(f"mutation text occurs {count} times in {m['file']}; need exactly 1")
+                problems.append(
+                    f"mutation text occurs {count} times in {m['file']}; need exactly 1"
+                )
     elif set(variant) != {"perturbation"} or not variant["perturbation"]:
         problems.append("variant: give exactly one of mutation or perturbation")
     return problems

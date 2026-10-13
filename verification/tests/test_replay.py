@@ -1,4 +1,5 @@
 """Blind replay: the replay sees the work as it began and nothing of the defect's record."""
+
 import json
 import os
 import subprocess
@@ -12,8 +13,9 @@ from verification import replay  # noqa: E402
 
 
 def git(repo, *args):
-    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True,
-                          check=True).stdout.strip()
+    return subprocess.run(
+        ["git", "-C", str(repo), *args], capture_output=True, text=True, check=True
+    ).stdout.strip()
 
 
 @pytest.fixture
@@ -35,29 +37,48 @@ def world(tmp_path):
     git(repo, "commit", "-qm", "fix holdout leak")
     store = tmp_path / "store"
     store.mkdir()
-    cause = {"id": "holdout-exit", "summary": "labels exit inside the holdout",
-             "sources": ["commit:abc"], "classification": {},
-             "spec": f"{repo}:spec.md", "pre_defect_commit": f"{repo}@{before}",
-             "reproduction": f"{repo}:audit.md"}
+    cause = {
+        "id": "holdout-exit",
+        "summary": "labels exit inside the holdout",
+        "sources": ["commit:abc"],
+        "classification": {},
+        "spec": f"{repo}:spec.md",
+        "pre_defect_commit": f"{repo}@{before}",
+        "reproduction": f"{repo}:audit.md",
+    }
     (store / "causes.jsonl").write_text(json.dumps(cause) + "\n")
     return {"repo": repo, "store": store, "out": tmp_path / "out", "root": tmp_path / "w"}
 
 
 def claude_transcript(items, reads=()):
-    events = [{"type": "assistant", "message": {"content": [
-        {"type": "tool_use", "name": "Read", "input": {"file_path": p}}]}} for p in reads]
+    events = [
+        {
+            "type": "assistant",
+            "message": {
+                "content": [{"type": "tool_use", "name": "Read", "input": {"file_path": p}}]
+            },
+        }
+        for p in reads
+    ]
     events.append({"type": "result", "result": json.dumps({"items": items})})
     return "\n".join(json.dumps(e) for e in events)
 
 
 def gpt_transcript(commands=()):
-    return "\n".join(json.dumps({"type": "item.completed", "item": {
-        "type": "command_execution", "command": c}}) for c in commands)
+    return "\n".join(
+        json.dumps({"type": "item.completed", "item": {"type": "command_execution", "command": c}})
+        for c in commands
+    )
 
 
-ITEMS = [{"id": "exit-after-holdout", "kind": "failure-case",
-          "text": "a label whose exit falls in the holdout"},
-         {"id": "sessions", "kind": "term", "text": "21 sessions: rows or exchange sessions"}]
+ITEMS = [
+    {
+        "id": "exit-after-holdout",
+        "kind": "failure-case",
+        "text": "a label whose exit falls in the holdout",
+    },
+    {"id": "sessions", "kind": "term", "text": "21 sessions: rows or exchange sessions"},
+]
 
 
 def fake(world, claude_reads=(), gpt_commands=(), seen=None):
@@ -68,22 +89,32 @@ def fake(world, claude_reads=(), gpt_commands=(), seen=None):
             reads = [r.format(cwd=cwd) for r in claude_reads]
             return claude_transcript(ITEMS, reads), json.dumps({"items": ITEMS})
         return gpt_transcript([c.format(cwd=cwd) for c in gpt_commands]), json.dumps(
-            {"items": ITEMS})
+            {"items": ITEMS}
+        )
+
     return ask_in
 
 
 def judges(claude_ids, gpt_ids):
     def ask(family, prompt):
         ids = claude_ids if family == "claude" else gpt_ids
-        return json.dumps({"exposing": [f"{f}:{i}" for f in ("claude", "gpt") for i in ids],
-                           "reason": "r"})
+        return json.dumps(
+            {"exposing": [f"{f}:{i}" for f in ("claude", "gpt") for i in ids], "reason": "r"}
+        )
+
     return ask
 
 
 def run(world, ask_in, ask):
     world["root"].mkdir(exist_ok=True)
-    return replay.run("holdout-exit", str(world["out"]), root=str(world["root"]),
-                      store_path=str(world["store"]), ask=ask, ask_in=ask_in)
+    return replay.run(
+        "holdout-exit",
+        str(world["out"]),
+        root=str(world["root"]),
+        store_path=str(world["store"]),
+        ask=ask,
+        ask_in=ask_in,
+    )
 
 
 def test_the_replay_reads_the_spec_and_code_as_the_work_began(world):
@@ -99,20 +130,25 @@ def test_the_replay_reads_the_spec_and_code_as_the_work_began(world):
 
 def test_a_read_of_the_live_repository_invalidates_the_replay(world):
     # The live repository holds the fix and the audit; reading it is reading the answer.
-    r = run(world, fake(world, claude_reads=[str(world["repo"] / "audit.md")]),
-            judges(["exit-after-holdout"], ["exit-after-holdout"]))
+    r = run(
+        world,
+        fake(world, claude_reads=[str(world["repo"] / "audit.md")]),
+        judges(["exit-after-holdout"], ["exit-after-holdout"]),
+    )
     assert r["blind"] is False and "claude" in r["invalid"]
 
 
 def test_a_gpt_command_that_reads_the_store_invalidates_the_replay(world):
-    r = run(world, fake(world, gpt_commands=[f"cat {world['store']}/causes.jsonl"]),
-            judges([], []))
+    r = run(world, fake(world, gpt_commands=[f"cat {world['store']}/causes.jsonl"]), judges([], []))
     assert r["blind"] is False and "gpt" in r["invalid"]
 
 
 def test_reads_inside_the_checkout_keep_the_replay_blind(world):
-    r = run(world, fake(world, claude_reads=["{cwd}/labels.py"], gpt_commands=["cat {cwd}/spec.md"]),
-            judges([], []))
+    r = run(
+        world,
+        fake(world, claude_reads=["{cwd}/labels.py"], gpt_commands=["cat {cwd}/spec.md"]),
+        judges([], []),
+    )
     assert r["blind"] is True
 
 
@@ -149,9 +185,16 @@ def test_a_banned_path_in_command_output_does_not_invalidate(world):
     def ask_in(family, prompt, cwd, timeout=0):
         if family == "claude":
             return claude_transcript(ITEMS), json.dumps({"items": ITEMS})
-        event = {"type": "item.completed", "item": {"type": "command_execution",
-                 "command": "cat AGENTS.md", "aggregated_output": f"see {world['repo']}"}}
+        event = {
+            "type": "item.completed",
+            "item": {
+                "type": "command_execution",
+                "command": "cat AGENTS.md",
+                "aggregated_output": f"see {world['repo']}",
+            },
+        }
         return json.dumps(event), json.dumps({"items": ITEMS})
+
     assert run(world, ask_in, judges([], []))["blind"] is True
 
 

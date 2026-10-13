@@ -1,4 +1,5 @@
 """Premise statements, claims and closure in a plan, using the crypto gap case as the fixture."""
+
 import os
 import subprocess
 import sys
@@ -48,7 +49,9 @@ def run(args, tmp_path, text):
     f.write_text(text)
     env = {k: v for k, v in os.environ.items() if k != "VERIFICATION_STORE"}
     env["HOME"] = str(tmp_path)
-    return subprocess.run([sys.executable, BIN, *args, str(f)], capture_output=True, text=True, env=env)
+    return subprocess.run(
+        [sys.executable, BIN, *args, str(f)], capture_output=True, text=True, env=env
+    )
 
 
 def test_complete_plan_passes(tmp_path):
@@ -111,11 +114,15 @@ def test_item_closed_by_no_issue_fails(tmp_path):
     # Prevents: a premise stated in planning that no issue ever verifies.
     text = PLAN.replace(", hourly-bars.institution", "")
     r = run(["closure", "check"], tmp_path, text)
-    assert r.returncode == 1 and "hourly-bars.institution: defined but closed by no issue" in r.stderr
+    assert (
+        r.returncode == 1 and "hourly-bars.institution: defined but closed by no issue" in r.stderr
+    )
 
 
 def test_item_closed_twice_or_undefined_fails(tmp_path):
-    text = PLAN.replace("Closes: hourly-bars.record,", "Closes: vol-7d, holdout.exit, hourly-bars.record,")
+    text = PLAN.replace(
+        "Closes: hourly-bars.record,", "Closes: vol-7d, holdout.exit, hourly-bars.record,"
+    )
     r = run(["closure", "check"], tmp_path, text)
     assert r.returncode == 1
     assert "vol-7d: closed by more than one issue" in r.stderr
@@ -123,7 +130,10 @@ def test_item_closed_twice_or_undefined_fails(tmp_path):
 
 
 def test_missing_closes_line_fails(tmp_path):
-    text = PLAN.replace("Closes: hourly-bars.record, hourly-bars.entity-identity, "
-                        "hourly-bars.known-at, hourly-bars.institution\n", "")
+    text = PLAN.replace(
+        "Closes: hourly-bars.record, hourly-bars.entity-identity, "
+        "hourly-bars.known-at, hourly-bars.institution\n",
+        "",
+    )
     r = run(["closure", "check"], tmp_path, text)
     assert r.returncode == 1 and "no `Closes:` line" in r.stderr

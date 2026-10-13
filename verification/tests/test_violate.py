@@ -4,6 +4,7 @@ Each rejected case is a test as it is actually written: a check handed a frame b
 a check that repeats the producer's own assignment, a mutation that never runs, a perturbation
 the test never applies, and a mutation that breaks the import instead of reaching the test.
 """
+
 import json
 import os
 import subprocess
@@ -38,15 +39,15 @@ def label(obs, horizon):
     return out
 '''
 
-PERTURB = '''\
+PERTURB = """\
 def drop_window(obs, start, end):
     kept = [o for o in obs if not start <= o["t"] < end]
     if len(kept) == len(obs):
         raise ValueError("nothing to remove")
     return kept
-'''
+"""
 
-TESTS = '''\
+TESTS = """\
 import os
 
 import observations
@@ -102,7 +103,7 @@ def test_labels_from_the_stage_script():
     run = subprocess.run([sys.executable, "stage.py"], capture_output=True, text=True, check=True)
     labels = json.loads(run.stdout)
     assert labels and all(x["exit_t"] - x["t"] == 2 for x in labels)
-'''
+"""
 
 STAGE = '''\
 """Run as its own process, as a pipeline runner starts each stage."""
@@ -118,8 +119,8 @@ print(json.dumps(label(observations.build(RAW), 2)))
 ROW_LABEL = {
     "file": "labels.py",
     "old": '        exit_bar = by_time.get(o["t"] + horizon)\n',
-    "new": '        i = obs.index(o)\n'
-           '        exit_bar = obs[i + horizon] if i + horizon < len(obs) else None\n',
+    "new": "        i = obs.index(o)\n"
+    "        exit_bar = obs[i + horizon] if i + horizon < len(obs) else None\n",
 }
 
 
@@ -182,7 +183,9 @@ def test_check_repeating_the_producers_assignment_is_rejected(repo):
 
 
 def test_mutation_in_code_the_test_never_runs_is_rejected(repo):
-    dead = {"mutation": {"file": "observations.py", "old": "    return 0\n", "new": "    return 1\n"}}
+    dead = {
+        "mutation": {"file": "observations.py", "old": "    return 0\n", "new": "    return 1\n"}
+    }
     r = violate(repo, "test_labels_span_the_horizon", dead)
     assert r.returncode == 1
     assert "mutated lines of observations.py never executed" in r.stderr

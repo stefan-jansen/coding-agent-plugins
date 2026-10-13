@@ -63,12 +63,29 @@ Reply with only a JSON object: {{"exposing": ["<item id>", ...], "reason": "<one
 
 COMMANDS = {
     "claude": lambda prompt, cwd, out: [
-        "claude", "-p", "--restricted", "--tools", "Read,Glob,Grep",
-        "--output-format", "stream-json", "--verbose", prompt,
+        "claude",
+        "-p",
+        "--restricted",
+        "--tools",
+        "Read,Glob,Grep",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        prompt,
     ],
     "gpt": lambda prompt, cwd, out: [
-        "codex", "exec", "--json", "--sandbox", "read-only", "--skip-git-repo-check",
-        "--ephemeral", "-C", cwd, "-o", out, prompt,
+        "codex",
+        "exec",
+        "--json",
+        "--sandbox",
+        "read-only",
+        "--skip-git-repo-check",
+        "--ephemeral",
+        "-C",
+        cwd,
+        "-o",
+        out,
+        prompt,
     ],
 }
 
@@ -81,7 +98,9 @@ def _cause(path, cause_id):
 
 
 def _git(repo, *args):
-    return subprocess.run(["git", "-C", repo, *args], capture_output=True, text=True, check=True).stdout
+    return subprocess.run(
+        ["git", "-C", repo, *args], capture_output=True, text=True, check=True
+    ).stdout
 
 
 def path_at(repo, sha, path):
@@ -93,7 +112,9 @@ def path_at(repo, sha, path):
             commit = line[1:]
         elif line.startswith("R") and commit:
             _, old, new = line.split("\t")
-            ancestor = subprocess.run(["git", "-C", repo, "merge-base", "--is-ancestor", commit, sha])
+            ancestor = subprocess.run(
+                ["git", "-C", repo, "merge-base", "--is-ancestor", commit, sha]
+            )
             if new == current and ancestor.returncode != 0:
                 current = old
     return current
@@ -110,21 +131,43 @@ def spec_text(cause):
     if ref.startswith("https://github.com/"):
         m = re.match(r"https://github.com/([^/]+/[^/]+)/issues/(\d+)", ref)
         owner, name = m.group(1).split("/")
-        query = ("query($o:String!,$n:String!,$i:Int!){repository(owner:$o,name:$n)"
-                 "{issue(number:$i){title body lastEditedAt}}}")
-        data = json.loads(subprocess.run(
-            ["gh", "api", "graphql", "-f", f"query={query}", "-f", f"o={owner}", "-f", f"n={name}",
-             "-F", f"i={m.group(2)}"],
-            capture_output=True, text=True, check=True).stdout)["data"]["repository"]["issue"]
+        query = (
+            "query($o:String!,$n:String!,$i:Int!){repository(owner:$o,name:$n)"
+            "{issue(number:$i){title body lastEditedAt}}}"
+        )
+        data = json.loads(
+            subprocess.run(
+                [
+                    "gh",
+                    "api",
+                    "graphql",
+                    "-f",
+                    f"query={query}",
+                    "-f",
+                    f"o={owner}",
+                    "-f",
+                    f"n={name}",
+                    "-F",
+                    f"i={m.group(2)}",
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout
+        )["data"]["repository"]["issue"]
         edited = data.get("lastEditedAt")
-        late = bool(edited) and datetime.fromisoformat(edited.replace("Z", "+00:00")) > \
-            datetime.fromisoformat(started)
+        late = bool(edited) and datetime.fromisoformat(
+            edited.replace("Z", "+00:00")
+        ) > datetime.fromisoformat(started)
         return f"# {data['title']}\n\n{data['body']}", {"spec": ref, "edited_after_start": late}
     if ":" in ref:
         spec_repo, path = ref.split(":", 1)
         if os.path.realpath(spec_repo) == os.path.realpath(repo):
             try:
-                return _git(repo, "show", f"{sha}:{path_at(repo, sha, path)}"), {"spec": ref, "at": sha}
+                return _git(repo, "show", f"{sha}:{path_at(repo, sha, path)}"), {
+                    "spec": ref,
+                    "at": sha,
+                }
             except subprocess.CalledProcessError:
                 return None, {"spec": ref, "missing": f"not in {sha[:7]}"}
         before = _git(spec_repo, "rev-list", "-1", f"--before={started}", "HEAD").strip()
@@ -140,9 +183,14 @@ def forbidden(cause, store_path):
     the store, the cause, the live repository (which holds the fix), and the record of the
     defect. Reads inside the exported checkout are the point of the replay and are allowed."""
     repo = cause["pre_defect_commit"].split("@")[0]
-    banned = {os.path.realpath(store_path), "verification-store", cause["id"],
-              os.path.expanduser("~/agents/factory"), os.path.expanduser("~/ml4t/agents/errata"),
-              os.path.realpath(repo)}
+    banned = {
+        os.path.realpath(store_path),
+        "verification-store",
+        cause["id"],
+        os.path.expanduser("~/agents/factory"),
+        os.path.expanduser("~/ml4t/agents/errata"),
+        os.path.realpath(repo),
+    }
     for field in ("reproduction", "evidence"):
         ref = cause.get(field) or ""
         if ":" in ref and not ref.startswith("http"):
@@ -167,7 +215,9 @@ def tool_calls(family, transcript):
             if item.get("type") in ("command_execution", "file_read", "mcp_tool_call"):
                 # What was asked for, not what came back: a file in the checkout may mention a
                 # banned path without the replay having read it.
-                calls.append(json.dumps({k: v for k, v in item.items() if k != "aggregated_output"}))
+                calls.append(
+                    json.dumps({k: v for k, v in item.items() if k != "aggregated_output"})
+                )
     return calls
 
 
@@ -191,8 +241,14 @@ def _final_text(family, transcript, out):
 
 def _ask_in(family, prompt, cwd, timeout=3600):
     out = os.path.join(tempfile.mkdtemp(prefix="o-"), "reply.txt")
-    r = subprocess.run(COMMANDS[family](prompt, cwd, out), cwd=cwd, capture_output=True,
-                       text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    r = subprocess.run(
+        COMMANDS[family](prompt, cwd, out),
+        cwd=cwd,
+        capture_output=True,
+        text=True,
+        timeout=timeout,
+        stdin=subprocess.DEVNULL,
+    )
     if r.returncode != 0:
         raise RuntimeError(f"{family} exited {r.returncode}: {r.stderr[-2000:]}")
     return r.stdout, _final_text(family, r.stdout, out)
@@ -242,16 +298,26 @@ def run(cause_id, out_dir, root=None, store_path=None, ask=families.ask, ask_in=
     for judge in ("claude", "gpt"):
         reply = families.parse_json_object(ask(judge, JUDGE.format(defect=defect, items=item_text)))
         ids = {i["id"] for i in listed}
-        verdicts[judge] = {"exposing": [x for x in reply.get("exposing", []) if x in ids],
-                           "reason": reply.get("reason", "")}
+        verdicts[judge] = {
+            "exposing": [x for x in reply.get("exposing", []) if x in ids],
+            "reason": reply.get("reason", ""),
+        }
     agreed = set(verdicts["claude"]["exposing"]) & set(verdicts["gpt"]["exposing"])
     kinds = {i["id"]: COMPONENT[i["kind"]] for i in listed}
     surfaced = sorted({kinds[x] for x in agreed}, key=formats.CATEGORIES.index)
     result = {
-        "run_id": run_id, "cause_id": cause_id, "date": date.today().isoformat(),
-        "surfaced_by": surfaced[0] if surfaced else "none", "components": surfaced,
-        "agreed_items": sorted(agreed), "verdicts": verdicts, "items": listed,
-        "invalid": invalid, "blind": not invalid, "workdir": work, **provenance,
+        "run_id": run_id,
+        "cause_id": cause_id,
+        "date": date.today().isoformat(),
+        "surfaced_by": surfaced[0] if surfaced else "none",
+        "components": surfaced,
+        "agreed_items": sorted(agreed),
+        "verdicts": verdicts,
+        "items": listed,
+        "invalid": invalid,
+        "blind": not invalid,
+        "workdir": work,
+        **provenance,
         "transcript": os.path.join(out_dir, f"{run_id}.claude.jsonl"),
     }
     with open(os.path.join(out_dir, f"{run_id}.json"), "w", encoding="utf-8") as fh:

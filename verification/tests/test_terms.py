@@ -1,5 +1,6 @@
 """Term tables: unresolved terms block decompose; a resolution in one repository is reused in
 another without a question, within the context it was decided for."""
+
 import os
 import subprocess
 import sys
@@ -45,7 +46,9 @@ def world(tmp_path):
 
 
 def spec(path, context="xnys, us-etfs", status="?", basis="-"):
-    path.write_text(SPEC.format(title=path.parent.name, context=context, status=status, basis=basis))
+    path.write_text(
+        SPEC.format(title=path.parent.name, context=context, status=status, basis=basis)
+    )
 
 
 def test_unresolved_term_fails(world):
@@ -77,10 +80,19 @@ def test_resolution_in_one_repo_resolves_the_other_without_a_question(world):
     origin = f"{a.parents[3]}:.workspace/work/u1/spec.md"
     r = run(
         [
-            "terms", "define", "--term", "20-day momentum", "--context", "xnys,us-etfs",
-            "--definition", "20 exchange sessions on the venue's calendar, reindexed onto the "
+            "terms",
+            "define",
+            "--term",
+            "20-day momentum",
+            "--context",
+            "xnys,us-etfs",
+            "--definition",
+            "20 exchange sessions on the venue's calendar, reindexed onto the "
             "session grid so a missing session is a gap, not a skipped row",
-            "--decided-by", "stefan", "--origin", origin,
+            "--decided-by",
+            "stefan",
+            "--origin",
+            origin,
         ],
         env,
     )
@@ -100,8 +112,23 @@ def test_author_asked_again_despite_house_definition_fails(world):
     store, a, b, env = world
     origin = f"{a.parents[3]}:.workspace/work/u1/spec.md"
     spec(a, status="resolved-by-author", basis="(b)")
-    run(["terms", "define", "--term", "20-day momentum", "--context", "xnys", "--definition",
-         "sessions", "--decided-by", "stefan", "--origin", origin], env)
+    run(
+        [
+            "terms",
+            "define",
+            "--term",
+            "20-day momentum",
+            "--context",
+            "xnys",
+            "--definition",
+            "sessions",
+            "--decided-by",
+            "stefan",
+            "--origin",
+            origin,
+        ],
+        env,
+    )
     spec(b, context="xnys", status="resolved-by-author", basis="(b)")
     r = run(["terms", "check", str(b)], env)
     assert r.returncode == 1 and "use it, not a question" in r.stderr
@@ -112,8 +139,23 @@ def test_definition_does_not_cross_into_another_context(world):
     store, a, b, env = world
     origin = f"{a.parents[3]}:.workspace/work/u1/spec.md"
     spec(a, status="resolved-by-author", basis="(b)")
-    run(["terms", "define", "--term", "20-day momentum", "--context", "xnys", "--definition",
-         "sessions", "--decided-by", "stefan", "--origin", origin], env)
+    run(
+        [
+            "terms",
+            "define",
+            "--term",
+            "20-day momentum",
+            "--context",
+            "xnys",
+            "--definition",
+            "sessions",
+            "--decided-by",
+            "stefan",
+            "--origin",
+            origin,
+        ],
+        env,
+    )
     spec(b, context="cme")
     r = run(["terms", "apply", str(b)], env)
     assert "0 term(s)" in r.stdout

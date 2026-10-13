@@ -1,4 +1,5 @@
 """Retrieval with dispositions, and two-family derivation with convergence."""
+
 import json
 import os
 import subprocess
@@ -18,9 +19,16 @@ def run(args, env):
 
 
 def entry(eid, shape, context):
-    return {"id": eid, "shape": shape, "context": context, "violation": f"{eid} violation",
-            "enforcement": {"level": "prose", "reason": "r"}, "institutional": False,
-            "fired": [], "admission": []}
+    return {
+        "id": eid,
+        "shape": shape,
+        "context": context,
+        "violation": f"{eid} violation",
+        "enforcement": {"level": "prose", "reason": "r"},
+        "institutional": False,
+        "fired": [],
+        "admission": [],
+    }
 
 
 @pytest.fixture
@@ -34,12 +42,21 @@ def world(tmp_path):
         entry("ticker-reuse", ["entity-join"], ["us-equities"]),
     ]
     (store / "entries.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
-    keys = [("rolling-window", "shape"), ("session-calendar", "shape"), ("entity-join", "shape"),
-            ("crypto-perps", "context"), ("xnys", "context"), ("cme", "context"),
-            ("us-equities", "context")]
-    (store / "keys.jsonl").write_text("".join(
-        json.dumps({"id": k, "kind": kind, "meaning": k, "derived_from": ["c"]}) + "\n"
-        for k, kind in keys))
+    keys = [
+        ("rolling-window", "shape"),
+        ("session-calendar", "shape"),
+        ("entity-join", "shape"),
+        ("crypto-perps", "context"),
+        ("xnys", "context"),
+        ("cme", "context"),
+        ("us-equities", "context"),
+    ]
+    (store / "keys.jsonl").write_text(
+        "".join(
+            json.dumps({"id": k, "kind": kind, "meaning": k, "derived_from": ["c"]}) + "\n"
+            for k, kind in keys
+        )
+    )
     unit = tmp_path / "unit"
     unit.mkdir()
     env = {**os.environ, "VERIFICATION_STORE": str(store)}
@@ -112,14 +129,22 @@ def fake_ask(replies, prompts):
 
 
 def test_families_raise_independently_and_convergence_is_counted(tmp_path):
-    a = {"items": [
-        {"id": "gap", "kind": "premise", "text": "bars are one hour apart"},
-        {"id": "vol-claim", "kind": "claim", "text": "vol is over 168 hours"},
-    ]}
-    b = {"items": [
-        {"id": "hourly-spacing", "kind": "premise", "text": "consecutive rows are an hour apart"},
-        {"id": "symbol-reuse", "kind": "failure-case", "text": "a delisted symbol is relisted"},
-    ]}
+    a = {
+        "items": [
+            {"id": "gap", "kind": "premise", "text": "bars are one hour apart"},
+            {"id": "vol-claim", "kind": "claim", "text": "vol is over 168 hours"},
+        ]
+    }
+    b = {
+        "items": [
+            {
+                "id": "hourly-spacing",
+                "kind": "premise",
+                "text": "consecutive rows are an hour apart",
+            },
+            {"id": "symbol-reuse", "kind": "failure-case", "text": "a delisted symbol is relisted"},
+        ]
+    }
     pairs = {"pairs": [["gap", "hourly-spacing"]]}
     spec = tmp_path / "spec.md"
     spec.write_text(SPEC)
@@ -133,6 +158,8 @@ def test_families_raise_independently_and_convergence_is_counted(tmp_path):
 
 
 def test_item_without_family_fails(tmp_path):
-    (tmp_path / derive.MERGED).write_text(json.dumps({"id": "x", "kind": "premise", "text": "t"}) + "\n")
+    (tmp_path / derive.MERGED).write_text(
+        json.dumps({"id": "x", "kind": "premise", "text": "t"}) + "\n"
+    )
     r = run(["derive", "--unit", str(tmp_path), "--report"], dict(os.environ))
     assert r.returncode == 1 and "x: no family marker" in r.stderr

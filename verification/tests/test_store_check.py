@@ -5,6 +5,7 @@ outgrows its budget, a test file or function renamed in the repository the entry
 points into, an entry added without the field its kind requires, or a store grown
 past the index cap.
 """
+
 import json
 import os
 import subprocess
@@ -75,10 +76,18 @@ def world(tmp_path):
     write_rows(
         store / "keys.jsonl",
         [
-            {"id": "rolling-window", "kind": "shape", "meaning": "window over an ordered series",
-             "derived_from": ["crypto-gap"]},
-            {"id": "crypto-perps", "kind": "context", "meaning": "crypto perpetuals",
-             "derived_from": ["crypto-gap"]},
+            {
+                "id": "rolling-window",
+                "kind": "shape",
+                "meaning": "window over an ordered series",
+                "derived_from": ["crypto-gap"],
+            },
+            {
+                "id": "crypto-perps",
+                "kind": "context",
+                "meaning": "crypto perpetuals",
+                "derived_from": ["crypto-gap"],
+            },
         ],
     )
     env = {**os.environ, "VERIFICATION_STORE": str(store), "HOME": str(tmp_path)}

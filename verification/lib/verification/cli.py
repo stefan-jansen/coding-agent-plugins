@@ -208,8 +208,10 @@ def cmd_replay_run(args):
 def cmd_replay_report(args):
     counts, latest = replay.report(args.out)
     for cause, r in sorted(latest.items()):
-        print(f"{cause}\t{','.join(r.get('components', [])) or 'none'}\t"
-              f"{'blind' if r.get('blind') else 'invalid'}")
+        print(
+            f"{cause}\t{','.join(r.get('components', [])) or 'none'}\t"
+            f"{'blind' if r.get('blind') else 'invalid'}"
+        )
     print(" ".join(f"{k}={v}" for k, v in counts.items()))
     return 1 if counts["invalid"] else 0
 

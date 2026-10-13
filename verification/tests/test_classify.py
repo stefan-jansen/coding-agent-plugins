@@ -1,4 +1,5 @@
 """Independent classification: one family's answers never reach the other's prompt."""
+
 import json
 import os
 import sys
