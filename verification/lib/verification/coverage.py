@@ -120,10 +120,13 @@ def assess(unit, item, row):
     return "finding", [], report
 
 
+def result_name(item):
+    return re.sub(r"[^A-Za-z0-9._-]", "_", item) + ".json"
+
+
 def _record(unit, item, state, problems, report):
     os.makedirs(os.path.join(unit, RESULTS), exist_ok=True)
-    name = re.sub(r"[^A-Za-z0-9._-]", "_", item) + ".json"
-    with open(os.path.join(unit, RESULTS, name), "w", encoding="utf-8") as fh:
+    with open(os.path.join(unit, RESULTS, result_name(item)), "w", encoding="utf-8") as fh:
         json.dump(
             {
                 "item": item,

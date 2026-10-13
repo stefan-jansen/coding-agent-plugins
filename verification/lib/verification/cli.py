@@ -12,6 +12,7 @@ from . import (
     fixture,
     replay,
     retrieval,
+    review,
     store,
     terms,
     units,
@@ -231,6 +232,17 @@ def cmd_violate(args):
     return _report("violate", problems)
 
 
+def cmd_review_table(args):
+    unit = args.unit or os.path.dirname(os.path.abspath(args.file))
+    spec = args.spec or os.path.join(unit, "spec.md")
+    spec_text = _read(spec) if os.path.exists(spec) else None
+    markdown, problems = review.build(unit, _read(args.file), args.issue, spec_text)
+    if problems:
+        return _report("review-table", problems)
+    print(f"wrote {review.write(unit, args.issue, markdown)}")
+    return 0
+
+
 def cmd_fixture_reduce(args):
     ok, message = fixture.reduce(args.src, args.dst, args.filter, args.python)
     print(message, file=sys.stdout if ok else sys.stderr)
@@ -339,6 +351,12 @@ def build_parser():
     vi = groups.add_parser("violate", help="run a test on its violated variant and on correct code")
     vi.add_argument("declaration", help="JSON declaring the test, producer, variant and fixture")
     vi.set_defaults(func=cmd_violate)
+    rv = groups.add_parser("review-table", help="the table the author reviews for one issue")
+    rv.add_argument("file", help="plan.md or one issue body; its directory is the unit")
+    rv.add_argument("--issue", type=int)
+    rv.add_argument("--unit")
+    rv.add_argument("--spec", help="spec.md with the term table (default: the unit's)")
+    rv.set_defaults(func=cmd_review_table)
     fx = groups.add_parser("fixture", help="reduced fixtures for fast tests")
     fx_cmds = fx.add_subparsers(dest="command", required=True)
     fr = fx_cmds.add_parser("reduce", help="filtered copy of a parquet or CSV file, at most 10 MB")
