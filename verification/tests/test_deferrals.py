@@ -66,7 +66,7 @@ def test_deferrals_reports_one_whose_test_already_runs(unit):
 
 def test_deferrals_reports_one_naming_a_closed_issue(unit):
     defer(unit)
-    r = cli("deferrals", unit / "plan.md", "--closed", "2")
+    r = cli("deferrals", unit / "plan.md", "--closed", "1 2")
     assert r.returncode == 1
     assert "full-panel: issue 2 closed without verifying it" in r.stderr
 

@@ -241,7 +241,7 @@ def cmd_violate(args):
 
 
 def _closed(value):
-    return {int(x) for x in _csv(value)}
+    return {int(x) for x in (value or "").replace(",", " ").split()}
 
 
 def cmd_deferrals(args):
