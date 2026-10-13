@@ -63,7 +63,7 @@ Located in `.workspace/memory/`:
 I'll:
 1. **Analyze recent work** for durable learnings
 2. **Update relevant memory files** with new knowledge
-3. **Ensure CLAUDE.md references** are current
+3. **Ensure AGENTS.md references** are current
 4. **Remove outdated information** if any
 
 ## Example Memory Structure
@@ -100,8 +100,8 @@ I'll:
 
 ## Integration with AGENTS.md
 
-AGENTS.md references memory through the index (Claude reads it via
-`CLAUDE.md → @AGENTS.md`):
+AGENTS.md references memory through the index (Claude reads AGENTS.md
+natively, or via a one-line `CLAUDE.md` in older projects):
 
 ```markdown
 ## Project memory

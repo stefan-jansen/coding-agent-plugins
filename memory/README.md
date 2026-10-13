@@ -20,7 +20,8 @@ Individual memory files are read on demand when their topic is relevant.
 
 How it works:
 - `AGENTS.md` includes only `@.workspace/memory/MEMORY_INDEX.md`.
-- `CLAUDE.md` is one line (`@AGENTS.md`), so Claude inherits the same context.
+- Claude Code reads `AGENTS.md` natively when the project has no `CLAUDE.md`; older
+  projects keep a one-line `CLAUDE.md` (`@AGENTS.md`). Either way Claude sees the same context.
 - Stale content silently degrades agent quality — `/memory-gc` consumes
   observed signals (`last_referenced`, `references`, anchor health) to
   produce a proposed status diff; `--execute` applies it transactionally.
@@ -342,7 +343,7 @@ relevance review on top of session start.
 
 ## Troubleshooting
 
-**Memory not loading**: confirm `AGENTS.md` includes `@.workspace/memory/<file>.md` lines and that `CLAUDE.md` contains `@AGENTS.md`. Check files are valid markdown.
+**Memory not loading**: confirm `AGENTS.md` includes `@.workspace/memory/<file>.md` lines and that there is either no `CLAUDE.md` in the project or a parent directory, or it contains `@AGENTS.md`. Check files are valid markdown.
 
 **`/memory-gc` removes too much**: increase the staleness threshold or run with `--dry-run` first. Backups land in `.workspace/work/archives/memory/`.
 

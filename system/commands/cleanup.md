@@ -52,7 +52,7 @@ Reports classified by content and filename:
 project/
 ├── README.md              # Main docs
 ├── AGENTS.md              # Canonical agent doc (Claude + Codex)
-├── CLAUDE.md              # one-liner: @AGENTS.md
+├── CLAUDE.md              # only in older projects, one line: @AGENTS.md
 ├── .workspace/
 │   ├── memory/            # Persistent project state
 │   ├── transitions/       # Session progress

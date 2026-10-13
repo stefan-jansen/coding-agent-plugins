@@ -1,7 +1,7 @@
 ---
 allowed-tools: [Read, Write, Bash, AskUserQuestion]
 argument-hint: "[project-name]"
-description: Bootstrap a project's agent infrastructure (.workspace/ + AGENTS.md + CLAUDE.md) through a short interview. Detects language and existing setup; idempotent; produces the canonical Claude + Codex shared layout.
+description: Bootstrap a project's agent infrastructure (.workspace/ + AGENTS.md, no CLAUDE.md) through a short interview. Detects language and existing setup; idempotent; produces the canonical Claude + Codex shared layout.
 ---
 
 # /setup — bootstrap a project for Claude + Codex
@@ -23,9 +23,13 @@ project.)
   first; ask only the questions the files don't already answer. An empty folder
   needs more questions than a mature repo.
 - **Idempotent.** Safe to re-run. Never overwrite an existing `AGENTS.md`,
-  memory file, or `settings.json` — enrich or skip. `CLAUDE.md` is the one
-  exception: it is always exactly `@AGENTS.md`, so rewriting it is safe.
-- **Canonical layout.** `AGENTS.md` (root) + `CLAUDE.md` (`@AGENTS.md`) +
+  memory file, `CLAUDE.md`, or `settings.json` — enrich or skip.
+- **No `CLAUDE.md`.** Claude Code (v2.1.277+) reads `AGENTS.md` natively, with
+  its `@` imports, but only when no `CLAUDE.md` exists in the project or any
+  directory above it. Creating one would turn that off. An existing project
+  that already has a one-line `@AGENTS.md` `CLAUDE.md` keeps it; it loads the
+  same content and never double-loads.
+- **Canonical layout.** `AGENTS.md` (root) +
   `.workspace/{memory,transitions,work}` (shared state) + `.claude/`
   (Claude-only config). NEVER create `.claude/memory/`,
   `.claude/transitions/`, or `.claude/work/` — those are deprecated.
@@ -282,8 +286,14 @@ else
   echo "kept: $WS/memory/MEMORY_INDEX.md (already present)"
 fi
 
-# CLAUDE.md is always exactly the include (safe to rewrite)
-echo "@AGENTS.md" > CLAUDE.md
+# No CLAUDE.md: Claude Code reads AGENTS.md natively unless a CLAUDE.md exists
+# here or in a parent directory. Report one that would block it.
+[ -f CLAUDE.md ] && echo "kept: CLAUDE.md (existing; it must contain @AGENTS.md)"
+d="$(cd .. && pwd)"
+while [ "$d" != "/" ]; do
+  [ -f "$d/CLAUDE.md" ] && echo "WARNING: $d/CLAUDE.md stops Claude reading this project's AGENTS.md natively"
+  d="$(dirname "$d")"
+done
 echo "infrastructure ready."
 ```
 
@@ -378,8 +388,7 @@ ls -r .workspace/transitions/$(date +%Y-%m-%d)/*.md   # newest first
 ## Agent infrastructure layout
 
 ​```
-AGENTS.md                  # this file — Codex reads natively
-CLAUDE.md                  # one line: @AGENTS.md
+AGENTS.md                  # this file — Claude Code and Codex both read it natively
 .workspace/                # SHARED state for both Claude and Codex
   memory/                  #   curated memory; only MEMORY_INDEX.md is @-included
   memory-auto/             #   Claude auto-memory (harness writes; Codex reads). Kept

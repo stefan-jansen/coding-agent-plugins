@@ -34,7 +34,8 @@ Bootstrap the current directory. Works on an empty folder or an existing repo.
 3. **Generates** (idempotent — never clobbers existing files):
    - `AGENTS.md` — canonical project doc, filled from the interview (not a
      placeholder skeleton)
-   - `CLAUDE.md` — one line, `@AGENTS.md`
+   - no `CLAUDE.md`: Claude Code reads `AGENTS.md` natively (v2.1.277+), and a
+     `CLAUDE.md` in the project or a parent directory would turn that off
    - `.workspace/{memory,memory-auto,transitions,work}` — shared Claude + Codex
      state; `memory-auto/` holds Claude auto-memory and sits outside `memory/`
      so model-written notes stay out of the curated index and `/memory-gc`

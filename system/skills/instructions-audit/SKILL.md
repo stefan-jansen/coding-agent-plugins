@@ -121,7 +121,7 @@ the include/exclude table (category 2) or a fact the repo contradicts
 ### Two more things not to do
 
 - **Do not propose Claude-only content into a shared file.** `AGENTS.md` is
-  canonical for both hosts and `CLAUDE.md` is `@AGENTS.md`. Claude-native
+  canonical for both hosts; `CLAUDE.md` is absent or `@AGENTS.md`. Claude-native
   coverage is not grounds for retiring content Codex reads.
 - **Do not report a mirrored memory directory as inert.** When
   `population.classification` is `mirrored`, a missing `MEMORY.md` means the
