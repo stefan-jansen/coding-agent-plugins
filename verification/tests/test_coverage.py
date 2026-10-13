@@ -143,7 +143,8 @@ def test_one_item_at_each_status_is_counted(unit):
     assert (unit / "repo" / "labels.py").read_text() == LABELS
 
 
-def test_the_gate_opens_once_the_uncovered_item_is_resolved(unit):
+def passing(unit):
+    """Resolve the one uncovered item the way the author would: a waiver."""
     rows = evidence(unit)
     rows[-1] = {
         "item": "hand-built",
@@ -153,6 +154,10 @@ def test_the_gate_opens_once_the_uncovered_item_is_resolved(unit):
         "date": TODAY,
     }
     write_evidence(unit, rows)
+
+
+def test_the_gate_opens_once_the_uncovered_item_is_resolved(unit):
+    passing(unit)
     r = cli("coverage", unit / "plan.md", "--issue", "1")
     assert r.returncode == 0, r.stdout + r.stderr
     assert "covered=1 waived=2 test-unreachable=1 finding=1 uncovered=0" in r.stdout
@@ -166,6 +171,7 @@ def test_an_item_with_no_evidence_is_uncovered(unit):
 
 
 def test_a_verdict_is_recorded_for_the_review_table(unit):
+    passing(unit)
     cli("coverage", unit / "plan.md", "--issue", "1")
     verdict = json.loads((unit / "results" / "horizon.json").read_text())
     assert verdict["state"] == "covered"
@@ -235,3 +241,20 @@ def test_an_issue_without_a_closes_line_is_refused(unit):
     r = cli("coverage", unit / "plan.md", "--issue", "2")
     assert r.returncode == 1
     assert "issue 2 has no `Closes:` line" in r.stderr
+
+
+def snapshot(directory):
+    return {
+        str(p.relative_to(directory)): p.read_bytes()
+        for p in sorted(directory.rglob("*"))
+        if p.is_file() and "__pycache__" not in p.parts and ".pytest_cache" not in p.parts
+    }
+
+
+def test_a_refusal_writes_nothing(unit):
+    # Prevents: a refused gate leaving files behind, so git status differs after the refusal
+    # (criterion 16).
+    before = snapshot(unit)
+    r = cli("coverage", unit / "plan.md", "--issue", "1")
+    assert r.returncode == 1
+    assert snapshot(unit) == before

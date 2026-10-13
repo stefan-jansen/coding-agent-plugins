@@ -6,7 +6,7 @@ import os
 import re
 import sys
 
-from test_coverage import PLAN, cli, evidence, write_evidence
+from test_coverage import PLAN, cli, evidence, passing, write_evidence
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lib"))
 from verification import pointers  # noqa: E402
@@ -25,6 +25,7 @@ Context: crypto
 
 def table(unit):
     (unit / "spec.md").write_text(SPEC)
+    passing(unit)
     cli("coverage", unit / "plan.md", "--issue", "1")
     r = cli("review-table", unit / "plan.md", "--issue", "1")
     path = unit / "review" / "issue-1.md"
@@ -84,6 +85,7 @@ Input: hourly bars
 
 def test_a_tested_premise_must_say_what_error_its_test_targets(unit):
     (unit / "plan.md").write_text(PREMISE_PLAN)
+    passing(unit)
     rows = evidence(unit)
     rows.append({**rows[0], "item": "hourly-bars.ordering-spacing"})
     write_evidence(unit, rows)

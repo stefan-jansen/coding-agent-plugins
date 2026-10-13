@@ -13,7 +13,8 @@ than trusting a recorded verdict. A waiver needs a reason and a date; `test-unre
 the missing prerequisite. A `finding` is a test that fails on the current code: the code lacks
 what the item asks for, so there is no correct version for violate to pass. Coverage confirms
 the test fails there, counts the finding and does not block on it. A finding whose test passes
-is uncovered. Each verdict is written to `<unit>/results/<item>.json` for the review table.
+is uncovered. When every item is covered, each verdict is written to
+`<unit>/results/<item>.json` for the review table; a refusal writes nothing.
 """
 
 import datetime
@@ -124,6 +125,11 @@ def result_name(item):
     return re.sub(r"[^A-Za-z0-9._-]", "_", item) + ".json"
 
 
+def record(unit, verdicts):
+    for item, state, problems, report in verdicts:
+        _record(unit, item, state, problems, report)
+
+
 def _record(unit, item, state, problems, report):
     os.makedirs(os.path.join(unit, RESULTS), exist_ok=True)
     with open(os.path.join(unit, RESULTS, result_name(item)), "w", encoding="utf-8") as fh:
@@ -149,8 +155,8 @@ def issue_body(text, number):
 
 
 def coverage(unit, body, number=None):
-    """({state: count}, [(item, state, problems, row)], refusal). Refusal is a reason the issue
-    cannot be assessed at all, such as no `Closes:` line."""
+    """({state: count}, [(item, state, problems, row, report)], refusal). Refusal is a reason the
+    issue cannot be assessed at all, such as no `Closes:` line. Nothing is written here."""
     closes = units.declared(body, "Closes")
     if closes is None:
         return None, [], f"issue {number} has no `Closes:` line"
@@ -162,9 +168,8 @@ def coverage(unit, body, number=None):
     for item in closes:
         row = rows.get(item)
         state, problems, report = assess(unit, item, row)
-        _record(unit, item, state, problems, report)
         counts[state] += 1
-        out.append((item, state, problems, row))
+        out.append((item, state, problems, row, report))
     return counts, out, None
 
 

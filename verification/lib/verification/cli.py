@@ -187,13 +187,16 @@ def cmd_coverage(args):
     if refusal:
         print(f"coverage: {refusal}", file=sys.stderr)
         return 1
-    for item, state, problems, row in rows:
+    for item, state, problems, row, _ in rows:
         if state == "finding":
             print(f"finding: {item}: filed at {row['filed']}")
         for p in problems:
             print(f"{item}: {p}", file=sys.stderr)
     print(f"issue {args.issue}: " + " ".join(f"{k}={v}" for k, v in counts.items()))
-    return 1 if counts["uncovered"] else 0
+    if counts["uncovered"]:
+        return 1
+    coverage.record(unit, [(i, s, p, rep) for i, s, p, _, rep in rows])
+    return 0
 
 
 def _csv(value):
