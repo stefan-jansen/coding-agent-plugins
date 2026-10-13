@@ -28,7 +28,7 @@ RESULTS = "replays.jsonl"
 
 PROMPT = """You are starting a piece of quantitative work. The specification is below. The
 repository as it stands before the work begins is the current directory; read whatever in it
-helps you.
+helps you.{location}
 
 Before any code is written, list:
 - term: a word or phrase in the specification with more than one reading that would produce
@@ -92,7 +92,7 @@ COMMANDS = {
 }
 
 
-def prompt(spec, store_path):
+def prompt(spec, store_path, repo=None):
     """The spec-time listing as the process now defines it: the premise questions come from the
     store's question set (criterion 3), claims carry the measured-number checklist."""
     qs = units.questions(store_path)
@@ -105,7 +105,14 @@ def prompt(spec, store_path):
     sim = (
         "; the last ones only if it simulates trading" if any(s != "data" for _, s, _ in qs) else ""
     )
-    return PROMPT.format(spec=spec, questions="\n".join(lines), simulation=sim)
+    # The instructions name the repository by its live path, which holds the fix; the agent
+    # reads that path unless told it is the current directory.
+    location = ""
+    if repo:
+        home = os.path.expanduser("~")
+        names = [repo] + (["~" + repo[len(home) :]] if repo.startswith(home + os.sep) else [])
+        location = f" Where the instructions name {' or '.join(names)}, they mean this directory."
+    return PROMPT.format(spec=spec, questions="\n".join(lines), simulation=sim, location=location)
 
 
 def _cause(path, cause_id):
@@ -334,7 +341,7 @@ def run(cause_id, out_dir, root=None, store_path=None, ask=families.ask, ask_in=
         os.makedirs(out_dir, exist_ok=True)
         listed, invalid = [], {}
         for family in ("claude", "gpt"):
-            transcript, final = ask_in(family, prompt(spec, store_path), work)
+            transcript, final = ask_in(family, prompt(spec, store_path, repo), work)
             path = os.path.join(out_dir, f"{run_id}.{family}.jsonl")
             with open(path, "w", encoding="utf-8") as fh:
                 fh.write(transcript)

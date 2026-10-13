@@ -285,6 +285,15 @@ def test_the_environment_link_does_not_name_the_live_repository(world):
     assert list(world["root"].iterdir()) == []
 
 
+def test_the_prompt_maps_the_live_repository_to_the_checkout(world):
+    # Prevents: an agent reading <live repository>/utils/cv_splits.py because AGENTS.md names
+    # the live path, not the checkout (aw-sp500-options-feasibility-decision-quote, 2026-10-13).
+    seen = {}
+    run(world, fake(world, seen=seen), judges([], []))
+    assert f"Where the instructions name {world['repo']}" in seen["prompt"]
+    assert "they mean this directory" in seen["prompt"]
+
+
 def test_the_prompt_asks_the_premise_questions_of_the_current_process(world):
     # Prevents: a replay that measures an older process than the one sessions run, so a
     # change to the question set never shows up in the catch rate.
