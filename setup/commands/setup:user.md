@@ -90,8 +90,8 @@ a shared path convention so state stays in one place:
 
 | Path | Audience | Purpose |
 |---|---|---|
-| `AGENTS.md` (project root) | All agents | Canonical project instructions. Codex reads natively; Claude includes via `CLAUDE.md` one-liner (`@AGENTS.md`). |
-| `CLAUDE.md` (project root) | Claude only | One line: `@AGENTS.md`. |
+| `AGENTS.md` (project root) | All agents | Canonical project instructions. Codex and Claude Code (v2.1.277+) both read it natively. |
+| `CLAUDE.md` (project root) | Claude only | None in new projects: any `CLAUDE.md` here or in a parent directory stops Claude reading `AGENTS.md` natively. Older projects keep a one-line `@AGENTS.md`. |
 | `.workspace/memory/MEMORY_INDEX.md` | All | The **only** memory file `@`-included. Lists every memory file with status, recency and token cost. |
 | `.workspace/memory/*.md` | All, **read on demand** | Persistent project state (`project_state.md`, `conventions.md`, `decisions.md`). Never `@`-included: that bypasses the memory budget. |
 | `.workspace/transitions/YYYY-MM-DD/HHMMSS.md` | All | Session progress, one file per event. The `transition` plugin's own hooks write these. Shared across agents. |

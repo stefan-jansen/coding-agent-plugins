@@ -1,7 +1,7 @@
 ---
 name: code-reviewer
 description: Code review, documentation quality, security audit, and quality assurance specialist with structured reasoning and semantic code analysis
-tools: Read, Write, MultiEdit, Grep, mcp__sequential-thinking__sequentialthinking, mcp__serena__find_symbol, mcp__serena__search_for_pattern, mcp__serena__get_symbols_overview, mcp__serena__find_referencing_symbols
+tools: Read, Write, Edit, Grep, Glob, mcp__sequential-thinking__sequentialthinking, mcp__serena__find_symbol, mcp__serena__search_for_pattern, mcp__serena__get_symbols_overview, mcp__serena__find_referencing_symbols
 ---
 
 # Code Reviewer Agent

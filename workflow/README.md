@@ -62,7 +62,7 @@ These are Claude-only and have no Codex mirror. They track work in
 
 | Path | Contents |
 |---|---|
-| `AGENTS.md` | Project instructions. Codex reads it natively; Claude includes it from a one-line `CLAUDE.md`. |
+| `AGENTS.md` | Project instructions. Codex and Claude Code both read it natively; older projects also have a one-line `CLAUDE.md` (`@AGENTS.md`). |
 | `.workspace/work/<unit>/` | `spec.md`, `plan.md`, and the notes for one piece of work. |
 | `.workspace/transitions/` | Session handoffs. |
 | `.workspace/memory/` | Facts that survive a `/clear`. |

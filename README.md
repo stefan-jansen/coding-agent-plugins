@@ -23,9 +23,9 @@ scripts/enable.sh --list             # show what is enabled
 
 The script merges into `~/.claude/settings.json`, so the plugins are on in every project on this machine and no project repo carries agent config. It is idempotent and backs the file up before its first change. To do it by hand, or to scope plugins to one project instead, see [Where to enable](#where-to-enable).
 
-### 3. Restart Claude Code
+### 3. Reload plugins
 
-Plugins, their hooks, and settings are read at session start and are not hot-reloaded. Restart the session (or `Cmd/Ctrl+Shift+P → Claude Code: Restart` in VS Code) after enabling a plugin or editing one.
+Run `/reload-plugins` in a running session to pick up a newly enabled or edited plugin, or start a new session.
 
 ## Plugins
 
@@ -33,7 +33,7 @@ Plugins, their hooks, and settings are read at session start and are not hot-rel
 
 | Plugin | Ships | Description |
 |---|---|---|
-| `workflow` | `/align` `/plan` `/plan-issues` `/next-issue` `/ship` `/handoff` `/continue` `/delegate` `/next` `/work` `/spike` | Structured task execution — spec → issues → implement → deliver, plus session handoffs |
+| `workflow` | `/align` `/decompose` `/plan-issues` `/next-issue` `/ship` `/handoff` `/continue` `/delegate` `/next` `/work` `/spike` | Structured task execution — spec → issues → implement → deliver, plus session handoffs |
 | `memory` | `/memory-gc` `/memory-review` `/memory-update` `/index` `/performance` | Persistent project memory under a token budget |
 | `transition` | PreCompact / PostCompact / SessionEnd hooks | Write a session summary to `.workspace/transitions/YYYY-MM-DD/HHMMSS.md` on every compaction |
 | `development` | `/analyze` `/review` `/docs` `/test` `/fix` `/git` `/prepare-review` | Code analysis, review, TDD, debugging, docs, git |
@@ -90,7 +90,7 @@ It links rather than copies, so one edit changes the skill for both agents with 
 
 ## Troubleshooting
 
-**Commands not appearing after enabling a plugin.** Restart Claude Code; plugins are resolved at session start.
+**Commands not appearing after enabling a plugin.** Run `/reload-plugins`, or start a new session.
 
 **A skill works in Claude Code but Codex does not know it.** Run `scripts/sync-codex-skills.sh`. See [Using the skills from Codex](#using-the-skills-from-codex).
 

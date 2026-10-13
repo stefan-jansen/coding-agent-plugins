@@ -1,7 +1,7 @@
 ---
 name: reasoning-specialist
 description: Complex analysis and structured reasoning specialist for deep problem-solving
-tools: Read, Write, MultiEdit, Grep, WebSearch, mcp__sequential-thinking__sequentialthinking, mcp__context7__resolve-library-id, mcp__context7__get-library-docs
+tools: Read, Write, Edit, Grep, Glob, WebSearch, mcp__sequential-thinking__sequentialthinking, mcp__context7__resolve-library-id, mcp__context7__query-docs
 ---
 
 # Reasoning Specialist Agent

@@ -1,16 +1,16 @@
 {
   "name": "local",
   "owner": {
-    "name": "Stefan Jansen"
+    "name": "Stefan Jansen",
+    "url": "https://github.com/stefan-jansen/coding-agent-plugins"
   },
   "description": "Plugin marketplace for coding-agent-toolkit - modular development, workflow, memory, and code-quality plugins for Claude Code",
-  "homepage": "https://github.com/stefan-jansen/coding-agent-plugins",
   "plugins": [
     {
       "name": "system",
       "source": "./system",
       "description": "System configuration and health management",
-      "version": "1.4.0",
+      "version": "1.5.2",
       "keywords": [
         "utilities",
         "system",
@@ -22,7 +22,7 @@
       "name": "workflow",
       "source": "./workflow",
       "description": "Structured development workflow - explore, plan, implement, deliver",
-      "version": "1.3.0",
+      "version": "1.6.1",
       "keywords": [
         "workflow",
         "tasks",
@@ -33,7 +33,7 @@
       "name": "development",
       "source": "./development",
       "description": "Code development and quality assurance tools - analyze, test, fix, review",
-      "version": "1.2.0",
+      "version": "1.3.1",
       "keywords": [
         "development",
         "testing",
@@ -45,7 +45,7 @@
       "name": "memory",
       "source": "./memory",
       "description": "Active memory management and maintenance for Claude Code framework",
-      "version": "2.1.0",
+      "version": "2.3.2",
       "keywords": [
         "memory",
         "knowledge",
@@ -69,7 +69,7 @@
       "name": "setup",
       "source": "./setup",
       "description": "Project initialization and Claude Code configuration",
-      "version": "2.1.0",
+      "version": "2.4.0",
       "keywords": [
         "setup",
         "initialization",
@@ -92,7 +92,7 @@
     {
       "name": "roborev",
       "source": "./roborev",
-      "description": "SessionStart summary of open roborev reviews on the current branch \u2014 pairs with /setup:* roborev init step",
+      "description": "SessionStart summary of open roborev reviews on the current branch — pairs with /setup:* roborev init step",
       "version": "0.1.0",
       "keywords": [
         "roborev",

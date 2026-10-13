@@ -47,14 +47,14 @@ Create persistent project understanding that survives sessions.
    - Testing: [approach]
    ```
 
-3. **Auto-import to CLAUDE.md**
-   - Add `@.claude/PROJECT_MAP.md` import
-   - Create CLAUDE.md if doesn't exist
+3. **Auto-import to AGENTS.md**
+   - Add `@.claude/PROJECT_MAP.md` import to `AGENTS.md`
+   - Never create `CLAUDE.md`: one would stop Claude reading `AGENTS.md` natively
 
 ## Output
 
 - `.claude/PROJECT_MAP.md` - Project understanding
-- CLAUDE.md updated with import
+- AGENTS.md updated with import
 
 ## Benefits
 
