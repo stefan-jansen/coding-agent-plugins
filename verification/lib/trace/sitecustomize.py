@@ -1,12 +1,19 @@
-"""Pytest plugin loaded by `verification violate`: records which code the test run executed.
+"""Loaded at interpreter start by every Python process `verification violate` runs, through
+PYTHONPATH: records which code ran, in the test process and in every child it starts.
 
-It writes JSON to $VERIFICATION_TRACE_OUT at the end of the session:
+A pipeline runner that starts each stage as `python stage.py` runs the producer in a child
+process; a trace of the test process alone reports such a producer as never executed.
+
+When $VERIFICATION_TRACE_DIR is set, each process writes <pid>.json there at exit:
     {"functions": [[file, name], ...], "lines": [[file, line], ...]}
 Functions are every Python function or module body that started. Lines are recorded only for
 the file:line pairs listed in $VERIFICATION_TRACE_LINES (comma-separated), which is where a
-code mutation was applied.
+code mutation was applied. A child that ends with os._exit (a multiprocessing worker) or is
+killed writes nothing. Any sitecustomize later on sys.path still runs.
 """
 
+import atexit
+import importlib.util
 import json
 import os
 import sys
@@ -61,16 +68,30 @@ def _start_tracing():
     sys.settrace(call)
 
 
-def pytest_configure(config):
+def _dump(directory):
+    with open(os.path.join(directory, f"{os.getpid()}.json"), "w", encoding="utf-8") as fh:
+        json.dump({"functions": sorted(_functions), "lines": sorted(_lines)}, fh)
+
+
+def _chain():
+    """Run the sitecustomize this module shadows, if one is further down sys.path."""
+    here = os.path.dirname(os.path.realpath(__file__))
+    for entry in sys.path:
+        if not entry or os.path.realpath(entry) == here:
+            continue
+        candidate = os.path.join(entry, "sitecustomize.py")
+        if os.path.isfile(candidate):
+            spec = importlib.util.spec_from_file_location("_shadowed_sitecustomize", candidate)
+            spec.loader.exec_module(importlib.util.module_from_spec(spec))
+            return
+
+
+_directory = os.environ.get("VERIFICATION_TRACE_DIR")
+if _directory and os.path.isdir(_directory):
     _watch()
     if hasattr(sys, "monitoring"):
         _start_monitoring()
     else:
         _start_tracing()
-
-
-def pytest_unconfigure(config):
-    out = os.environ.get("VERIFICATION_TRACE_OUT")
-    if out:
-        with open(out, "w", encoding="utf-8") as fh:
-            json.dump({"functions": sorted(_functions), "lines": sorted(_lines)}, fh)
+    atexit.register(_dump, _directory)
+_chain()

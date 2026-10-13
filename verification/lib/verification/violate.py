@@ -20,17 +20,21 @@ mutation's lines must execute in the violated run; a perturbation must be called
 "violated") when its variant is a perturbation; a mutation is applied to the file and needs no
 cooperation from the test.
 
-The trace records which functions ran, not which object reached the check. A test that calls
+The trace covers every Python process the test run starts, so a producer that a pipeline
+runner executes as a stage subprocess counts as run. It records which functions ran, not which
+object reached the check. A test that calls
 the producer and then hands the check a frame it built anyway is not caught here; reviewing the
 declared test is still required.
 """
 
+import glob
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 
-PLUGIN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "pytest_plugin")
+TRACE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "trace")
 PERTURBATIONS_FILE = os.path.join("diagnostic", "evaluation", "violations.py")
 TEST_FAILED = 1
 
@@ -84,26 +88,30 @@ def _mutated_lines(text, old, new):
 
 
 def _run(decl, variant, watch_lines):
-    with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as fh:
-        trace_out = fh.name
+    """Run the test once. Every Python process it starts, the test process and any stage it
+    launches as a child, loads trace/sitecustomize.py and records what it executed."""
+    trace_dir = tempfile.mkdtemp(prefix="verification-trace-")
     env = {
         **os.environ,
         "VERIFICATION_VARIANT": variant,
-        "VERIFICATION_TRACE_OUT": trace_out,
+        "VERIFICATION_TRACE_DIR": trace_dir,
         "VERIFICATION_TRACE_LINES": ",".join(f"{p}:{n}" for p, n in watch_lines),
-        "PYTHONPATH": os.pathsep.join(filter(None, [PLUGIN_DIR, os.environ.get("PYTHONPATH")])),
+        "PYTHONPATH": os.pathsep.join(filter(None, [TRACE_DIR, os.environ.get("PYTHONPATH")])),
     }
-    cmd = [*decl["command"], "-p", "verification_trace", "-p", "no:cacheprovider", decl["test"]]
-    proc = subprocess.run(cmd, cwd=decl["root"], env=env, capture_output=True, text=True)
+    cmd = [*decl["command"], "-p", "no:cacheprovider", decl["test"]]
+    functions, lines = set(), set()
     try:
-        with open(trace_out, encoding="utf-8") as fh:
-            trace = json.load(fh)
-    except (OSError, ValueError):
-        trace = {"functions": [], "lines": []}
+        proc = subprocess.run(cmd, cwd=decl["root"], env=env, capture_output=True, text=True)
+        for path in glob.glob(os.path.join(trace_dir, "*.json")):
+            try:
+                with open(path, encoding="utf-8") as fh:
+                    trace = json.load(fh)
+            except (OSError, ValueError):
+                continue
+            functions |= {tuple(f) for f in trace["functions"]}
+            lines |= {tuple(x) for x in trace["lines"]}
     finally:
-        os.unlink(trace_out)
-    functions = {tuple(f) for f in trace["functions"]}
-    lines = {tuple(x) for x in trace["lines"]}
+        shutil.rmtree(trace_dir, ignore_errors=True)
     return proc, functions, lines
 
 

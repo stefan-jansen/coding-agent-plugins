@@ -92,6 +92,27 @@ def test_gap_check_swapping_in_a_built_frame():
 
 def test_gap_check_that_never_perturbs():
     no_gaps(observations.build([(t, 1.0) for t in range(48)]))
+
+
+def test_labels_from_the_stage_script():
+    import json
+    import subprocess
+    import sys
+
+    run = subprocess.run([sys.executable, "stage.py"], capture_output=True, text=True, check=True)
+    labels = json.loads(run.stdout)
+    assert labels and all(x["exit_t"] - x["t"] == 2 for x in labels)
+'''
+
+STAGE = '''\
+"""Run as its own process, as a pipeline runner starts each stage."""
+import json
+
+import observations
+from labels import label
+
+RAW = [(t, 100.0 + t) for t in range(48) if not 20 <= t < 23]
+print(json.dumps(label(observations.build(RAW), 2)))
 '''
 
 ROW_LABEL = {
@@ -107,6 +128,7 @@ def repo(tmp_path):
     files = {
         "observations.py": OBSERVATIONS,
         "labels.py": LABELS,
+        "stage.py": STAGE,
         "test_pipeline.py": TESTS,
         "ml4t/__init__.py": "",
         "ml4t/diagnostic/__init__.py": "",
@@ -202,3 +224,11 @@ def test_violated_input_built_by_hand_is_rejected(repo):
     r = violate(repo, "test_gap_check_swapping_in_a_built_frame", {"perturbation": "drop_window"})
     assert r.returncode == 1
     assert "violated run: producer observations.py never executed" in r.stderr
+
+
+def test_producer_run_in_a_child_process_is_traced(repo):
+    # Prevents: rejecting a sound test because the producer runs in a stage subprocess, as
+    # R2P's run.py starts every stage; the trace saw only the pytest process.
+    r = violate(repo, "test_labels_from_the_stage_script", {"mutation": ROW_LABEL}, "labels.py")
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "violated run: exit 1" in r.stdout
