@@ -334,3 +334,28 @@ def test_an_oversized_reduced_fixture_is_refused_before_anything_runs(repo):
     assert "fixture big: big.json is over 10 MB" in r.stderr
     assert "correct run" not in r.stdout
     assert (repo / "bars.json").read_text() == BARS
+
+
+def test_a_relative_root_is_resolved_from_the_declaration(repo, tmp_path_factory):
+    # Prevents: a declaration committed in a repository working only from one directory.
+    unit = repo / ".workspace" / "work" / "u1"
+    unit.mkdir(parents=True)
+    decl = {
+        "test": "test_pipeline.py::test_labels_span_the_horizon",
+        "root": "../../..",
+        "command": [sys.executable, "-m", "pytest", "-q"],
+        "producer": "observations.py",
+        "variant": {"mutation": ROW_LABEL},
+        "fixture": "RAW in test_pipeline.py",
+    }
+    (unit / "horizon.json").write_text(json.dumps(decl))
+    elsewhere = tmp_path_factory.mktemp("elsewhere")
+    env = {**os.environ, "PYTHONPATH": str(repo)}
+    r = subprocess.run(
+        [sys.executable, BIN, "violate", str(unit / "horizon.json")],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=elsewhere,
+    )
+    assert r.returncode == 0, r.stdout + r.stderr

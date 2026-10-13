@@ -55,8 +55,8 @@ FIXTURE_LIMIT = 10 * 1024 * 1024
 def load(path):
     with open(path, encoding="utf-8") as fh:
         decl = json.load(fh)
-    root = os.path.expanduser(decl.get("root") or os.path.dirname(os.path.abspath(path)))
-    decl["root"] = root
+    here = os.path.dirname(os.path.abspath(path))
+    decl["root"] = os.path.normpath(os.path.join(here, os.path.expanduser(decl.get("root") or ".")))
     decl.setdefault("command", ["python", "-m", "pytest"])
     return decl
 
