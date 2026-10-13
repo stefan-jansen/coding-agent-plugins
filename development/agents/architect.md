@@ -1,7 +1,7 @@
 ---
 name: architect
 description: System design and architectural decisions specialist with structured reasoning
-tools: Read, Write, MultiEdit, Grep, WebSearch, WebFetch, mcp__sequential-thinking__sequentialthinking
+tools: Read, Write, Edit, Grep, Glob, WebSearch, WebFetch, mcp__sequential-thinking__sequentialthinking
 ---
 
 # System Architect Agent

@@ -1,5 +1,4 @@
 ---
-name: system:status
 description: Unified view of work, system, and memory state
 allowed-tools: [Read, Bash, Glob]
 argument-hint: "[verbose]"

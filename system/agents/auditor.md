@@ -1,7 +1,7 @@
 ---
 name: auditor
 description: Unified compliance auditor for work progress and system setup with intelligent documentation verification
-tools: [Read, Write, Edit, Bash, Grep, Glob, LS, mcp__context7__resolve-library-id, mcp__context7__get-library-docs]
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__context7__resolve-library-id, mcp__context7__query-docs
 ---
 
 # Auditor Agent

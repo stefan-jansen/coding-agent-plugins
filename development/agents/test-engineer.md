@@ -1,7 +1,7 @@
 ---
 name: test-engineer
 description: Test creation, coverage analysis, and quality assurance specialist with semantic code understanding
-tools: Read, Write, MultiEdit, Grep, mcp__serena__find_symbol, mcp__serena__search_for_pattern, mcp__serena__get_symbols_overview, mcp__serena__find_referencing_symbols
+tools: Read, Write, Edit, Bash, Grep, Glob, mcp__serena__find_symbol, mcp__serena__search_for_pattern, mcp__serena__get_symbols_overview, mcp__serena__find_referencing_symbols
 ---
 
 # Test Engineer Agent
