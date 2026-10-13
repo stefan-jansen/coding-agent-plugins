@@ -11,6 +11,7 @@ from . import (
     coverage,
     derive,
     fixture,
+    misses,
     replay,
     retrieval,
     review,
@@ -101,6 +102,28 @@ def cmd_store_sources(_args):
         return 0
     missing = admission.sourceless(path)
     return _report("sources", [f"{i}: institutional, no source" for i in missing])
+
+
+def cmd_miss_record(args):
+    path = _store_or_absent()
+    if path is None:
+        return 1
+    problems = misses.record(
+        path, args.id, args.defect, args.classification or [], args.reported_by, args.pointer
+    )
+    if problems:
+        return _report("miss record (nothing written)", problems)
+    print(f"recorded: {args.id} ({args.classification[0]})")
+    return 0
+
+
+def cmd_miss_report(_args):
+    path = _store_or_absent()
+    if path is None:
+        return 0
+    for name, n in misses.report(path).items():
+        print(f"{name}\t{n}")
+    return 0
 
 
 def cmd_corpus_report(_args):
@@ -374,6 +397,18 @@ def build_parser():
     st_cmds.add_parser(
         "sources", help="fail on an institutional entry without an authoritative source"
     ).set_defaults(func=cmd_store_sources)
+    mi = groups.add_parser("miss", help="defects named by a person that the process missed")
+    mi_cmds = mi.add_subparsers(dest="cmd", required=True)
+    mr = mi_cmds.add_parser("record", help="record a miss against the component that missed it")
+    mr.add_argument("id", help="slug for the miss")
+    mr.add_argument("--defect", required=True, help="the defect, one line")
+    mr.add_argument("--reported-by", required=True, help="who named it")
+    mr.add_argument(
+        "--classification", action="append", help="term, premise, claim, retrieval or test"
+    )
+    mr.add_argument("--pointer", help="where the defect is recorded, as a store pointer")
+    mr.set_defaults(func=cmd_miss_record)
+    mi_cmds.add_parser("report", help="misses per component").set_defaults(func=cmd_miss_report)
     co = groups.add_parser("corpus", help="the corpus of shipped defects")
     co_cmds = co.add_subparsers(dest="command", required=True)
     co_cmds.add_parser("report", help="recoverable share and classification").set_defaults(
