@@ -120,6 +120,12 @@ def _git(repo, *args):
     ).stdout
 
 
+def commit_of(cause):
+    """(repository path with ~ expanded, sha) from a cause's pre_defect_commit pointer."""
+    repo, sha = cause["pre_defect_commit"].split("@")
+    return os.path.expanduser(repo), sha
+
+
 def path_at(repo, sha, path):
     """The name `path` had at `sha`, following renames made after it."""
     log = _git(repo, "log", "--follow", "--name-status", "--format=@%H", "--", path)
@@ -142,7 +148,7 @@ def spec_text(cause):
 
     A path is read at the pre-defect commit. An issue is read as it is now, with its last edit
     time, so a body edited after the work began is flagged rather than silently used."""
-    repo, sha = cause["pre_defect_commit"].split("@")
+    repo, sha = commit_of(cause)
     ref = cause.get("spec") or ""
     started = _git(repo, "show", "-s", "--format=%cI", sha).strip()
     if ref.startswith("https://github.com/"):
@@ -179,6 +185,7 @@ def spec_text(cause):
         return f"# {data['title']}\n\n{data['body']}", {"spec": ref, "edited_after_start": late}
     if ":" in ref:
         spec_repo, path = ref.split(":", 1)
+        spec_repo = os.path.expanduser(spec_repo)
         if os.path.realpath(spec_repo) == os.path.realpath(repo):
             try:
                 return _git(repo, "show", f"{sha}:{path_at(repo, sha, path)}"), {
@@ -199,7 +206,7 @@ def forbidden(cause, store_path):
     """Paths and names whose appearance in a tool call means the replay read what it must not:
     the store, the cause, the live repository (which holds the fix), and the record of the
     defect. Reads inside the exported checkout are the point of the replay and are allowed."""
-    repo = cause["pre_defect_commit"].split("@")[0]
+    repo = commit_of(cause)[0]
     banned = {
         os.path.realpath(store_path),
         "verification-store",
@@ -211,7 +218,10 @@ def forbidden(cause, store_path):
     for field in ("reproduction", "evidence"):
         ref = cause.get(field) or ""
         if ":" in ref and not ref.startswith("http"):
-            banned.add(os.path.join(*ref.split(":", 1)))
+            banned.add(os.path.expanduser(os.path.join(*ref.split(":", 1))))
+    # A tool call may spell a path under the home directory either way.
+    home = os.path.expanduser("~")
+    banned |= {"~" + b[len(home) :] for b in banned if b.startswith(home + os.sep)}
     return sorted(banned)
 
 
@@ -285,7 +295,7 @@ def run(cause_id, out_dir, root=None, store_path=None, ask=families.ask, ask_in=
     spec, provenance = spec_text(cause)
     if spec is None:
         return {"cause_id": cause_id, "skipped": provenance["missing"], **provenance}
-    repo, sha = cause["pre_defect_commit"].split("@")
+    repo, sha = commit_of(cause)
     work = os.path.join(root or tempfile.gettempdir(), "w" + secrets.token_hex(4))
     os.makedirs(work)
     archive = subprocess.run(["git", "-C", repo, "archive", sha], capture_output=True, check=True)

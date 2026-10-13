@@ -318,3 +318,17 @@ def test_a_run_that_adds_easier_causes_does_not_count_as_an_improvement(tmp_path
     hist = replay.history(str(runs), str(history_store(tmp_path)))
     assert hist["runs"][1]["rates"]["term"] > hist["runs"][0]["rates"]["term"]
     assert "term" not in hist["improved"] and "term" in hist["next"]["components"]
+
+
+def test_a_cause_written_with_home_relative_pointers_replays(world, monkeypatch):
+    # Prevents: causes traced into the store as ~/repo@sha (the store's pointer form) failing
+    # every replay because git is handed an unexpanded ~.
+    monkeypatch.setenv("HOME", str(world["repo"].parent))
+    cause = json.loads((world["store"] / "causes.jsonl").read_text())
+    for field in ("spec", "pre_defect_commit", "reproduction"):
+        cause[field] = cause[field].replace(str(world["repo"]), "~/project")
+    (world["store"] / "causes.jsonl").write_text(json.dumps(cause) + "\n")
+    seen = {}
+    r = run(world, fake(world, seen=seen, claude_reads=["~/project/audit.md"]), judges([], []))
+    assert "Label each ETF over 21 sessions." in seen["prompt"]
+    assert r["blind"] is False  # ~/project is the live repository, banned in either spelling
