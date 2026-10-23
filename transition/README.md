@@ -43,24 +43,26 @@ where the files land.
 
 ## Hooks (plugin-owned, v1.2.0+)
 
-The plugin registers its own compaction and session-end hooks via
-`hooks/hooks.json`, so enabling `transition@local` (or the marketplace
-equivalent) is sufficient — no per-project wiring in `settings.json`. All three
-resolve their target from `$CLAUDE_PROJECT_DIR` (the top-level project dir Claude
+The plugin registers its own compaction hooks via `hooks/hooks.json`, so
+enabling `transition@local` (or the marketplace equivalent) is sufficient — no
+per-project wiring in `settings.json`. Both resolve their target from `$CLAUDE_PROJECT_DIR` (the top-level project dir Claude
 Code always sets for hooks), which is why they are safe to register at the plugin
 level.
 
 - **`PreCompact`** (`auto|manual`) → `hooks/pre-compact.sh` — emits custom
   instructions telling Claude what to preserve in the compaction summary
-  (current task, decisions, active files, blockers). Additively surfaces a
-  `/memory-gc` staleness nudge when the memory plugin's sidecar is present and
-  overdue.
+  (current task, decisions, active files, blockers). Its stdout reaches the
+  summarizer (verified 2026-10-23); about 250 tokens per compaction.
 - **`PostCompact`** (`auto|manual`) → `hooks/post-compact.sh` — writes the
-  compaction summary to a timestamped `<transitions>/YYYY-MM-DD/HHMMSS.md`
-  (one file per event - the same convention `/handoff` uses).
-- **`SessionEnd`** → `hooks/session-end.sh` — appends a session-exit marker to
-  today's most-recent transition file, or does nothing if none exists (a bare
-  marker file would be the thin-file anti-pattern below).
+  compaction summary, minus the `<analysis>` scratch block, to a timestamped
+  `<transitions>/YYYY-MM-DD/HHMMSS.md` (one file per event - the same convention
+  `/handoff` uses). It copies the summary Claude Code already generated; there
+  is no second model call. The file outlives Claude's transcript retention
+  (`cleanupPeriodDays`, default 30) and is readable by Codex and other sessions.
+
+The `SessionEnd` marker hook and the stale-`/memory-gc` nudge were removed on
+2026-10-23: nothing read the marker, and the memory plugin's SessionStart hook
+already reports the nudge.
 
 `hooks/init-transition.sh` is retained but **unregistered**. The old
 `UserPromptSubmit` hourly-stub hook was removed on 2026-08-05: it created an
@@ -72,17 +74,10 @@ stray `.workspace/` there. Do not recreate a per-hour auto-stub.
 
 ## Manual handoffs
 
-Automatic capture covers compaction and session end. For the cases with no
-compaction event — before `/clear`, a Claude↔Codex host swap, or a deliberate
-milestone checkpoint — use the **`workflow` plugin's host-neutral skills**:
-
-- `/handoff` — write a durable transition at
-  `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`
-- `/continue` — resume from the most recent handoff (runs its verification
-  snapshot, reports drift, surfaces suggested next steps)
-
-This plugin no longer ships its own `handoff`/`continue` commands; the workflow
-skills are the single, richer implementation.
+Automatic capture covers compaction. On the same host, `claude --continue` /
+`--resume` and `codex resume` restore a session. For a Claude↔Codex host swap,
+or a deliberate `/clear` that must start from curated state, use the
+**`workflow` plugin's `/handoff`**; `/continue` resumes from it on either host.
 
 ---
 
@@ -108,14 +103,9 @@ skills are the single, richer implementation.
 
 **Typical flow**:
 
-1. Work on task until context >80% (or reach a milestone / a host swap)
-2. `/handoff` (workflow plugin) — create a durable handoff
-3. `/clear` — free conversation tokens
-4. `/continue` (workflow plugin) — resume with recap
-5. Continue work with fresh context
-
-Between those manual checkpoints, auto-capture fires on every compaction and at
-session end with no action needed.
+- Long sessions: auto-compaction (`autoCompactWindow`, 300K in the settings
+  template) compacts; this plugin shapes and copies the summary. No action.
+- Host swap: `/handoff` on one host, `/continue` on the other.
 
 ---
 

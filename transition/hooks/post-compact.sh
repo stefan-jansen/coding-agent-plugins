@@ -13,11 +13,14 @@
 INPUT=$(cat)
 
 # Extract fields
+# Drop the <analysis> scratch block: Claude Code strips it before the model sees
+# the summary, so storing it only adds bytes (~15% of summary files measured).
 SUMMARY=$(echo "$INPUT" | python3 -c "
-import sys, json
+import re, sys, json
 try:
     data = json.loads(sys.stdin.read())
-    print(data.get('compact_summary', ''))
+    s = data.get('compact_summary', '')
+    print(re.sub(r'<analysis>.*?</analysis>\\s*', '', s, flags=re.S).strip())
 except: pass
 " 2>/dev/null)
 
