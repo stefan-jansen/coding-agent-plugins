@@ -35,7 +35,7 @@ Run `/reload-plugins` in a running session to pick up a newly enabled or edited 
 |---|---|---|
 | `workflow` | `/align` `/decompose` `/plan-issues` `/next-issue` `/ship` `/handoff` `/continue` `/delegate` `/next` `/work` `/spike` | Structured task execution — spec → issues → implement → deliver, plus session handoffs |
 | `memory` | `/memory-gc` `/memory-review` `/memory-update` `/index` `/performance` | Persistent project memory under a token budget |
-| `transition` | PreCompact / PostCompact / SessionEnd hooks | Write a session summary to `.workspace/transitions/YYYY-MM-DD/HHMMSS.md` on every compaction |
+| `transition` | PreCompact / PostCompact hooks | Write a session summary to `.workspace/transitions/YYYY-MM-DD/HHMMSS.md` on every compaction |
 | `development` | `/analyze` `/review` `/docs` `/test` `/fix` `/git` `/prepare-review` | Code analysis, review, TDD, debugging, docs, git |
 | `system` | `/audit` `/cleanup` `/status` | Framework health, cleanup, unified status view |
 | `setup` | `/setup` `/setup:user` | Project initialization (interview-driven) + global user config — enable once, disable after |

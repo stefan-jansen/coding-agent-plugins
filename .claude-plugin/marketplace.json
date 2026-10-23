@@ -22,7 +22,7 @@
       "name": "workflow",
       "source": "./workflow",
       "description": "Structured development workflow - explore, plan, implement, deliver",
-      "version": "1.6.1",
+      "version": "1.6.2",
       "keywords": [
         "workflow",
         "tasks",
@@ -56,8 +56,8 @@
     {
       "name": "transition",
       "source": "./transition",
-      "description": "Session transition and handoff management - seamless context continuity across sessions",
-      "version": "1.4.0",
+      "description": "Copies each compaction summary to .workspace/transitions/ and shapes it as a handoff",
+      "version": "1.5.0",
       "keywords": [
         "transition",
         "handoff",

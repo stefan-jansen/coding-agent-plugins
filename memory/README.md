@@ -339,7 +339,7 @@ relevance review on top of session start.
 | workflow | `/ship` and `/align` trigger update suggestions |
 | development | `/review` proposes convention updates |
 | system | `/system:status` shows memory size; `/cleanup` archives unused files |
-| transition | `/handoff` and `/continue` read memory for session context; `pre-compact.sh` extended to also fire the memory-budget nudge when `/memory-gc` is stale |
+| transition | `/handoff` and `/continue` read memory for session context |
 
 ## Troubleshooting
 

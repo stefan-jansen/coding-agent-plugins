@@ -46,16 +46,17 @@ CLAUDE_PROJECT_DIR="$R" CLAUDE_TRANSITIONS_DIR="$ABS" \
 check "absolute override -> that path" "$ABS/$TODAY/*.md"
 rm -rf "$R" "$ABS"
 
-echo "session-end.sh"
+echo "post-compact.sh content"
+# A real compact_summary carries an <analysis> scratch block before <summary>.
+# Storing it wastes ~15% of every file; the summary body must survive intact.
 R=$(newroot)
-CLAUDE_PROJECT_DIR="$R" CLAUDE_TRANSITIONS_DIR="transitions" \
-    bash "$HOOKS/post-compact.sh" <<<"$SUMMARY" >/dev/null
-CLAUDE_PROJECT_DIR="$R" CLAUDE_TRANSITIONS_DIR="transitions" \
-    bash "$HOOKS/session-end.sh" <<<'{"reason":"clear"}' >/dev/null
-if grep -q "Session ended (clear)" "$R"/transitions/"$TODAY"/*.md 2>/dev/null; then
-    echo "  ok   annotates the overridden dir"; PASS=$((PASS+1))
+CLAUDE_PROJECT_DIR="$R" bash "$HOOKS/post-compact.sh" \
+    <<<'{"trigger":"auto","compact_summary":"<analysis>\nscratch reasoning ANALYSIS-MARK\n</analysis>\n\n<summary>\n1. Primary Request: SUMMARY-MARK\n</summary>"}' >/dev/null
+F=$(ls "$R"/.workspace/transitions/"$TODAY"/*.md 2>/dev/null | head -1)
+if [ -n "$F" ] && grep -q "SUMMARY-MARK" "$F" && ! grep -q "ANALYSIS-MARK" "$F"; then
+    echo "  ok   drops <analysis>, keeps <summary>"; PASS=$((PASS+1))
 else
-    echo "  FAIL annotates the overridden dir"; FAIL=$((FAIL+1))
+    echo "  FAIL drops <analysis>, keeps <summary>"; FAIL=$((FAIL+1))
 fi
 rm -rf "$R"
 

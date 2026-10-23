@@ -136,7 +136,7 @@ touch "$WS/memory-auto/.gitkeep" "$WS/transitions/.gitkeep" "$WS/work/.gitkeep"
 mkdir -p "$CL/commands"
 
 # NOTE: transition capture is handled by the `transition` plugin's own
-# PreCompact/PostCompact/SessionEnd hooks (plugin-level, timestamped HHMMSS.md).
+# PreCompact/PostCompact hooks (plugin-level, timestamped HHMMSS.md).
 # Do NOT seed a per-project transition hook here — the old per-project
 # UserPromptSubmit -> init-transition.sh wiring created hour-based HH.md stubs
 # and was removed 2026-08-05. Enabling the plugin is all that's needed.
@@ -377,9 +377,8 @@ Claude sessions only; Codex-only sessions rely on the curated files.
 
 Session progress goes to timestamped `.workspace/transitions/YYYY-MM-DD/HHMMSS.md`
 files, one per event, written by the `transition` plugin's own
-PreCompact/PostCompact/SessionEnd hooks. No per-project wiring is needed.
-`/handoff` covers events with no compaction (before `/clear`, a Claude/Codex
-host swap, a milestone); `/continue` resumes. Both agents share the files.
+PreCompact/PostCompact hooks. No per-project wiring is needed. `/handoff`
+covers a Claude/Codex host swap or a deliberate `/clear`; `/continue` resumes. Both agents share the files.
 
 ​```bash
 ls -r .workspace/transitions/$(date +%Y-%m-%d)/*.md   # newest first
