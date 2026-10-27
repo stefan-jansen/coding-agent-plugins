@@ -93,7 +93,7 @@
       "name": "roborev",
       "source": "./roborev",
       "description": "SessionStart summary of open roborev reviews on the current branch — pairs with /setup:* roborev init step",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "keywords": [
         "roborev",
         "code-review",
