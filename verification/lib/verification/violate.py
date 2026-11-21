@@ -158,6 +158,9 @@ def _run(decl, variant, watch_lines):
         "VERIFICATION_VARIANT": variant,
         "VERIFICATION_TRACE_DIR": trace_dir,
         "VERIFICATION_TRACE_LINES": ",".join(f"{p}:{n}" for p, n in watch_lines),
+        # A fresh bytecode cache per run: a mutation of the same size written within the second
+        # the source was last compiled is otherwise imported from the unmutated .pyc.
+        "PYTHONPYCACHEPREFIX": os.path.join(trace_dir, "pycache"),
         "PYTHONPATH": os.pathsep.join(filter(None, [TRACE_DIR, os.environ.get("PYTHONPATH")])),
     }
     cmd = [*decl["command"], "-p", "no:cacheprovider", decl["test"]]
