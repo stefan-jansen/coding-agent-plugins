@@ -359,3 +359,35 @@ def test_a_relative_root_is_resolved_from_the_declaration(repo, tmp_path_factory
         cwd=elsewhere,
     )
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_a_mutation_of_the_same_length_is_not_hidden_by_stale_bytecode(tmp_path):
+    """A mutation that keeps the file's size, written within the second the correct run compiled
+    the producer, was imported from the correct run's bytecode, so the test passed on it. An
+    unchecked-hash .pyc of the correct code stands in for that collision, deterministically."""
+    import py_compile
+
+    (tmp_path / "lag.py").write_text("def lag(a, b):\n    return a - b\n")
+    (tmp_path / "test_lag.py").write_text(
+        "import lag\n\n\ndef test_lag():\n    assert lag.lag(3, 1) == 2\n"
+    )
+    py_compile.compile(
+        str(tmp_path / "lag.py"),
+        cfile=str(tmp_path / "__pycache__" / f"lag.{sys.implementation.cache_tag}.pyc"),
+        invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH,
+    )
+    decl = {
+        "test": "test_lag.py::test_lag",
+        "root": str(tmp_path),
+        "command": [sys.executable, "-m", "pytest", "-q"],
+        "producer": "lag.py",
+        "variant": {"mutation": {"file": "lag.py", "old": "a - b", "new": "b - a"}},
+        "fixture": "the arguments in test_lag.py",
+    }
+    path = tmp_path / "violation.json"
+    path.write_text(json.dumps(decl))
+    env = {**os.environ, "PYTHONPATH": str(tmp_path)}
+    r = subprocess.run(
+        [sys.executable, BIN, "violate", str(path)], capture_output=True, text=True, env=env
+    )
+    assert r.returncode == 0, r.stdout + r.stderr
